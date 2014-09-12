@@ -572,7 +572,7 @@ KurentoClient.register(_dereq_('kurento-client-filters'))
 module.exports = KurentoClient;
 KurentoClient.KurentoClient = KurentoClient;
 
-},{"async":2,"checktype":3,"es6-promise":4,"events":18,"extend":14,"inherits":41,"kurento-client-core":59,"kurento-client-elements":76,"kurento-client-filters":82,"kurento-jsonrpc":86,"promisecallback":91,"reconnect-ws":92,"url":38}],2:[function(_dereq_,module,exports){
+},{"async":2,"checktype":3,"es6-promise":4,"events":19,"extend":14,"inherits":42,"kurento-client-core":60,"kurento-client-elements":77,"kurento-client-filters":83,"kurento-jsonrpc":87,"promisecallback":92,"reconnect-ws":93,"url":39}],2:[function(_dereq_,module,exports){
 (function (process){
 /*!
  * async
@@ -1699,7 +1699,7 @@ KurentoClient.KurentoClient = KurentoClient;
 }());
 
 }).call(this,_dereq_("JkpR2F"))
-},{"JkpR2F":19}],3:[function(_dereq_,module,exports){
+},{"JkpR2F":20}],3:[function(_dereq_,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -2025,7 +2025,7 @@ function asap(callback, arg) {
 
 exports.asap = asap;
 }).call(this,_dereq_("JkpR2F"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"JkpR2F":19}],7:[function(_dereq_,module,exports){
+},{"JkpR2F":20}],7:[function(_dereq_,module,exports){
 "use strict";
 var config = {
   instrument: false
@@ -2563,11 +2563,14 @@ module.exports = function extend() {
 
 var base64 = _dereq_('base64-js')
 var ieee754 = _dereq_('ieee754')
+var isArray = _dereq_('is-array')
 
 exports.Buffer = Buffer
 exports.SlowBuffer = Buffer
 exports.INSPECT_MAX_BYTES = 50
-Buffer.poolSize = 8192
+Buffer.poolSize = 8192 // not used by this implementation
+
+var kMaxLength = 0x3fffffff
 
 /**
  * If `Buffer.TYPED_ARRAY_SUPPORT`:
@@ -2635,7 +2638,11 @@ function Buffer (subject, encoding, noZero) {
       subject = subject.data
     length = +subject.length > 0 ? Math.floor(+subject.length) : 0
   } else
-    throw new Error('First argument needs to be a number, array or string.')
+    throw new TypeError('must start with number, buffer, array or string')
+
+  if (this.length > kMaxLength)
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+      'size: 0x' + kMaxLength.toString(16) + ' bytes')
 
   var buf
   if (Buffer.TYPED_ARRAY_SUPPORT) {
@@ -2672,8 +2679,25 @@ function Buffer (subject, encoding, noZero) {
   return buf
 }
 
-// STATIC METHODS
-// ==============
+Buffer.isBuffer = function (b) {
+  return !!(b != null && b._isBuffer)
+}
+
+Buffer.compare = function (a, b) {
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b))
+    throw new TypeError('Arguments must be Buffers')
+
+  var x = a.length
+  var y = b.length
+  for (var i = 0, len = Math.min(x, y); i < len && a[i] === b[i]; i++) {}
+  if (i !== len) {
+    x = a[i]
+    y = b[i]
+  }
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
 
 Buffer.isEncoding = function (encoding) {
   switch (String(encoding).toLowerCase()) {
@@ -2694,43 +2718,8 @@ Buffer.isEncoding = function (encoding) {
   }
 }
 
-Buffer.isBuffer = function (b) {
-  return !!(b != null && b._isBuffer)
-}
-
-Buffer.byteLength = function (str, encoding) {
-  var ret
-  str = str.toString()
-  switch (encoding || 'utf8') {
-    case 'hex':
-      ret = str.length / 2
-      break
-    case 'utf8':
-    case 'utf-8':
-      ret = utf8ToBytes(str).length
-      break
-    case 'ascii':
-    case 'binary':
-    case 'raw':
-      ret = str.length
-      break
-    case 'base64':
-      ret = base64ToBytes(str).length
-      break
-    case 'ucs2':
-    case 'ucs-2':
-    case 'utf16le':
-    case 'utf-16le':
-      ret = str.length * 2
-      break
-    default:
-      throw new Error('Unknown encoding')
-  }
-  return ret
-}
-
 Buffer.concat = function (list, totalLength) {
-  assert(isArray(list), 'Usage: Buffer.concat(list[, length])')
+  if (!isArray(list)) throw new TypeError('Usage: Buffer.concat(list[, length])')
 
   if (list.length === 0) {
     return new Buffer(0)
@@ -2756,26 +2745,118 @@ Buffer.concat = function (list, totalLength) {
   return buf
 }
 
-Buffer.compare = function (a, b) {
-  assert(Buffer.isBuffer(a) && Buffer.isBuffer(b), 'Arguments must be Buffers')
-  var x = a.length
-  var y = b.length
-  for (var i = 0, len = Math.min(x, y); i < len && a[i] === b[i]; i++) {}
-  if (i !== len) {
-    x = a[i]
-    y = b[i]
+Buffer.byteLength = function (str, encoding) {
+  var ret
+  str = str + ''
+  switch (encoding || 'utf8') {
+    case 'ascii':
+    case 'binary':
+    case 'raw':
+      ret = str.length
+      break
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      ret = str.length * 2
+      break
+    case 'hex':
+      ret = str.length >>> 1
+      break
+    case 'utf8':
+    case 'utf-8':
+      ret = utf8ToBytes(str).length
+      break
+    case 'base64':
+      ret = base64ToBytes(str).length
+      break
+    default:
+      ret = str.length
   }
-  if (x < y) {
-    return -1
-  }
-  if (y < x) {
-    return 1
-  }
-  return 0
+  return ret
 }
 
-// BUFFER INSTANCE METHODS
-// =======================
+// pre-set for values that may exist in the future
+Buffer.prototype.length = undefined
+Buffer.prototype.parent = undefined
+
+// toString(encoding, start=0, end=buffer.length)
+Buffer.prototype.toString = function (encoding, start, end) {
+  var loweredCase = false
+
+  start = start >>> 0
+  end = end === undefined || end === Infinity ? this.length : end >>> 0
+
+  if (!encoding) encoding = 'utf8'
+  if (start < 0) start = 0
+  if (end > this.length) end = this.length
+  if (end <= start) return ''
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'binary':
+        return binarySlice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase)
+          throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.equals = function (b) {
+  if(!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function () {
+  var str = ''
+  var max = exports.INSPECT_MAX_BYTES
+  if (this.length > 0) {
+    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
+    if (this.length > max)
+      str += ' ... '
+  }
+  return '<Buffer ' + str + '>'
+}
+
+Buffer.prototype.compare = function (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  return Buffer.compare(this, b)
+}
+
+// `get` will be removed in Node 0.13+
+Buffer.prototype.get = function (offset) {
+  console.log('.get() is deprecated. Access using array indexes instead.')
+  return this.readUInt8(offset)
+}
+
+// `set` will be removed in Node 0.13+
+Buffer.prototype.set = function (v, offset) {
+  console.log('.set() is deprecated. Access using array indexes instead.')
+  return this.writeUInt8(v, offset)
+}
 
 function hexWrite (buf, string, offset, length) {
   offset = Number(offset) || 0
@@ -2791,14 +2872,14 @@ function hexWrite (buf, string, offset, length) {
 
   // must be an even number of digits
   var strLen = string.length
-  assert(strLen % 2 === 0, 'Invalid hex string')
+  if (strLen % 2 !== 0) throw new Error('Invalid hex string')
 
   if (length > strLen / 2) {
     length = strLen / 2
   }
   for (var i = 0; i < length; i++) {
     var byte = parseInt(string.substr(i * 2, 2), 16)
-    assert(!isNaN(byte), 'Invalid hex string')
+    if (isNaN(byte)) throw new Error('Invalid hex string')
     buf[offset + i] = byte
   }
   return i
@@ -2880,48 +2961,7 @@ Buffer.prototype.write = function (string, offset, length, encoding) {
       ret = utf16leWrite(this, string, offset, length)
       break
     default:
-      throw new Error('Unknown encoding')
-  }
-  return ret
-}
-
-Buffer.prototype.toString = function (encoding, start, end) {
-  var self = this
-
-  encoding = String(encoding || 'utf8').toLowerCase()
-  start = Number(start) || 0
-  end = (end === undefined) ? self.length : Number(end)
-
-  // Fastpath empty strings
-  if (end === start)
-    return ''
-
-  var ret
-  switch (encoding) {
-    case 'hex':
-      ret = hexSlice(self, start, end)
-      break
-    case 'utf8':
-    case 'utf-8':
-      ret = utf8Slice(self, start, end)
-      break
-    case 'ascii':
-      ret = asciiSlice(self, start, end)
-      break
-    case 'binary':
-      ret = binarySlice(self, start, end)
-      break
-    case 'base64':
-      ret = base64Slice(self, start, end)
-      break
-    case 'ucs2':
-    case 'ucs-2':
-    case 'utf16le':
-    case 'utf-16le':
-      ret = utf16leSlice(self, start, end)
-      break
-    default:
-      throw new Error('Unknown encoding')
+      throw new TypeError('Unknown encoding: ' + encoding)
   }
   return ret
 }
@@ -2930,52 +2970,6 @@ Buffer.prototype.toJSON = function () {
   return {
     type: 'Buffer',
     data: Array.prototype.slice.call(this._arr || this, 0)
-  }
-}
-
-Buffer.prototype.equals = function (b) {
-  assert(Buffer.isBuffer(b), 'Argument must be a Buffer')
-  return Buffer.compare(this, b) === 0
-}
-
-Buffer.prototype.compare = function (b) {
-  assert(Buffer.isBuffer(b), 'Argument must be a Buffer')
-  return Buffer.compare(this, b)
-}
-
-// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
-Buffer.prototype.copy = function (target, target_start, start, end) {
-  var source = this
-
-  if (!start) start = 0
-  if (!end && end !== 0) end = this.length
-  if (!target_start) target_start = 0
-
-  // Copy 0 bytes; we're done
-  if (end === start) return
-  if (target.length === 0 || source.length === 0) return
-
-  // Fatal error conditions
-  assert(end >= start, 'sourceEnd < sourceStart')
-  assert(target_start >= 0 && target_start < target.length,
-      'targetStart out of bounds')
-  assert(start >= 0 && start < source.length, 'sourceStart out of bounds')
-  assert(end >= 0 && end <= source.length, 'sourceEnd out of bounds')
-
-  // Are we oob?
-  if (end > this.length)
-    end = this.length
-  if (target.length - target_start < end - start)
-    end = target.length - target_start + start
-
-  var len = end - start
-
-  if (len < 100 || !Buffer.TYPED_ARRAY_SUPPORT) {
-    for (var i = 0; i < len; i++) {
-      target[i + target_start] = this[i + start]
-    }
-  } else {
-    target._set(this.subarray(start, start + len), target_start)
   }
 }
 
@@ -3074,18 +3068,6 @@ Buffer.prototype.slice = function (start, end) {
     }
     return newBuf
   }
-}
-
-// `get` will be removed in Node 0.13+
-Buffer.prototype.get = function (offset) {
-  console.log('.get() is deprecated. Access using array indexes instead.')
-  return this.readUInt8(offset)
-}
-
-// `set` will be removed in Node 0.13+
-Buffer.prototype.set = function (v, offset) {
-  console.log('.set() is deprecated. Access using array indexes instead.')
-  return this.writeUInt8(v, offset)
 }
 
 /*
@@ -3203,9 +3185,9 @@ Buffer.prototype.readDoubleBE = function (offset, noAssert) {
 }
 
 function checkInt (buf, value, offset, ext, max, min) {
-  assert(Buffer.isBuffer(buf), 'buffer must be a Buffer instance')
-  assert(value <= max && value >= min, 'value is out of bounds')
-  assert(offset + ext <= buf.length, 'index out of range')
+  if (!Buffer.isBuffer(buf)) throw new TypeError('buffer must be a Buffer instance')
+  if (value > max || value < min) throw new TypeError('value is out of bounds')
+  if (offset + ext > buf.length) throw new TypeError('index out of range')
 }
 
 Buffer.prototype.writeUInt8 = function (value, offset, noAssert) {
@@ -3350,8 +3332,8 @@ Buffer.prototype.writeInt32BE = function (value, offset, noAssert) {
 }
 
 function checkIEEE754 (buf, value, offset, ext, max, min) {
-  assert(value <= max && value >= min, 'value is out of bounds')
-  assert(offset + ext <= buf.length, 'index out of range')
+  if (value > max || value < min) throw new TypeError('value is out of bounds')
+  if (offset + ext > buf.length) throw new TypeError('index out of range')
 }
 
 function writeFloat (buf, value, offset, littleEndian, noAssert) {
@@ -3384,20 +3366,56 @@ Buffer.prototype.writeDoubleBE = function (value, offset, noAssert) {
   return writeDouble(this, value, offset, false, noAssert)
 }
 
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function (target, target_start, start, end) {
+  var source = this
+
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (!target_start) target_start = 0
+
+  // Copy 0 bytes; we're done
+  if (end === start) return
+  if (target.length === 0 || source.length === 0) return
+
+  // Fatal error conditions
+  if (end < start) throw new TypeError('sourceEnd < sourceStart')
+  if (target_start < 0 || target_start >= target.length)
+    throw new TypeError('targetStart out of bounds')
+  if (start < 0 || start >= source.length) throw new TypeError('sourceStart out of bounds')
+  if (end < 0 || end > source.length) throw new TypeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length)
+    end = this.length
+  if (target.length - target_start < end - start)
+    end = target.length - target_start + start
+
+  var len = end - start
+
+  if (len < 100 || !Buffer.TYPED_ARRAY_SUPPORT) {
+    for (var i = 0; i < len; i++) {
+      target[i + target_start] = this[i + start]
+    }
+  } else {
+    target._set(this.subarray(start, start + len), target_start)
+  }
+}
+
 // fill(value, start=0, end=buffer.length)
 Buffer.prototype.fill = function (value, start, end) {
   if (!value) value = 0
   if (!start) start = 0
   if (!end) end = this.length
 
-  assert(end >= start, 'end < start')
+  if (end < start) throw new TypeError('end < start')
 
   // Fill 0 bytes; we're done
   if (end === start) return
   if (this.length === 0) return
 
-  assert(start >= 0 && start < this.length, 'start out of bounds')
-  assert(end >= 0 && end <= this.length, 'end out of bounds')
+  if (start < 0 || start >= this.length) throw new TypeError('start out of bounds')
+  if (end < 0 || end > this.length) throw new TypeError('end out of bounds')
 
   var i
   if (typeof value === 'number') {
@@ -3413,19 +3431,6 @@ Buffer.prototype.fill = function (value, start, end) {
   }
 
   return this
-}
-
-Buffer.prototype.inspect = function () {
-  var out = []
-  var len = this.length
-  for (var i = 0; i < len; i++) {
-    out[i] = toHex(this[i])
-    if (i === exports.INSPECT_MAX_BYTES) {
-      out[i + 1] = '...'
-      break
-    }
-  }
-  return '<Buffer ' + out.join(' ') + '>'
 }
 
 /**
@@ -3444,7 +3449,7 @@ Buffer.prototype.toArrayBuffer = function () {
       return buf.buffer
     }
   } else {
-    throw new Error('Buffer.toArrayBuffer not supported in this browser')
+    throw new TypeError('Buffer.toArrayBuffer not supported in this browser')
   }
 }
 
@@ -3527,12 +3532,6 @@ function stringtrim (str) {
   return str.replace(/^\s+|\s+$/g, '')
 }
 
-function isArray (subject) {
-  return (Array.isArray || function (subject) {
-    return Object.prototype.toString.call(subject) === '[object Array]'
-  })(subject)
-}
-
 function isArrayish (subject) {
   return isArray(subject) || Buffer.isBuffer(subject) ||
       subject && typeof subject === 'object' &&
@@ -3606,11 +3605,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-function assert (test, message) {
-  if (!test) throw new Error(message || 'Failed assertion')
-}
-
-},{"base64-js":16,"ieee754":17}],16:[function(_dereq_,module,exports){
+},{"base64-js":16,"ieee754":17,"is-array":18}],16:[function(_dereq_,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -3819,6 +3814,41 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
 };
 
 },{}],18:[function(_dereq_,module,exports){
+
+/**
+ * isArray
+ */
+
+var isArray = Array.isArray;
+
+/**
+ * toString
+ */
+
+var str = Object.prototype.toString;
+
+/**
+ * Whether or not the given `val`
+ * is an array.
+ *
+ * example:
+ *
+ *        isArray([]);
+ *        // > true
+ *        isArray(arguments);
+ *        // > false
+ *        isArray('');
+ *        // > false
+ *
+ * @param {mixed} val
+ * @return {bool}
+ */
+
+module.exports = isArray || function (val) {
+  return !! val && '[object Array]' == str.call(val);
+};
+
+},{}],19:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4121,7 +4151,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],19:[function(_dereq_,module,exports){
+},{}],20:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -4186,7 +4216,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],20:[function(_dereq_,module,exports){
+},{}],21:[function(_dereq_,module,exports){
 (function (global){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
@@ -4697,7 +4727,7 @@ process.chdir = function (dir) {
 }(this));
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],21:[function(_dereq_,module,exports){
+},{}],22:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4783,7 +4813,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],22:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4870,16 +4900,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],23:[function(_dereq_,module,exports){
+},{}],24:[function(_dereq_,module,exports){
 'use strict';
 
 exports.decode = exports.parse = _dereq_('./decode');
 exports.encode = exports.stringify = _dereq_('./encode');
 
-},{"./decode":21,"./encode":22}],24:[function(_dereq_,module,exports){
+},{"./decode":22,"./encode":23}],25:[function(_dereq_,module,exports){
 module.exports = _dereq_("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":25}],25:[function(_dereq_,module,exports){
+},{"./lib/_stream_duplex.js":26}],26:[function(_dereq_,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -4972,7 +5002,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,_dereq_("JkpR2F"))
-},{"./_stream_readable":27,"./_stream_writable":29,"JkpR2F":19,"core-util-is":30,"inherits":41}],26:[function(_dereq_,module,exports){
+},{"./_stream_readable":28,"./_stream_writable":30,"JkpR2F":20,"core-util-is":31,"inherits":42}],27:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5020,7 +5050,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":28,"core-util-is":30,"inherits":41}],27:[function(_dereq_,module,exports){
+},{"./_stream_transform":29,"core-util-is":31,"inherits":42}],28:[function(_dereq_,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6006,7 +6036,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,_dereq_("JkpR2F"))
-},{"JkpR2F":19,"buffer":15,"core-util-is":30,"events":18,"inherits":41,"isarray":31,"stream":37,"string_decoder/":32}],28:[function(_dereq_,module,exports){
+},{"JkpR2F":20,"buffer":15,"core-util-is":31,"events":19,"inherits":42,"isarray":32,"stream":38,"string_decoder/":33}],29:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6218,7 +6248,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":25,"core-util-is":30,"inherits":41}],29:[function(_dereq_,module,exports){
+},{"./_stream_duplex":26,"core-util-is":31,"inherits":42}],30:[function(_dereq_,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6608,7 +6638,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,_dereq_("JkpR2F"))
-},{"./_stream_duplex":25,"JkpR2F":19,"buffer":15,"core-util-is":30,"inherits":41,"stream":37}],30:[function(_dereq_,module,exports){
+},{"./_stream_duplex":26,"JkpR2F":20,"buffer":15,"core-util-is":31,"inherits":42,"stream":38}],31:[function(_dereq_,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6718,12 +6748,12 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,_dereq_("buffer").Buffer)
-},{"buffer":15}],31:[function(_dereq_,module,exports){
+},{"buffer":15}],32:[function(_dereq_,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],32:[function(_dereq_,module,exports){
+},{}],33:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6946,10 +6976,10 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":15}],33:[function(_dereq_,module,exports){
+},{"buffer":15}],34:[function(_dereq_,module,exports){
 module.exports = _dereq_("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":26}],34:[function(_dereq_,module,exports){
+},{"./lib/_stream_passthrough.js":27}],35:[function(_dereq_,module,exports){
 exports = module.exports = _dereq_('./lib/_stream_readable.js');
 exports.Readable = exports;
 exports.Writable = _dereq_('./lib/_stream_writable.js');
@@ -6957,13 +6987,13 @@ exports.Duplex = _dereq_('./lib/_stream_duplex.js');
 exports.Transform = _dereq_('./lib/_stream_transform.js');
 exports.PassThrough = _dereq_('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":25,"./lib/_stream_passthrough.js":26,"./lib/_stream_readable.js":27,"./lib/_stream_transform.js":28,"./lib/_stream_writable.js":29}],35:[function(_dereq_,module,exports){
+},{"./lib/_stream_duplex.js":26,"./lib/_stream_passthrough.js":27,"./lib/_stream_readable.js":28,"./lib/_stream_transform.js":29,"./lib/_stream_writable.js":30}],36:[function(_dereq_,module,exports){
 module.exports = _dereq_("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":28}],36:[function(_dereq_,module,exports){
+},{"./lib/_stream_transform.js":29}],37:[function(_dereq_,module,exports){
 module.exports = _dereq_("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":29}],37:[function(_dereq_,module,exports){
+},{"./lib/_stream_writable.js":30}],38:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7092,7 +7122,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":18,"inherits":41,"readable-stream/duplex.js":24,"readable-stream/passthrough.js":33,"readable-stream/readable.js":34,"readable-stream/transform.js":35,"readable-stream/writable.js":36}],38:[function(_dereq_,module,exports){
+},{"events":19,"inherits":42,"readable-stream/duplex.js":25,"readable-stream/passthrough.js":34,"readable-stream/readable.js":35,"readable-stream/transform.js":36,"readable-stream/writable.js":37}],39:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7801,14 +7831,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":20,"querystring":23}],39:[function(_dereq_,module,exports){
+},{"punycode":21,"querystring":24}],40:[function(_dereq_,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],40:[function(_dereq_,module,exports){
+},{}],41:[function(_dereq_,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -8398,7 +8428,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,_dereq_("JkpR2F"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":39,"JkpR2F":19,"inherits":41}],41:[function(_dereq_,module,exports){
+},{"./support/isBuffer":40,"JkpR2F":20,"inherits":42}],42:[function(_dereq_,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -8423,7 +8453,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],42:[function(_dereq_,module,exports){
+},{}],43:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8490,7 +8520,7 @@ HubPort.check = function(key, value)
     throw SyntaxError(key+' param should be a HubPort, not '+typeof value);
 };
 
-},{"./abstracts/MediaElement":47,"inherits":41}],43:[function(_dereq_,module,exports){
+},{"./abstracts/MediaElement":48,"inherits":42}],44:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8598,7 +8628,7 @@ MediaPipeline.check = function(key, value)
     throw SyntaxError(key+' param should be a MediaPipeline, not '+typeof value);
 };
 
-},{"./abstracts/MediaObject":48,"es6-promise":4,"inherits":41,"promisecallback":91}],44:[function(_dereq_,module,exports){
+},{"./abstracts/MediaObject":49,"es6-promise":4,"inherits":42,"promisecallback":92}],45:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8661,7 +8691,7 @@ Endpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a Endpoint, not '+typeof value);
 };
 
-},{"./MediaElement":47,"inherits":41}],45:[function(_dereq_,module,exports){
+},{"./MediaElement":48,"inherits":42}],46:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8719,7 +8749,7 @@ Filter.check = function(key, value)
     throw SyntaxError(key+' param should be a Filter, not '+typeof value);
 };
 
-},{"./MediaElement":47,"inherits":41}],46:[function(_dereq_,module,exports){
+},{"./MediaElement":48,"inherits":42}],47:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8811,7 +8841,7 @@ Hub.check = function(key, value)
     throw SyntaxError(key+' param should be a Hub, not '+typeof value);
 };
 
-},{"./MediaObject":48,"es6-promise":4,"inherits":41,"promisecallback":91}],47:[function(_dereq_,module,exports){
+},{"./MediaObject":49,"es6-promise":4,"inherits":42,"promisecallback":92}],48:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9006,7 +9036,7 @@ MediaElement.check = function(key, value)
     throw SyntaxError(key+' param should be a MediaElement, not '+typeof value);
 };
 
-},{"./MediaObject":48,"checktype":3,"inherits":41}],48:[function(_dereq_,module,exports){
+},{"./MediaObject":49,"checktype":3,"inherits":42}],49:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9258,7 +9288,7 @@ MediaObject.check = function(key, value)
     throw SyntaxError(key+' param should be a MediaObject, not '+typeof value);
 };
 
-},{"es6-promise":4,"events":18,"inherits":41,"promisecallback":91}],49:[function(_dereq_,module,exports){
+},{"es6-promise":4,"events":19,"inherits":42,"promisecallback":92}],50:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9370,7 +9400,7 @@ MediaPad.check = function(key, value)
     throw SyntaxError(key+' param should be a MediaPad, not '+typeof value);
 };
 
-},{"./MediaObject":48,"inherits":41}],50:[function(_dereq_,module,exports){
+},{"./MediaObject":49,"inherits":42}],51:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9476,7 +9506,7 @@ MediaSink.check = function(key, value)
     throw SyntaxError(key+' param should be a MediaSink, not '+typeof value);
 };
 
-},{"./MediaPad":49,"checktype":3,"inherits":41}],51:[function(_dereq_,module,exports){
+},{"./MediaPad":50,"checktype":3,"inherits":42}],52:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9608,7 +9638,7 @@ MediaSource.check = function(key, value)
     throw SyntaxError(key+' param should be a MediaSource, not '+typeof value);
 };
 
-},{"./MediaPad":49,"checktype":3,"inherits":41}],52:[function(_dereq_,module,exports){
+},{"./MediaPad":50,"checktype":3,"inherits":42}],53:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9788,7 +9818,7 @@ SdpEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a SdpEndpoint, not '+typeof value);
 };
 
-},{"./SessionEndpoint":53,"checktype":3,"inherits":41}],53:[function(_dereq_,module,exports){
+},{"./SessionEndpoint":54,"checktype":3,"inherits":42}],54:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9849,7 +9879,7 @@ SessionEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a SessionEndpoint, not '+typeof value);
 };
 
-},{"./Endpoint":44,"inherits":41}],54:[function(_dereq_,module,exports){
+},{"./Endpoint":45,"inherits":42}],55:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9962,7 +9992,7 @@ UriEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a UriEndpoint, not '+typeof value);
 };
 
-},{"./Endpoint":44,"checktype":3,"inherits":41}],55:[function(_dereq_,module,exports){
+},{"./Endpoint":45,"checktype":3,"inherits":42}],56:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10014,7 +10044,7 @@ exports.SdpEndpoint = SdpEndpoint;
 exports.SessionEndpoint = SessionEndpoint;
 exports.UriEndpoint = UriEndpoint;
 
-},{"./Endpoint":44,"./Filter":45,"./Hub":46,"./MediaElement":47,"./MediaObject":48,"./MediaPad":49,"./MediaSink":50,"./MediaSource":51,"./SdpEndpoint":52,"./SessionEndpoint":53,"./UriEndpoint":54}],56:[function(_dereq_,module,exports){
+},{"./Endpoint":45,"./Filter":46,"./Hub":47,"./MediaElement":48,"./MediaObject":49,"./MediaPad":50,"./MediaSink":51,"./MediaSource":52,"./SdpEndpoint":53,"./SessionEndpoint":54,"./UriEndpoint":55}],57:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10065,7 +10095,7 @@ function checkFilterType(key, value)
 
 module.exports = checkFilterType;
 
-},{"checktype":3}],57:[function(_dereq_,module,exports){
+},{"checktype":3}],58:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10116,7 +10146,7 @@ function checkMediaType(key, value)
 
 module.exports = checkMediaType;
 
-},{"checktype":3}],58:[function(_dereq_,module,exports){
+},{"checktype":3}],59:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10150,7 +10180,7 @@ var MediaType = _dereq_('./MediaType');
 exports.FilterType = FilterType;
 exports.MediaType = MediaType;
 
-},{"./FilterType":56,"./MediaType":57}],59:[function(_dereq_,module,exports){
+},{"./FilterType":57,"./MediaType":58}],60:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10187,7 +10217,7 @@ exports.MediaPipeline = MediaPipeline;
 exports.abstracts    = _dereq_('./abstracts');
 exports.complexTypes = _dereq_('./complexTypes');
 
-},{"./HubPort":42,"./MediaPipeline":43,"./abstracts":55,"./complexTypes":58}],60:[function(_dereq_,module,exports){
+},{"./HubPort":43,"./MediaPipeline":44,"./abstracts":56,"./complexTypes":59}],61:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10339,7 +10369,7 @@ AlphaBlending.check = function(key, value)
     throw SyntaxError(key+' param should be a AlphaBlending, not '+typeof value);
 };
 
-},{"checktype":3,"inherits":41,"kurento-client-core":59}],61:[function(_dereq_,module,exports){
+},{"checktype":3,"inherits":42,"kurento-client-core":60}],62:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10406,7 +10436,7 @@ Composite.check = function(key, value)
     throw SyntaxError(key+' param should be a Composite, not '+typeof value);
 };
 
-},{"inherits":41,"kurento-client-core":59}],62:[function(_dereq_,module,exports){
+},{"inherits":42,"kurento-client-core":60}],63:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10507,7 +10537,7 @@ Dispatcher.check = function(key, value)
     throw SyntaxError(key+' param should be a Dispatcher, not '+typeof value);
 };
 
-},{"checktype":3,"inherits":41,"kurento-client-core":59}],63:[function(_dereq_,module,exports){
+},{"checktype":3,"inherits":42,"kurento-client-core":60}],64:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10620,7 +10650,7 @@ DispatcherOneToMany.check = function(key, value)
     throw SyntaxError(key+' param should be a DispatcherOneToMany, not '+typeof value);
 };
 
-},{"checktype":3,"inherits":41,"kurento-client-core":59}],64:[function(_dereq_,module,exports){
+},{"checktype":3,"inherits":42,"kurento-client-core":60}],65:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10712,7 +10742,7 @@ HttpGetEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a HttpGetEndpoint, not '+typeof value);
 };
 
-},{"./abstracts/HttpEndpoint":72,"inherits":41}],65:[function(_dereq_,module,exports){
+},{"./abstracts/HttpEndpoint":73,"inherits":42}],66:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10797,7 +10827,7 @@ HttpPostEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a HttpPostEndpoint, not '+typeof value);
 };
 
-},{"./abstracts/HttpEndpoint":72,"inherits":41}],66:[function(_dereq_,module,exports){
+},{"./abstracts/HttpEndpoint":73,"inherits":42}],67:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10939,7 +10969,7 @@ Mixer.check = function(key, value)
     throw SyntaxError(key+' param should be a Mixer, not '+typeof value);
 };
 
-},{"checktype":3,"inherits":41,"kurento-client-core":59}],67:[function(_dereq_,module,exports){
+},{"checktype":3,"inherits":42,"kurento-client-core":60}],68:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11052,7 +11082,7 @@ PlayerEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a PlayerEndpoint, not '+typeof value);
 };
 
-},{"checktype":3,"inherits":41,"kurento-client-core":59}],68:[function(_dereq_,module,exports){
+},{"checktype":3,"inherits":42,"kurento-client-core":60}],69:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11151,7 +11181,7 @@ PlumberEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a PlumberEndpoint, not '+typeof value);
 };
 
-},{"inherits":41,"kurento-client-core":59}],69:[function(_dereq_,module,exports){
+},{"inherits":42,"kurento-client-core":60}],70:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11260,7 +11290,7 @@ RecorderEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a RecorderEndpoint, not '+typeof value);
 };
 
-},{"checktype":3,"inherits":41,"kurento-client-core":59}],70:[function(_dereq_,module,exports){
+},{"checktype":3,"inherits":42,"kurento-client-core":60}],71:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11327,7 +11357,7 @@ RtpEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a RtpEndpoint, not '+typeof value);
 };
 
-},{"inherits":41,"kurento-client-core":59}],71:[function(_dereq_,module,exports){
+},{"inherits":42,"kurento-client-core":60}],72:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11394,7 +11424,7 @@ WebRtcEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a WebRtcEndpoint, not '+typeof value);
 };
 
-},{"inherits":41,"kurento-client-core":59}],72:[function(_dereq_,module,exports){
+},{"inherits":42,"kurento-client-core":60}],73:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11474,7 +11504,7 @@ HttpEndpoint.check = function(key, value)
     throw SyntaxError(key+' param should be a HttpEndpoint, not '+typeof value);
 };
 
-},{"checktype":3,"inherits":41,"kurento-client-core":59}],73:[function(_dereq_,module,exports){
+},{"checktype":3,"inherits":42,"kurento-client-core":60}],74:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11506,7 +11536,7 @@ var HttpEndpoint = _dereq_('./HttpEndpoint');
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":72}],74:[function(_dereq_,module,exports){
+},{"./HttpEndpoint":73}],75:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11558,7 +11588,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"checktype":3}],75:[function(_dereq_,module,exports){
+},{"checktype":3}],76:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11590,7 +11620,7 @@ var MediaProfileSpecType = _dereq_('./MediaProfileSpecType');
 
 exports.MediaProfileSpecType = MediaProfileSpecType;
 
-},{"./MediaProfileSpecType":74}],76:[function(_dereq_,module,exports){
+},{"./MediaProfileSpecType":75}],77:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11647,7 +11677,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = _dereq_('./abstracts');
 exports.complexTypes = _dereq_('./complexTypes');
 
-},{"./AlphaBlending":60,"./Composite":61,"./Dispatcher":62,"./DispatcherOneToMany":63,"./HttpGetEndpoint":64,"./HttpPostEndpoint":65,"./Mixer":66,"./PlayerEndpoint":67,"./PlumberEndpoint":68,"./RecorderEndpoint":69,"./RtpEndpoint":70,"./WebRtcEndpoint":71,"./abstracts":73,"./complexTypes":75}],77:[function(_dereq_,module,exports){
+},{"./AlphaBlending":61,"./Composite":62,"./Dispatcher":63,"./DispatcherOneToMany":64,"./HttpGetEndpoint":65,"./HttpPostEndpoint":66,"./Mixer":67,"./PlayerEndpoint":68,"./PlumberEndpoint":69,"./RecorderEndpoint":70,"./RtpEndpoint":71,"./WebRtcEndpoint":72,"./abstracts":74,"./complexTypes":76}],78:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11800,7 +11830,7 @@ FaceOverlayFilter.check = function(key, value)
     throw SyntaxError(key+' param should be a FaceOverlayFilter, not '+typeof value);
 };
 
-},{"checktype":3,"inherits":41,"kurento-client-core":59}],78:[function(_dereq_,module,exports){
+},{"checktype":3,"inherits":42,"kurento-client-core":60}],79:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11882,7 +11912,7 @@ GStreamerFilter.check = function(key, value)
     throw SyntaxError(key+' param should be a GStreamerFilter, not '+typeof value);
 };
 
-},{"inherits":41,"kurento-client-core":59}],79:[function(_dereq_,module,exports){
+},{"inherits":42,"kurento-client-core":60}],80:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11951,7 +11981,7 @@ ZBarFilter.check = function(key, value)
     throw SyntaxError(key+' param should be a ZBarFilter, not '+typeof value);
 };
 
-},{"inherits":41,"kurento-client-core":59}],80:[function(_dereq_,module,exports){
+},{"inherits":42,"kurento-client-core":60}],81:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12009,7 +12039,7 @@ OpenCVFilter.check = function(key, value)
     throw SyntaxError(key+' param should be a OpenCVFilter, not '+typeof value);
 };
 
-},{"inherits":41,"kurento-client-core":59}],81:[function(_dereq_,module,exports){
+},{"inherits":42,"kurento-client-core":60}],82:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12041,7 +12071,7 @@ var OpenCVFilter = _dereq_('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":80}],82:[function(_dereq_,module,exports){
+},{"./OpenCVFilter":81}],83:[function(_dereq_,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12079,7 +12109,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = _dereq_('./abstracts');
 
-},{"./FaceOverlayFilter":77,"./GStreamerFilter":78,"./ZBarFilter":79,"./abstracts":81}],83:[function(_dereq_,module,exports){
+},{"./FaceOverlayFilter":78,"./GStreamerFilter":79,"./ZBarFilter":80,"./abstracts":82}],84:[function(_dereq_,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -12145,7 +12175,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],84:[function(_dereq_,module,exports){
+},{}],85:[function(_dereq_,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -12166,7 +12196,7 @@ var JsonRpcClient  = _dereq_('./jsonrpcclient');
 
 exports.JsonRpcClient  = JsonRpcClient;
 
-},{"./jsonrpcclient":85}],85:[function(_dereq_,module,exports){
+},{"./jsonrpcclient":86}],86:[function(_dereq_,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -12201,7 +12231,7 @@ function JsonRpcClient(wsUrl, onRequest, onerror)
 
 module.exports  = JsonRpcClient;
 
-},{"../..":86,"ws":90}],86:[function(_dereq_,module,exports){
+},{"../..":87,"ws":91}],87:[function(_dereq_,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -12957,7 +12987,7 @@ var clients = _dereq_('./clients');
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":83,"./clients":84,"./packers":89,"events":18,"inherits":41}],87:[function(_dereq_,module,exports){
+},{"./Mapper":84,"./clients":85,"./packers":90,"events":19,"inherits":42}],88:[function(_dereq_,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -13061,7 +13091,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],88:[function(_dereq_,module,exports){
+},{}],89:[function(_dereq_,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -13076,7 +13106,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],89:[function(_dereq_,module,exports){
+},{}],90:[function(_dereq_,module,exports){
 var JsonRPC = _dereq_('./JsonRPC');
 var XmlRPC  = _dereq_('./XmlRPC');
 
@@ -13084,7 +13114,7 @@ var XmlRPC  = _dereq_('./XmlRPC');
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":87,"./XmlRPC":88}],90:[function(_dereq_,module,exports){
+},{"./JsonRPC":88,"./XmlRPC":89}],91:[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -13129,7 +13159,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],91:[function(_dereq_,module,exports){
+},{}],92:[function(_dereq_,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -13176,7 +13206,7 @@ function promiseCallback(promise, callback)
 
 module.exports = promiseCallback;
 
-},{}],92:[function(_dereq_,module,exports){
+},{}],93:[function(_dereq_,module,exports){
 var websocket = _dereq_('websocket-stream');
 var inject = _dereq_('reconnect-core');
 
@@ -13195,7 +13225,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":93,"websocket-stream":100}],93:[function(_dereq_,module,exports){
+},{"reconnect-core":94,"websocket-stream":101}],94:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_('events').EventEmitter
 var backoff = _dereq_('backoff')
 
@@ -13309,7 +13339,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":94,"events":18}],94:[function(_dereq_,module,exports){
+},{"backoff":95,"events":19}],95:[function(_dereq_,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -13360,7 +13390,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":95,"./lib/function_call.js":96,"./lib/strategy/exponential":97,"./lib/strategy/fibonacci":98}],95:[function(_dereq_,module,exports){
+},{"./lib/backoff":96,"./lib/function_call.js":97,"./lib/strategy/exponential":98,"./lib/strategy/fibonacci":99}],96:[function(_dereq_,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -13446,7 +13476,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":18,"util":40}],96:[function(_dereq_,module,exports){
+},{"events":19,"util":41}],97:[function(_dereq_,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -13675,7 +13705,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":95,"./strategy/fibonacci":98,"events":18,"util":40}],97:[function(_dereq_,module,exports){
+},{"./backoff":96,"./strategy/fibonacci":99,"events":19,"util":41}],98:[function(_dereq_,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -13711,7 +13741,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":99,"util":40}],98:[function(_dereq_,module,exports){
+},{"./strategy":100,"util":41}],99:[function(_dereq_,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -13748,7 +13778,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":99,"util":40}],99:[function(_dereq_,module,exports){
+},{"./strategy":100,"util":41}],100:[function(_dereq_,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -13848,7 +13878,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":18,"util":40}],100:[function(_dereq_,module,exports){
+},{"events":19,"util":41}],101:[function(_dereq_,module,exports){
 (function (process){
 var through = _dereq_('through')
 var isBuffer = _dereq_('isbuffer')
@@ -13944,7 +13974,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,_dereq_("JkpR2F"))
-},{"JkpR2F":19,"isbuffer":101,"through":102,"ws":103}],101:[function(_dereq_,module,exports){
+},{"JkpR2F":20,"isbuffer":102,"through":103,"ws":104}],102:[function(_dereq_,module,exports){
 var Buffer = _dereq_('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -13954,7 +13984,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":15}],102:[function(_dereq_,module,exports){
+},{"buffer":15}],103:[function(_dereq_,module,exports){
 (function (process){
 var Stream = _dereq_('stream')
 
@@ -14066,8 +14096,8 @@ function through (write, end, opts) {
 
 
 }).call(this,_dereq_("JkpR2F"))
-},{"JkpR2F":19,"stream":37}],103:[function(_dereq_,module,exports){
-module.exports=_dereq_(90)
+},{"JkpR2F":20,"stream":38}],104:[function(_dereq_,module,exports){
+module.exports=_dereq_(91)
 },{}]},{},[1])
 (1)
 });
