@@ -1723,8 +1723,17 @@ KurentoClient.KurentoClient = KurentoClient;
  */
 if (!Number.isInteger) {
   Number.isInteger = function isInteger (nVal) {
-    return typeof nVal === "number" && isFinite(nVal) && nVal > -9007199254740992 && nVal < 9007199254740992 && Math.floor(nVal) === nVal;
+    return typeof nVal === "number" && isFinite(nVal)
+        && nVal > -9007199254740992 && nVal < 9007199254740992
+        && Math.floor(nVal) === nVal;
   };
+}
+
+
+function ChecktypeError(key, type, object)
+{
+  return SyntaxError(key + ' param should be a ' + (type.name || type)
+                    + ', not ' + value.constructor.name);
 }
 
 
@@ -1735,7 +1744,7 @@ if (!Number.isInteger) {
 function checkArray(type, key, value)
 {
   if(!(value instanceof Array))
-    throw SyntaxError(key+' param should be an Array of '+type+', not '+typeof value);
+    throw ChecktypeError(key, 'Array of '+type, value);
 
   for(var i=0, item; item=value[i]; i++)
     checkType(type, key+'['+i+']', item);
@@ -1744,31 +1753,31 @@ function checkArray(type, key, value)
 function checkBoolean(key, value)
 {
   if(typeof value != 'boolean')
-    throw SyntaxError(key+' param should be a Boolean, not '+typeof value);
+    throw ChecktypeError(key, Boolean, value);
 };
 
 function checkNumber(key, value)
 {
   if(typeof value != 'number')
-    throw SyntaxError(key+' param should be a Number, not '+typeof value);
+    throw ChecktypeError(key, Number, value);
 };
 
 function checkInteger(key, value)
 {
   if(!Number.isInteger(value))
-    throw SyntaxError(key+' param should be an Integer, not '+typeof value);
+    throw ChecktypeError(key, 'Integer', value);
 };
 
 function checkObject(key, value)
 {
   if(typeof value != 'object')
-    throw SyntaxError(key+' param should be an Object, not '+typeof value);
+    throw ChecktypeError(key, Object, value);
 };
 
 function checkString(key, value)
 {
   if(typeof value != 'string')
-    throw SyntaxError(key+' param should be a String, not '+typeof value);
+    throw ChecktypeError(key, String, value);
 };
 
 
@@ -1849,7 +1858,8 @@ function checkMethodParams(callparams, method_params)
 
 module.exports = checkType;
 
-checkType.checkParams = checkParams;
+checkType.checkParams    = checkParams;
+checkType.ChecktypeError = ChecktypeError;
 
 
 // Basic types
