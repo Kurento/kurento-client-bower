@@ -531,9 +531,14 @@ function register(name, constructor)
   // Adjust parameters
   if(typeof name != 'string')
   {
-    type = constructor
     constructor = name
     name = undefined
+  }
+
+  else if (constructor == undefined)
+  {
+     // Execute require if we only have a name
+     return register (name, require (name));
   }
 
   // Registering a function
@@ -11218,7 +11223,7 @@ PlumberEndpoint.prototype.getPort = function(callback){
 /**
  * Connect a control channel to the remote {@link module:elements.PlumberEndpoint PlumberEndpoint}
  *
- * @alias module:elements.PlumberEndpoint.connect
+ * @alias module:elements.PlumberEndpoint.link
  *
  * @param {external:String} address
  *  IP Address where the {@link module:elements.PlumberEndpoint PlumberEndpoint} is waiting for
@@ -11226,11 +11231,11 @@ PlumberEndpoint.prototype.getPort = function(callback){
  * @param {external:Integer} port
  *  Port where the {@link module:elements.PlumberEndpoint PlumberEndpoint} is listening to
  *
- * @param {module:elements.PlumberEndpoint~connectCallback} [callback]
+ * @param {module:elements.PlumberEndpoint~linkCallback} [callback]
  *
  * @return {external:Promise}
  */
-PlumberEndpoint.prototype.connect = function(address, port, callback){
+PlumberEndpoint.prototype.link = function(address, port, callback){
   checkType('String', 'address', address, {required: true});
   checkType('int', 'port', port, {required: true});
 
@@ -11239,10 +11244,10 @@ PlumberEndpoint.prototype.connect = function(address, port, callback){
     port: port,
   };
 
-  return this.invoke('connect', params, callback);
+  return this.invoke('link', params, callback);
 };
 /**
- * @callback module:elements.PlumberEndpoint~connectCallback
+ * @callback module:elements.PlumberEndpoint~linkCallback
  * @param {external:Error} error
  * @param {external:Boolean} result
  *  If both :rom:cls:`PlumberEndpoints` could be connected
