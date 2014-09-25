@@ -1,4 +1,4 @@
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var n;"undefined"!=typeof window?n=window:"undefined"!=typeof global?n=global:"undefined"!=typeof self&&(n=self),n.kurentoClient=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var n;"undefined"!=typeof window?n=window:"undefined"!=typeof global?n=global:"undefined"!=typeof self&&(n=self),n.kurentoClient=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -23,25 +23,25 @@
  * @license LGPL
  */
 
-var EventEmitter = _dereq_('events').EventEmitter;
-var extend       = _dereq_('extend');
-var inherits     = _dereq_('inherits');
-var url          = _dereq_('url');
+var EventEmitter = require('events').EventEmitter;
+var extend       = require('extend');
+var inherits     = require('inherits');
+var url          = require('url');
 
-var Promise = _dereq_('es6-promise').Promise;
+var Promise = require('es6-promise').Promise;
 
-var async     = _dereq_('async');
-var reconnect = _dereq_('reconnect-ws');
+var async     = require('async');
+var reconnect = require('reconnect-ws');
 
-var RpcBuilder = _dereq_('kurento-jsonrpc');
+var RpcBuilder = require('kurento-jsonrpc');
 var JsonRPC    = RpcBuilder.packers.JsonRPC;
 
-var checkType   = _dereq_('checktype');
+var checkType   = require('checktype');
 var checkParams = checkType.checkParams;
 
-var promiseCallback = _dereq_('promisecallback');
+var promiseCallback = require('promisecallback');
 
-var register = _dereq_('./register');
+var register = require('./register');
 
 
 /**
@@ -66,7 +66,9 @@ function serializeParams(params)
  */
 function getConstructor(type)
 {
-  return register.classes[type] || register.abstracts[type] || register.abstracts.MediaObject;
+  return register.classes[type]
+      || register.abstracts[type]
+      || register.abstracts.MediaObject;
 };
 
 function createConstructor(item)
@@ -241,6 +243,9 @@ function KurentoClient(ws_uri, options, callback)
           }
           catch(exception)
           {
+            if(!onRejected)
+              console.trace('Uncaugh exception', exception)
+
             return reject(exception);
           }
 
@@ -250,17 +255,19 @@ function KurentoClient(ws_uri, options, callback)
       {
         removeListeners()
 
-        var result;
+        var result = new Error('Connection error');
 
         if(onRejected)
           try
           {
-            result = onRejected(new Error('Connection error'));
+            result = onRejected(result);
           }
           catch(exception)
           {
             return reject(exception);
           }
+        else
+          console.trace('Uncaugh exception', result)
 
         reject(result);
       };
@@ -482,12 +489,12 @@ KurentoClient.register = register;
 
 // Register Kurento basic elements
 
-register(_dereq_('kurento-client-core'))
-register(_dereq_('kurento-client-elements'))
-register(_dereq_('kurento-client-filters'))
+register(require('kurento-client-core'))
+register(require('kurento-client-elements'))
+register(require('kurento-client-filters'))
 
-},{"./register":2,"async":3,"checktype":4,"es6-promise":5,"events":20,"extend":15,"inherits":43,"kurento-client-core":61,"kurento-client-elements":78,"kurento-client-filters":84,"kurento-jsonrpc":88,"promisecallback":93,"reconnect-ws":94,"url":40}],2:[function(_dereq_,module,exports){
-var checkType   = _dereq_('checktype');
+},{"./register":2,"async":3,"checktype":4,"es6-promise":5,"events":20,"extend":15,"inherits":43,"kurento-client-core":61,"kurento-client-elements":78,"kurento-client-filters":84,"kurento-jsonrpc":88,"promisecallback":93,"reconnect-ws":94,"url":40}],2:[function(require,module,exports){
+var checkType   = require('checktype');
 
 
 var abstracts = {};
@@ -538,7 +545,7 @@ function register(name, constructor)
   else if (constructor == undefined)
   {
      // Execute require if we only have a name
-     return register (name, _dereq_ (name));
+     return register (name, require (name));
   }
 
   // Registering a function
@@ -578,7 +585,7 @@ module.exports = register;
 register.abstracts = abstracts;
 register.classes = classes;
 
-},{"checktype":4}],3:[function(_dereq_,module,exports){
+},{"checktype":4}],3:[function(require,module,exports){
 (function (process){
 /*!
  * async
@@ -1704,8 +1711,8 @@ register.classes = classes;
 
 }());
 
-}).call(this,_dereq_("JkpR2F"))
-},{"JkpR2F":21}],4:[function(_dereq_,module,exports){
+}).call(this,require('_process'))
+},{"_process":22}],4:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -1877,18 +1884,18 @@ checkType.int     = checkInteger;
 checkType.Object  = checkObject;
 checkType.String  = checkString;
 
-},{}],5:[function(_dereq_,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
-var Promise = _dereq_("./promise/promise").Promise;
-var polyfill = _dereq_("./promise/polyfill").polyfill;
+var Promise = require("./promise/promise").Promise;
+var polyfill = require("./promise/polyfill").polyfill;
 exports.Promise = Promise;
 exports.polyfill = polyfill;
-},{"./promise/polyfill":9,"./promise/promise":10}],6:[function(_dereq_,module,exports){
+},{"./promise/polyfill":9,"./promise/promise":10}],6:[function(require,module,exports){
 "use strict";
 /* global toString */
 
-var isArray = _dereq_("./utils").isArray;
-var isFunction = _dereq_("./utils").isFunction;
+var isArray = require("./utils").isArray;
+var isFunction = require("./utils").isFunction;
 
 /**
   Returns a promise that is fulfilled when all the given promises have been
@@ -1977,7 +1984,7 @@ function all(promises) {
 }
 
 exports.all = all;
-},{"./utils":14}],7:[function(_dereq_,module,exports){
+},{"./utils":14}],7:[function(require,module,exports){
 (function (process,global){
 "use strict";
 var browserGlobal = (typeof window !== 'undefined') ? window : {};
@@ -2040,8 +2047,8 @@ function asap(callback, arg) {
 }
 
 exports.asap = asap;
-}).call(this,_dereq_("JkpR2F"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"JkpR2F":21}],8:[function(_dereq_,module,exports){
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"_process":22}],8:[function(require,module,exports){
 "use strict";
 var config = {
   instrument: false
@@ -2057,12 +2064,12 @@ function configure(name, value) {
 
 exports.config = config;
 exports.configure = configure;
-},{}],9:[function(_dereq_,module,exports){
+},{}],9:[function(require,module,exports){
 (function (global){
 "use strict";
 /*global self*/
-var RSVPPromise = _dereq_("./promise").Promise;
-var isFunction = _dereq_("./utils").isFunction;
+var RSVPPromise = require("./promise").Promise;
+var isFunction = require("./utils").isFunction;
 
 function polyfill() {
   var local;
@@ -2097,19 +2104,19 @@ function polyfill() {
 }
 
 exports.polyfill = polyfill;
-}).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./promise":10,"./utils":14}],10:[function(_dereq_,module,exports){
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./promise":10,"./utils":14}],10:[function(require,module,exports){
 "use strict";
-var config = _dereq_("./config").config;
-var configure = _dereq_("./config").configure;
-var objectOrFunction = _dereq_("./utils").objectOrFunction;
-var isFunction = _dereq_("./utils").isFunction;
-var now = _dereq_("./utils").now;
-var all = _dereq_("./all").all;
-var race = _dereq_("./race").race;
-var staticResolve = _dereq_("./resolve").resolve;
-var staticReject = _dereq_("./reject").reject;
-var asap = _dereq_("./asap").asap;
+var config = require("./config").config;
+var configure = require("./config").configure;
+var objectOrFunction = require("./utils").objectOrFunction;
+var isFunction = require("./utils").isFunction;
+var now = require("./utils").now;
+var all = require("./all").all;
+var race = require("./race").race;
+var staticResolve = require("./resolve").resolve;
+var staticReject = require("./reject").reject;
+var asap = require("./asap").asap;
 
 var counter = 0;
 
@@ -2310,10 +2317,10 @@ function publishRejection(promise) {
 }
 
 exports.Promise = Promise;
-},{"./all":6,"./asap":7,"./config":8,"./race":11,"./reject":12,"./resolve":13,"./utils":14}],11:[function(_dereq_,module,exports){
+},{"./all":6,"./asap":7,"./config":8,"./race":11,"./reject":12,"./resolve":13,"./utils":14}],11:[function(require,module,exports){
 "use strict";
 /* global toString */
-var isArray = _dereq_("./utils").isArray;
+var isArray = require("./utils").isArray;
 
 /**
   `RSVP.race` allows you to watch a series of promises and act as soon as the
@@ -2400,7 +2407,7 @@ function race(promises) {
 }
 
 exports.race = race;
-},{"./utils":14}],12:[function(_dereq_,module,exports){
+},{"./utils":14}],12:[function(require,module,exports){
 "use strict";
 /**
   `RSVP.reject` returns a promise that will become rejected with the passed
@@ -2448,7 +2455,7 @@ function reject(reason) {
 }
 
 exports.reject = reject;
-},{}],13:[function(_dereq_,module,exports){
+},{}],13:[function(require,module,exports){
 "use strict";
 function resolve(value) {
   /*jshint validthis:true */
@@ -2464,7 +2471,7 @@ function resolve(value) {
 }
 
 exports.resolve = resolve;
-},{}],14:[function(_dereq_,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 function objectOrFunction(x) {
   return isFunction(x) || (typeof x === "object" && x !== null);
@@ -2487,7 +2494,7 @@ exports.objectOrFunction = objectOrFunction;
 exports.isFunction = isFunction;
 exports.isArray = isArray;
 exports.now = now;
-},{}],15:[function(_dereq_,module,exports){
+},{}],15:[function(require,module,exports){
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
 var undefined;
@@ -2569,7 +2576,7 @@ module.exports = function extend() {
 };
 
 
-},{}],16:[function(_dereq_,module,exports){
+},{}],16:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -2577,9 +2584,9 @@ module.exports = function extend() {
  * @license  MIT
  */
 
-var base64 = _dereq_('base64-js')
-var ieee754 = _dereq_('ieee754')
-var isArray = _dereq_('is-array')
+var base64 = require('base64-js')
+var ieee754 = require('ieee754')
+var isArray = require('is-array')
 
 exports.Buffer = Buffer
 exports.SlowBuffer = Buffer
@@ -3621,7 +3628,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":17,"ieee754":18,"is-array":19}],17:[function(_dereq_,module,exports){
+},{"base64-js":17,"ieee754":18,"is-array":19}],17:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -3743,7 +3750,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],18:[function(_dereq_,module,exports){
+},{}],18:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -3829,7 +3836,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],19:[function(_dereq_,module,exports){
+},{}],19:[function(require,module,exports){
 
 /**
  * isArray
@@ -3864,7 +3871,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],20:[function(_dereq_,module,exports){
+},{}],20:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4167,7 +4174,12 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],21:[function(_dereq_,module,exports){
+},{}],21:[function(require,module,exports){
+module.exports = Array.isArray || function (arr) {
+  return Object.prototype.toString.call(arr) == '[object Array]';
+};
+
+},{}],22:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -4232,7 +4244,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],22:[function(_dereq_,module,exports){
+},{}],23:[function(require,module,exports){
 (function (global){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
@@ -4742,8 +4754,8 @@ process.chdir = function (dir) {
 
 }(this));
 
-}).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],23:[function(_dereq_,module,exports){
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],24:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4829,7 +4841,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],24:[function(_dereq_,module,exports){
+},{}],25:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4916,16 +4928,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],25:[function(_dereq_,module,exports){
+},{}],26:[function(require,module,exports){
 'use strict';
 
-exports.decode = exports.parse = _dereq_('./decode');
-exports.encode = exports.stringify = _dereq_('./encode');
+exports.decode = exports.parse = require('./decode');
+exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":23,"./encode":24}],26:[function(_dereq_,module,exports){
-module.exports = _dereq_("./lib/_stream_duplex.js")
+},{"./decode":24,"./encode":25}],27:[function(require,module,exports){
+module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":27}],27:[function(_dereq_,module,exports){
+},{"./lib/_stream_duplex.js":28}],28:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -4965,12 +4977,12 @@ var objectKeys = Object.keys || function (obj) {
 
 
 /*<replacement>*/
-var util = _dereq_('core-util-is');
-util.inherits = _dereq_('inherits');
+var util = require('core-util-is');
+util.inherits = require('inherits');
 /*</replacement>*/
 
-var Readable = _dereq_('./_stream_readable');
-var Writable = _dereq_('./_stream_writable');
+var Readable = require('./_stream_readable');
+var Writable = require('./_stream_writable');
 
 util.inherits(Duplex, Readable);
 
@@ -5017,8 +5029,8 @@ function forEach (xs, f) {
   }
 }
 
-}).call(this,_dereq_("JkpR2F"))
-},{"./_stream_readable":29,"./_stream_writable":31,"JkpR2F":21,"core-util-is":32,"inherits":43}],28:[function(_dereq_,module,exports){
+}).call(this,require('_process'))
+},{"./_stream_readable":30,"./_stream_writable":32,"_process":22,"core-util-is":33,"inherits":43}],29:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5046,11 +5058,11 @@ function forEach (xs, f) {
 
 module.exports = PassThrough;
 
-var Transform = _dereq_('./_stream_transform');
+var Transform = require('./_stream_transform');
 
 /*<replacement>*/
-var util = _dereq_('core-util-is');
-util.inherits = _dereq_('inherits');
+var util = require('core-util-is');
+util.inherits = require('inherits');
 /*</replacement>*/
 
 util.inherits(PassThrough, Transform);
@@ -5066,7 +5078,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":30,"core-util-is":32,"inherits":43}],29:[function(_dereq_,module,exports){
+},{"./_stream_transform":31,"core-util-is":33,"inherits":43}],30:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -5092,17 +5104,17 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
 module.exports = Readable;
 
 /*<replacement>*/
-var isArray = _dereq_('isarray');
+var isArray = require('isarray');
 /*</replacement>*/
 
 
 /*<replacement>*/
-var Buffer = _dereq_('buffer').Buffer;
+var Buffer = require('buffer').Buffer;
 /*</replacement>*/
 
 Readable.ReadableState = ReadableState;
 
-var EE = _dereq_('events').EventEmitter;
+var EE = require('events').EventEmitter;
 
 /*<replacement>*/
 if (!EE.listenerCount) EE.listenerCount = function(emitter, type) {
@@ -5110,11 +5122,11 @@ if (!EE.listenerCount) EE.listenerCount = function(emitter, type) {
 };
 /*</replacement>*/
 
-var Stream = _dereq_('stream');
+var Stream = require('stream');
 
 /*<replacement>*/
-var util = _dereq_('core-util-is');
-util.inherits = _dereq_('inherits');
+var util = require('core-util-is');
+util.inherits = require('inherits');
 /*</replacement>*/
 
 var StringDecoder;
@@ -5183,7 +5195,7 @@ function ReadableState(options, stream) {
   this.encoding = null;
   if (options.encoding) {
     if (!StringDecoder)
-      StringDecoder = _dereq_('string_decoder/').StringDecoder;
+      StringDecoder = require('string_decoder/').StringDecoder;
     this.decoder = new StringDecoder(options.encoding);
     this.encoding = options.encoding;
   }
@@ -5284,7 +5296,7 @@ function needMoreData(state) {
 // backwards compatibility.
 Readable.prototype.setEncoding = function(enc) {
   if (!StringDecoder)
-    StringDecoder = _dereq_('string_decoder/').StringDecoder;
+    StringDecoder = require('string_decoder/').StringDecoder;
   this._readableState.decoder = new StringDecoder(enc);
   this._readableState.encoding = enc;
 };
@@ -6051,8 +6063,8 @@ function indexOf (xs, x) {
   return -1;
 }
 
-}).call(this,_dereq_("JkpR2F"))
-},{"JkpR2F":21,"buffer":16,"core-util-is":32,"events":20,"inherits":43,"isarray":33,"stream":39,"string_decoder/":34}],30:[function(_dereq_,module,exports){
+}).call(this,require('_process'))
+},{"_process":22,"buffer":16,"core-util-is":33,"events":20,"inherits":43,"isarray":21,"stream":39,"string_decoder/":34}],31:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6119,11 +6131,11 @@ function indexOf (xs, x) {
 
 module.exports = Transform;
 
-var Duplex = _dereq_('./_stream_duplex');
+var Duplex = require('./_stream_duplex');
 
 /*<replacement>*/
-var util = _dereq_('core-util-is');
-util.inherits = _dereq_('inherits');
+var util = require('core-util-is');
+util.inherits = require('inherits');
 /*</replacement>*/
 
 util.inherits(Transform, Duplex);
@@ -6264,7 +6276,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":27,"core-util-is":32,"inherits":43}],31:[function(_dereq_,module,exports){
+},{"./_stream_duplex":28,"core-util-is":33,"inherits":43}],32:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6294,18 +6306,18 @@ function done(stream, er) {
 module.exports = Writable;
 
 /*<replacement>*/
-var Buffer = _dereq_('buffer').Buffer;
+var Buffer = require('buffer').Buffer;
 /*</replacement>*/
 
 Writable.WritableState = WritableState;
 
 
 /*<replacement>*/
-var util = _dereq_('core-util-is');
-util.inherits = _dereq_('inherits');
+var util = require('core-util-is');
+util.inherits = require('inherits');
 /*</replacement>*/
 
-var Stream = _dereq_('stream');
+var Stream = require('stream');
 
 util.inherits(Writable, Stream);
 
@@ -6387,7 +6399,7 @@ function WritableState(options, stream) {
 }
 
 function Writable(options) {
-  var Duplex = _dereq_('./_stream_duplex');
+  var Duplex = require('./_stream_duplex');
 
   // Writable ctor is applied to Duplexes, though they're not
   // instanceof Writable, they're instanceof Readable.
@@ -6653,8 +6665,8 @@ function endWritable(stream, state, cb) {
   state.ended = true;
 }
 
-}).call(this,_dereq_("JkpR2F"))
-},{"./_stream_duplex":27,"JkpR2F":21,"buffer":16,"core-util-is":32,"inherits":43,"stream":39}],32:[function(_dereq_,module,exports){
+}).call(this,require('_process'))
+},{"./_stream_duplex":28,"_process":22,"buffer":16,"core-util-is":33,"inherits":43,"stream":39}],33:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6763,13 +6775,8 @@ exports.isBuffer = isBuffer;
 function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
-}).call(this,_dereq_("buffer").Buffer)
-},{"buffer":16}],33:[function(_dereq_,module,exports){
-module.exports = Array.isArray || function (arr) {
-  return Object.prototype.toString.call(arr) == '[object Array]';
-};
-
-},{}],34:[function(_dereq_,module,exports){
+}).call(this,require("buffer").Buffer)
+},{"buffer":16}],34:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6791,7 +6798,7 @@ module.exports = Array.isArray || function (arr) {
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-var Buffer = _dereq_('buffer').Buffer;
+var Buffer = require('buffer').Buffer;
 
 var isBufferEncoding = Buffer.isEncoding
   || function(encoding) {
@@ -6992,24 +6999,24 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":16}],35:[function(_dereq_,module,exports){
-module.exports = _dereq_("./lib/_stream_passthrough.js")
+},{"buffer":16}],35:[function(require,module,exports){
+module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":28}],36:[function(_dereq_,module,exports){
-exports = module.exports = _dereq_('./lib/_stream_readable.js');
+},{"./lib/_stream_passthrough.js":29}],36:[function(require,module,exports){
+exports = module.exports = require('./lib/_stream_readable.js');
 exports.Readable = exports;
-exports.Writable = _dereq_('./lib/_stream_writable.js');
-exports.Duplex = _dereq_('./lib/_stream_duplex.js');
-exports.Transform = _dereq_('./lib/_stream_transform.js');
-exports.PassThrough = _dereq_('./lib/_stream_passthrough.js');
+exports.Writable = require('./lib/_stream_writable.js');
+exports.Duplex = require('./lib/_stream_duplex.js');
+exports.Transform = require('./lib/_stream_transform.js');
+exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":27,"./lib/_stream_passthrough.js":28,"./lib/_stream_readable.js":29,"./lib/_stream_transform.js":30,"./lib/_stream_writable.js":31}],37:[function(_dereq_,module,exports){
-module.exports = _dereq_("./lib/_stream_transform.js")
+},{"./lib/_stream_duplex.js":28,"./lib/_stream_passthrough.js":29,"./lib/_stream_readable.js":30,"./lib/_stream_transform.js":31,"./lib/_stream_writable.js":32}],37:[function(require,module,exports){
+module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":30}],38:[function(_dereq_,module,exports){
-module.exports = _dereq_("./lib/_stream_writable.js")
+},{"./lib/_stream_transform.js":31}],38:[function(require,module,exports){
+module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":31}],39:[function(_dereq_,module,exports){
+},{"./lib/_stream_writable.js":32}],39:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7033,15 +7040,15 @@ module.exports = _dereq_("./lib/_stream_writable.js")
 
 module.exports = Stream;
 
-var EE = _dereq_('events').EventEmitter;
-var inherits = _dereq_('inherits');
+var EE = require('events').EventEmitter;
+var inherits = require('inherits');
 
 inherits(Stream, EE);
-Stream.Readable = _dereq_('readable-stream/readable.js');
-Stream.Writable = _dereq_('readable-stream/writable.js');
-Stream.Duplex = _dereq_('readable-stream/duplex.js');
-Stream.Transform = _dereq_('readable-stream/transform.js');
-Stream.PassThrough = _dereq_('readable-stream/passthrough.js');
+Stream.Readable = require('readable-stream/readable.js');
+Stream.Writable = require('readable-stream/writable.js');
+Stream.Duplex = require('readable-stream/duplex.js');
+Stream.Transform = require('readable-stream/transform.js');
+Stream.PassThrough = require('readable-stream/passthrough.js');
 
 // Backwards-compat with node 0.4.x
 Stream.Stream = Stream;
@@ -7138,7 +7145,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":20,"inherits":43,"readable-stream/duplex.js":26,"readable-stream/passthrough.js":35,"readable-stream/readable.js":36,"readable-stream/transform.js":37,"readable-stream/writable.js":38}],40:[function(_dereq_,module,exports){
+},{"events":20,"inherits":43,"readable-stream/duplex.js":27,"readable-stream/passthrough.js":35,"readable-stream/readable.js":36,"readable-stream/transform.js":37,"readable-stream/writable.js":38}],40:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7160,7 +7167,7 @@ Stream.prototype.pipe = function(dest, options) {
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-var punycode = _dereq_('punycode');
+var punycode = require('punycode');
 
 exports.parse = urlParse;
 exports.resolve = urlResolve;
@@ -7232,7 +7239,7 @@ var protocolPattern = /^([a-z0-9.+-]+:)/i,
       'gopher:': true,
       'file:': true
     },
-    querystring = _dereq_('querystring');
+    querystring = require('querystring');
 
 function urlParse(url, parseQueryString, slashesDenoteHost) {
   if (url && isObject(url) && url instanceof Url) return url;
@@ -7847,14 +7854,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":22,"querystring":25}],41:[function(_dereq_,module,exports){
+},{"punycode":23,"querystring":26}],41:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],42:[function(_dereq_,module,exports){
+},{}],42:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -8381,7 +8388,7 @@ function isPrimitive(arg) {
 }
 exports.isPrimitive = isPrimitive;
 
-exports.isBuffer = _dereq_('./support/isBuffer');
+exports.isBuffer = require('./support/isBuffer');
 
 function objectToString(o) {
   return Object.prototype.toString.call(o);
@@ -8425,7 +8432,7 @@ exports.log = function() {
  *     prototype.
  * @param {function} superCtor Constructor function to inherit prototype from.
  */
-exports.inherits = _dereq_('inherits');
+exports.inherits = require('inherits');
 
 exports._extend = function(origin, add) {
   // Don't do anything if add isn't an object
@@ -8443,8 +8450,8 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-}).call(this,_dereq_("JkpR2F"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":41,"JkpR2F":21,"inherits":43}],43:[function(_dereq_,module,exports){
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./support/isBuffer":41,"_process":22,"inherits":43}],43:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -8469,7 +8476,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],44:[function(_dereq_,module,exports){
+},{}],44:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8487,11 +8494,11 @@ if (typeof Object.create === 'function') {
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var MediaElement = _dereq_('./abstracts/MediaElement');
+var MediaElement = require('./abstracts/MediaElement');
 
 /**
  * Creates a {@link module:core.HubPort HubPort} for the given {@link module:core/abstracts.Hub Hub}
@@ -8538,7 +8545,7 @@ HubPort.check = function(key, value)
     throw ChecktypeError(key, HubPort, value);
 };
 
-},{"./abstracts/MediaElement":49,"checktype":4,"inherits":43}],45:[function(_dereq_,module,exports){
+},{"./abstracts/MediaElement":49,"checktype":4,"inherits":43}],45:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8556,15 +8563,15 @@ HubPort.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var Promise = _dereq_('es6-promise').Promise;
+var Promise = require('es6-promise').Promise;
 
-var promiseCallback = _dereq_('promisecallback');
+var promiseCallback = require('promisecallback');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var MediaObject = _dereq_('./abstracts/MediaObject');
+var MediaObject = require('./abstracts/MediaObject');
 
 /**
  * Create a {@link module:core.MediaPipeline MediaPipeline}
@@ -8648,7 +8655,7 @@ MediaPipeline.check = function(key, value)
     throw ChecktypeError(key, MediaPipeline, value);
 };
 
-},{"./abstracts/MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"promisecallback":93}],46:[function(_dereq_,module,exports){
+},{"./abstracts/MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"promisecallback":93}],46:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8666,11 +8673,11 @@ MediaPipeline.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var MediaElement = _dereq_('./MediaElement');
+var MediaElement = require('./MediaElement');
 
 /**
  * @classdesc
@@ -8713,7 +8720,7 @@ Endpoint.check = function(key, value)
     throw ChecktypeError(key, Endpoint, value);
 };
 
-},{"./MediaElement":49,"checktype":4,"inherits":43}],47:[function(_dereq_,module,exports){
+},{"./MediaElement":49,"checktype":4,"inherits":43}],47:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8731,11 +8738,11 @@ Endpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var MediaElement = _dereq_('./MediaElement');
+var MediaElement = require('./MediaElement');
 
 /**
  * @classdesc
@@ -8773,7 +8780,7 @@ Filter.check = function(key, value)
     throw ChecktypeError(key, Filter, value);
 };
 
-},{"./MediaElement":49,"checktype":4,"inherits":43}],48:[function(_dereq_,module,exports){
+},{"./MediaElement":49,"checktype":4,"inherits":43}],48:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8791,15 +8798,15 @@ Filter.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var Promise = _dereq_('es6-promise').Promise;
+var Promise = require('es6-promise').Promise;
 
-var promiseCallback = _dereq_('promisecallback');
+var promiseCallback = require('promisecallback');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var MediaObject = _dereq_('./MediaObject');
+var MediaObject = require('./MediaObject');
 
 /**
  * @classdesc
@@ -8867,7 +8874,7 @@ Hub.check = function(key, value)
     throw ChecktypeError(key, Hub, value);
 };
 
-},{"./MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"promisecallback":93}],49:[function(_dereq_,module,exports){
+},{"./MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"promisecallback":93}],49:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8885,13 +8892,13 @@ Hub.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var MediaObject = _dereq_('./MediaObject');
+var MediaObject = require('./MediaObject');
 
 /**
  * @classdesc
@@ -9064,7 +9071,7 @@ MediaElement.check = function(key, value)
     throw ChecktypeError(key, MediaElement, value);
 };
 
-},{"./MediaObject":50,"checktype":4,"inherits":43}],50:[function(_dereq_,module,exports){
+},{"./MediaObject":50,"checktype":4,"inherits":43}],50:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9082,15 +9089,15 @@ MediaElement.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var Promise = _dereq_('es6-promise').Promise;
+var Promise = require('es6-promise').Promise;
 
-var promiseCallback = _dereq_('promisecallback');
+var promiseCallback = require('promisecallback');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var EventEmitter = _dereq_('events').EventEmitter;
+var EventEmitter = require('events').EventEmitter;
 
 /**
  * @classdesc
@@ -9318,7 +9325,7 @@ MediaObject.check = function(key, value)
     throw ChecktypeError(key, MediaObject, value);
 };
 
-},{"checktype":4,"es6-promise":5,"events":20,"inherits":43,"promisecallback":93}],51:[function(_dereq_,module,exports){
+},{"checktype":4,"es6-promise":5,"events":20,"inherits":43,"promisecallback":93}],51:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9336,11 +9343,11 @@ MediaObject.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var MediaObject = _dereq_('./MediaObject');
+var MediaObject = require('./MediaObject');
 
 /**
  * @classdesc
@@ -9432,7 +9439,7 @@ MediaPad.check = function(key, value)
     throw ChecktypeError(key, MediaPad, value);
 };
 
-},{"./MediaObject":50,"checktype":4,"inherits":43}],52:[function(_dereq_,module,exports){
+},{"./MediaObject":50,"checktype":4,"inherits":43}],52:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9450,13 +9457,13 @@ MediaPad.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var MediaPad = _dereq_('./MediaPad');
+var MediaPad = require('./MediaPad');
 
 /**
  * @classdesc
@@ -9540,7 +9547,7 @@ MediaSink.check = function(key, value)
     throw ChecktypeError(key, MediaSink, value);
 };
 
-},{"./MediaPad":51,"checktype":4,"inherits":43}],53:[function(_dereq_,module,exports){
+},{"./MediaPad":51,"checktype":4,"inherits":43}],53:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9558,13 +9565,13 @@ MediaSink.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var MediaPad = _dereq_('./MediaPad');
+var MediaPad = require('./MediaPad');
 
 /**
  * @classdesc
@@ -9674,7 +9681,7 @@ MediaSource.check = function(key, value)
     throw ChecktypeError(key, MediaSource, value);
 };
 
-},{"./MediaPad":51,"checktype":4,"inherits":43}],54:[function(_dereq_,module,exports){
+},{"./MediaPad":51,"checktype":4,"inherits":43}],54:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9692,13 +9699,13 @@ MediaSource.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var SessionEndpoint = _dereq_('./SessionEndpoint');
+var SessionEndpoint = require('./SessionEndpoint');
 
 /**
  * @classdesc
@@ -9856,7 +9863,7 @@ SdpEndpoint.check = function(key, value)
     throw ChecktypeError(key, SdpEndpoint, value);
 };
 
-},{"./SessionEndpoint":55,"checktype":4,"inherits":43}],55:[function(_dereq_,module,exports){
+},{"./SessionEndpoint":55,"checktype":4,"inherits":43}],55:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9874,11 +9881,11 @@ SdpEndpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var Endpoint = _dereq_('./Endpoint');
+var Endpoint = require('./Endpoint');
 
 /**
  * @classdesc
@@ -9919,7 +9926,7 @@ SessionEndpoint.check = function(key, value)
     throw ChecktypeError(key, SessionEndpoint, value);
 };
 
-},{"./Endpoint":46,"checktype":4,"inherits":43}],56:[function(_dereq_,module,exports){
+},{"./Endpoint":46,"checktype":4,"inherits":43}],56:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9937,13 +9944,13 @@ SessionEndpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var Endpoint = _dereq_('./Endpoint');
+var Endpoint = require('./Endpoint');
 
 /**
  * @classdesc
@@ -10034,7 +10041,7 @@ UriEndpoint.check = function(key, value)
     throw ChecktypeError(key, UriEndpoint, value);
 };
 
-},{"./Endpoint":46,"checktype":4,"inherits":43}],57:[function(_dereq_,module,exports){
+},{"./Endpoint":46,"checktype":4,"inherits":43}],57:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10061,17 +10068,17 @@ UriEndpoint.check = function(key, value)
  * @license LGPL
  */
 
-var Endpoint = _dereq_('./Endpoint');
-var Filter = _dereq_('./Filter');
-var Hub = _dereq_('./Hub');
-var MediaElement = _dereq_('./MediaElement');
-var MediaObject = _dereq_('./MediaObject');
-var MediaPad = _dereq_('./MediaPad');
-var MediaSink = _dereq_('./MediaSink');
-var MediaSource = _dereq_('./MediaSource');
-var SdpEndpoint = _dereq_('./SdpEndpoint');
-var SessionEndpoint = _dereq_('./SessionEndpoint');
-var UriEndpoint = _dereq_('./UriEndpoint');
+var Endpoint = require('./Endpoint');
+var Filter = require('./Filter');
+var Hub = require('./Hub');
+var MediaElement = require('./MediaElement');
+var MediaObject = require('./MediaObject');
+var MediaPad = require('./MediaPad');
+var MediaSink = require('./MediaSink');
+var MediaSource = require('./MediaSource');
+var SdpEndpoint = require('./SdpEndpoint');
+var SessionEndpoint = require('./SessionEndpoint');
+var UriEndpoint = require('./UriEndpoint');
 
 
 exports.Endpoint = Endpoint;
@@ -10086,7 +10093,7 @@ exports.SdpEndpoint = SdpEndpoint;
 exports.SessionEndpoint = SessionEndpoint;
 exports.UriEndpoint = UriEndpoint;
 
-},{"./Endpoint":46,"./Filter":47,"./Hub":48,"./MediaElement":49,"./MediaObject":50,"./MediaPad":51,"./MediaSink":52,"./MediaSource":53,"./SdpEndpoint":54,"./SessionEndpoint":55,"./UriEndpoint":56}],58:[function(_dereq_,module,exports){
+},{"./Endpoint":46,"./Filter":47,"./Hub":48,"./MediaElement":49,"./MediaObject":50,"./MediaPad":51,"./MediaSink":52,"./MediaSource":53,"./SdpEndpoint":54,"./SessionEndpoint":55,"./UriEndpoint":56}],58:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10104,7 +10111,7 @@ exports.UriEndpoint = UriEndpoint;
  *
  */
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 /**
  * Checker for {@link core/complexTypes.FilterType}
@@ -10137,7 +10144,7 @@ function checkFilterType(key, value)
 
 module.exports = checkFilterType;
 
-},{"checktype":4}],59:[function(_dereq_,module,exports){
+},{"checktype":4}],59:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10155,7 +10162,7 @@ module.exports = checkFilterType;
  *
  */
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 /**
  * Checker for {@link core/complexTypes.MediaType}
@@ -10188,7 +10195,7 @@ function checkMediaType(key, value)
 
 module.exports = checkMediaType;
 
-},{"checktype":4}],60:[function(_dereq_,module,exports){
+},{"checktype":4}],60:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10215,14 +10222,14 @@ module.exports = checkMediaType;
  * @license LGPL
  */
 
-var FilterType = _dereq_('./FilterType');
-var MediaType = _dereq_('./MediaType');
+var FilterType = require('./FilterType');
+var MediaType = require('./MediaType');
 
 
 exports.FilterType = FilterType;
 exports.MediaType = MediaType;
 
-},{"./FilterType":58,"./MediaType":59}],61:[function(_dereq_,module,exports){
+},{"./FilterType":58,"./MediaType":59}],61:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10249,17 +10256,17 @@ exports.MediaType = MediaType;
  * @license LGPL
  */
 
-var HubPort = _dereq_('./HubPort');
-var MediaPipeline = _dereq_('./MediaPipeline');
+var HubPort = require('./HubPort');
+var MediaPipeline = require('./MediaPipeline');
 
 
 exports.HubPort = HubPort;
 exports.MediaPipeline = MediaPipeline;
 
-exports.abstracts    = _dereq_('./abstracts');
-exports.complexTypes = _dereq_('./complexTypes');
+exports.abstracts    = require('./abstracts');
+exports.complexTypes = require('./complexTypes');
 
-},{"./HubPort":44,"./MediaPipeline":45,"./abstracts":57,"./complexTypes":60}],62:[function(_dereq_,module,exports){
+},{"./HubPort":44,"./MediaPipeline":45,"./abstracts":57,"./complexTypes":60}],62:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10277,13 +10284,13 @@ exports.complexTypes = _dereq_('./complexTypes');
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var Hub = _dereq_('kurento-client-core').abstracts.Hub;
+var Hub = require('kurento-client-core').abstracts.Hub;
 
 /**
  * Create for the given pipeline
@@ -10413,7 +10420,7 @@ AlphaBlending.check = function(key, value)
     throw ChecktypeError(key, AlphaBlending, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],63:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],63:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10431,11 +10438,11 @@ AlphaBlending.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var Hub = _dereq_('kurento-client-core').abstracts.Hub;
+var Hub = require('kurento-client-core').abstracts.Hub;
 
 /**
  * Create for the given pipeline
@@ -10482,7 +10489,7 @@ Composite.check = function(key, value)
     throw ChecktypeError(key, Composite, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],64:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],64:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10500,13 +10507,13 @@ Composite.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var Hub = _dereq_('kurento-client-core').abstracts.Hub;
+var Hub = require('kurento-client-core').abstracts.Hub;
 
 /**
  * Create a {@link module:elements.Dispatcher Dispatcher} belonging to the given pipeline.
@@ -10585,7 +10592,7 @@ Dispatcher.check = function(key, value)
     throw ChecktypeError(key, Dispatcher, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],65:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],65:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10603,13 +10610,13 @@ Dispatcher.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var Hub = _dereq_('kurento-client-core').abstracts.Hub;
+var Hub = require('kurento-client-core').abstracts.Hub;
 
 /**
  * Create a {@link module:elements.DispatcherOneToMany DispatcherOneToMany} belonging to the given pipeline.
@@ -10700,7 +10707,7 @@ DispatcherOneToMany.check = function(key, value)
     throw ChecktypeError(key, DispatcherOneToMany, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],66:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],66:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10718,11 +10725,11 @@ DispatcherOneToMany.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var HttpEndpoint = _dereq_('./abstracts/HttpEndpoint');
+var HttpEndpoint = require('./abstracts/HttpEndpoint');
 
 /**
  * Builder for the {@link module:elements.HttpGetEndpoint HttpGetEndpoint}.
@@ -10794,7 +10801,7 @@ HttpGetEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpGetEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":74,"checktype":4,"inherits":43}],67:[function(_dereq_,module,exports){
+},{"./abstracts/HttpEndpoint":74,"checktype":4,"inherits":43}],67:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10812,11 +10819,11 @@ HttpGetEndpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var HttpEndpoint = _dereq_('./abstracts/HttpEndpoint');
+var HttpEndpoint = require('./abstracts/HttpEndpoint');
 
 /**
  * Builder for the {@link module:elements.HttpPostEndpoint HttpPostEndpoint}.
@@ -10881,7 +10888,7 @@ HttpPostEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpPostEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":74,"checktype":4,"inherits":43}],68:[function(_dereq_,module,exports){
+},{"./abstracts/HttpEndpoint":74,"checktype":4,"inherits":43}],68:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10899,13 +10906,13 @@ HttpPostEndpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var Hub = _dereq_('kurento-client-core').abstracts.Hub;
+var Hub = require('kurento-client-core').abstracts.Hub;
 
 /**
  * Create a {@link module:elements.Mixer Mixer} belonging to the given pipeline.
@@ -11025,7 +11032,7 @@ Mixer.check = function(key, value)
     throw ChecktypeError(key, Mixer, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],69:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],69:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11043,13 +11050,13 @@ Mixer.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var UriEndpoint = _dereq_('kurento-client-core').abstracts.UriEndpoint;
+var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
 
 /**
  * Create a PlayerEndpoint
@@ -11140,7 +11147,7 @@ PlayerEndpoint.check = function(key, value)
     throw ChecktypeError(key, PlayerEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],70:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],70:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11158,13 +11165,13 @@ PlayerEndpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var Endpoint = _dereq_('kurento-client-core').abstracts.Endpoint;
+var Endpoint = require('kurento-client-core').abstracts.Endpoint;
 
 /**
  * Builder for the {@link module:elements.PlumberEndpoint PlumberEndpoint}
@@ -11281,7 +11288,7 @@ PlumberEndpoint.check = function(key, value)
     throw ChecktypeError(key, PlumberEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],71:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],71:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11299,13 +11306,13 @@ PlumberEndpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var UriEndpoint = _dereq_('kurento-client-core').abstracts.UriEndpoint;
+var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
 
 /**
  * 
@@ -11392,7 +11399,7 @@ RecorderEndpoint.check = function(key, value)
     throw ChecktypeError(key, RecorderEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],72:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],72:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11410,11 +11417,11 @@ RecorderEndpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var SdpEndpoint = _dereq_('kurento-client-core').abstracts.SdpEndpoint;
+var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
 
 /**
  * Builder for the {@link module:elements.RtpEndpoint RtpEndpoint}
@@ -11461,7 +11468,7 @@ RtpEndpoint.check = function(key, value)
     throw ChecktypeError(key, RtpEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],73:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],73:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11479,11 +11486,11 @@ RtpEndpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var SdpEndpoint = _dereq_('kurento-client-core').abstracts.SdpEndpoint;
+var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
 
 /**
  * Builder for the {@link module:elements.WebRtcEndpoint WebRtcEndpoint}
@@ -11530,7 +11537,7 @@ WebRtcEndpoint.check = function(key, value)
     throw ChecktypeError(key, WebRtcEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],74:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],74:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11548,13 +11555,13 @@ WebRtcEndpoint.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var SessionEndpoint = _dereq_('kurento-client-core').abstracts.SessionEndpoint;
+var SessionEndpoint = require('kurento-client-core').abstracts.SessionEndpoint;
 
 /**
  * @classdesc
@@ -11612,7 +11619,7 @@ HttpEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],75:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],75:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11639,12 +11646,12 @@ HttpEndpoint.check = function(key, value)
  * @license LGPL
  */
 
-var HttpEndpoint = _dereq_('./HttpEndpoint');
+var HttpEndpoint = require('./HttpEndpoint');
 
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":74}],76:[function(_dereq_,module,exports){
+},{"./HttpEndpoint":74}],76:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11662,7 +11669,7 @@ exports.HttpEndpoint = HttpEndpoint;
  *
  */
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 /**
  * Checker for {@link elements/complexTypes.MediaProfileSpecType}
@@ -11696,7 +11703,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"checktype":4}],77:[function(_dereq_,module,exports){
+},{"checktype":4}],77:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11723,12 +11730,12 @@ module.exports = checkMediaProfileSpecType;
  * @license LGPL
  */
 
-var MediaProfileSpecType = _dereq_('./MediaProfileSpecType');
+var MediaProfileSpecType = require('./MediaProfileSpecType');
 
 
 exports.MediaProfileSpecType = MediaProfileSpecType;
 
-},{"./MediaProfileSpecType":76}],78:[function(_dereq_,module,exports){
+},{"./MediaProfileSpecType":76}],78:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11755,18 +11762,18 @@ exports.MediaProfileSpecType = MediaProfileSpecType;
  * @license LGPL
  */
 
-var AlphaBlending = _dereq_('./AlphaBlending');
-var Composite = _dereq_('./Composite');
-var Dispatcher = _dereq_('./Dispatcher');
-var DispatcherOneToMany = _dereq_('./DispatcherOneToMany');
-var HttpGetEndpoint = _dereq_('./HttpGetEndpoint');
-var HttpPostEndpoint = _dereq_('./HttpPostEndpoint');
-var Mixer = _dereq_('./Mixer');
-var PlayerEndpoint = _dereq_('./PlayerEndpoint');
-var PlumberEndpoint = _dereq_('./PlumberEndpoint');
-var RecorderEndpoint = _dereq_('./RecorderEndpoint');
-var RtpEndpoint = _dereq_('./RtpEndpoint');
-var WebRtcEndpoint = _dereq_('./WebRtcEndpoint');
+var AlphaBlending = require('./AlphaBlending');
+var Composite = require('./Composite');
+var Dispatcher = require('./Dispatcher');
+var DispatcherOneToMany = require('./DispatcherOneToMany');
+var HttpGetEndpoint = require('./HttpGetEndpoint');
+var HttpPostEndpoint = require('./HttpPostEndpoint');
+var Mixer = require('./Mixer');
+var PlayerEndpoint = require('./PlayerEndpoint');
+var PlumberEndpoint = require('./PlumberEndpoint');
+var RecorderEndpoint = require('./RecorderEndpoint');
+var RtpEndpoint = require('./RtpEndpoint');
+var WebRtcEndpoint = require('./WebRtcEndpoint');
 
 
 exports.AlphaBlending = AlphaBlending;
@@ -11782,10 +11789,10 @@ exports.RecorderEndpoint = RecorderEndpoint;
 exports.RtpEndpoint = RtpEndpoint;
 exports.WebRtcEndpoint = WebRtcEndpoint;
 
-exports.abstracts    = _dereq_('./abstracts');
-exports.complexTypes = _dereq_('./complexTypes');
+exports.abstracts    = require('./abstracts');
+exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":62,"./Composite":63,"./Dispatcher":64,"./DispatcherOneToMany":65,"./HttpGetEndpoint":66,"./HttpPostEndpoint":67,"./Mixer":68,"./PlayerEndpoint":69,"./PlumberEndpoint":70,"./RecorderEndpoint":71,"./RtpEndpoint":72,"./WebRtcEndpoint":73,"./abstracts":75,"./complexTypes":77}],79:[function(_dereq_,module,exports){
+},{"./AlphaBlending":62,"./Composite":63,"./Dispatcher":64,"./DispatcherOneToMany":65,"./HttpGetEndpoint":66,"./HttpPostEndpoint":67,"./Mixer":68,"./PlayerEndpoint":69,"./PlumberEndpoint":70,"./RecorderEndpoint":71,"./RtpEndpoint":72,"./WebRtcEndpoint":73,"./abstracts":75,"./complexTypes":77}],79:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11803,13 +11810,13 @@ exports.complexTypes = _dereq_('./complexTypes');
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var checkType = _dereq_('checktype');
+var checkType = require('checktype');
 
 var ChecktypeError = checkType.ChecktypeError;
 
-var Filter = _dereq_('kurento-client-core').abstracts.Filter;
+var Filter = require('kurento-client-core').abstracts.Filter;
 
 /**
  * FaceOverlayFilter interface. This type of {@link module:core/abstracts.Filter Filter} detects faces in a video feed. The face is then overlaid with an image.
@@ -11940,7 +11947,7 @@ FaceOverlayFilter.check = function(key, value)
     throw ChecktypeError(key, FaceOverlayFilter, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],80:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],80:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11958,11 +11965,11 @@ FaceOverlayFilter.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var Filter = _dereq_('kurento-client-core').abstracts.Filter;
+var Filter = require('kurento-client-core').abstracts.Filter;
 
 /**
  * Create a {@link module:filters.GStreamerFilter GStreamerFilter}
@@ -12024,7 +12031,7 @@ GStreamerFilter.check = function(key, value)
     throw ChecktypeError(key, GStreamerFilter, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],81:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],81:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12042,11 +12049,11 @@ GStreamerFilter.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var Filter = _dereq_('kurento-client-core').abstracts.Filter;
+var Filter = require('kurento-client-core').abstracts.Filter;
 
 /**
  * Builder for the {@link module:filters.ZBarFilter ZBarFilter}.
@@ -12095,7 +12102,7 @@ ZBarFilter.check = function(key, value)
     throw ChecktypeError(key, ZBarFilter, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],82:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],82:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12113,11 +12120,11 @@ ZBarFilter.check = function(key, value)
  *
  */
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var ChecktypeError = _dereq_('checktype').ChecktypeError;
+var ChecktypeError = require('checktype').ChecktypeError;
 
-var Filter = _dereq_('kurento-client-core').abstracts.Filter;
+var Filter = require('kurento-client-core').abstracts.Filter;
 
 /**
  * @classdesc
@@ -12155,7 +12162,7 @@ OpenCVFilter.check = function(key, value)
     throw ChecktypeError(key, OpenCVFilter, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":61}],83:[function(_dereq_,module,exports){
+},{"checktype":4,"inherits":43,"kurento-client-core":61}],83:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12182,12 +12189,12 @@ OpenCVFilter.check = function(key, value)
  * @license LGPL
  */
 
-var OpenCVFilter = _dereq_('./OpenCVFilter');
+var OpenCVFilter = require('./OpenCVFilter');
 
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":82}],84:[function(_dereq_,module,exports){
+},{"./OpenCVFilter":82}],84:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12214,18 +12221,18 @@ exports.OpenCVFilter = OpenCVFilter;
  * @license LGPL
  */
 
-var FaceOverlayFilter = _dereq_('./FaceOverlayFilter');
-var GStreamerFilter = _dereq_('./GStreamerFilter');
-var ZBarFilter = _dereq_('./ZBarFilter');
+var FaceOverlayFilter = require('./FaceOverlayFilter');
+var GStreamerFilter = require('./GStreamerFilter');
+var ZBarFilter = require('./ZBarFilter');
 
 
 exports.FaceOverlayFilter = FaceOverlayFilter;
 exports.GStreamerFilter = GStreamerFilter;
 exports.ZBarFilter = ZBarFilter;
 
-exports.abstracts = _dereq_('./abstracts');
+exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":79,"./GStreamerFilter":80,"./ZBarFilter":81,"./abstracts":83}],85:[function(_dereq_,module,exports){
+},{"./FaceOverlayFilter":79,"./GStreamerFilter":80,"./ZBarFilter":81,"./abstracts":83}],85:[function(require,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -12291,7 +12298,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],86:[function(_dereq_,module,exports){
+},{}],86:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -12307,12 +12314,12 @@ module.exports = Mapper;
  *
  */
 
-var JsonRpcClient  = _dereq_('./jsonrpcclient');
+var JsonRpcClient  = require('./jsonrpcclient');
 
 
 exports.JsonRpcClient  = JsonRpcClient;
 
-},{"./jsonrpcclient":87}],87:[function(_dereq_,module,exports){
+},{"./jsonrpcclient":87}],87:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -12328,9 +12335,9 @@ exports.JsonRpcClient  = JsonRpcClient;
  *
  */
 
-var RpcBuilder = _dereq_('../..');
+var RpcBuilder = require('../..');
 
-var WebSocket = _dereq_('ws');
+var WebSocket = require('ws');
 
 
 function JsonRpcClient(wsUrl, onRequest, onerror)
@@ -12347,7 +12354,7 @@ function JsonRpcClient(wsUrl, onRequest, onerror)
 
 module.exports  = JsonRpcClient;
 
-},{"../..":88,"ws":92}],88:[function(_dereq_,module,exports){
+},{"../..":88,"ws":92}],88:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -12363,12 +12370,12 @@ module.exports  = JsonRpcClient;
  *
  */
 
-var EventEmitter = _dereq_('events').EventEmitter;
+var EventEmitter = require('events').EventEmitter;
 
-var inherits = _dereq_('inherits');
+var inherits = require('inherits');
 
-var packers = _dereq_('./packers');
-var Mapper = _dereq_('./Mapper');
+var packers = require('./packers');
+var Mapper = require('./Mapper');
 
 
 const BASE_TIMEOUT = 5000;
@@ -13098,12 +13105,12 @@ RpcBuilder.RpcNotification = RpcNotification;
 
 module.exports = RpcBuilder;
 
-var clients = _dereq_('./clients');
+var clients = require('./clients');
 
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":85,"./clients":86,"./packers":91,"events":20,"inherits":43}],89:[function(_dereq_,module,exports){
+},{"./Mapper":85,"./clients":86,"./packers":91,"events":20,"inherits":43}],89:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -13207,7 +13214,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],90:[function(_dereq_,module,exports){
+},{}],90:[function(require,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -13222,15 +13229,15 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],91:[function(_dereq_,module,exports){
-var JsonRPC = _dereq_('./JsonRPC');
-var XmlRPC  = _dereq_('./XmlRPC');
+},{}],91:[function(require,module,exports){
+var JsonRPC = require('./JsonRPC');
+var XmlRPC  = require('./XmlRPC');
 
 
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":89,"./XmlRPC":90}],92:[function(_dereq_,module,exports){
+},{"./JsonRPC":89,"./XmlRPC":90}],92:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -13275,7 +13282,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],93:[function(_dereq_,module,exports){
+},{}],93:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -13322,9 +13329,9 @@ function promiseCallback(promise, callback)
 
 module.exports = promiseCallback;
 
-},{}],94:[function(_dereq_,module,exports){
-var websocket = _dereq_('websocket-stream');
-var inject = _dereq_('reconnect-core');
+},{}],94:[function(require,module,exports){
+var websocket = require('websocket-stream');
+var inject = require('reconnect-core');
 
 module.exports = inject(function () {
   // Create new websocket-stream instance
@@ -13341,9 +13348,9 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":95,"websocket-stream":102}],95:[function(_dereq_,module,exports){
-var EventEmitter = _dereq_('events').EventEmitter
-var backoff = _dereq_('backoff')
+},{"reconnect-core":95,"websocket-stream":102}],95:[function(require,module,exports){
+var EventEmitter = require('events').EventEmitter
+var backoff = require('backoff')
 
 module.exports =
 function (createConnection) {
@@ -13455,16 +13462,16 @@ function (createConnection) {
 
 }
 
-},{"backoff":96,"events":20}],96:[function(_dereq_,module,exports){
+},{"backoff":96,"events":20}],96:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
-var Backoff = _dereq_('./lib/backoff');
-var ExponentialBackoffStrategy = _dereq_('./lib/strategy/exponential');
-var FibonacciBackoffStrategy = _dereq_('./lib/strategy/fibonacci');
-var FunctionCall = _dereq_('./lib/function_call.js');
+var Backoff = require('./lib/backoff');
+var ExponentialBackoffStrategy = require('./lib/strategy/exponential');
+var FibonacciBackoffStrategy = require('./lib/strategy/fibonacci');
+var FunctionCall = require('./lib/function_call.js');
 
 module.exports.Backoff = Backoff;
 module.exports.FunctionCall = FunctionCall;
@@ -13506,14 +13513,14 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":97,"./lib/function_call.js":98,"./lib/strategy/exponential":99,"./lib/strategy/fibonacci":100}],97:[function(_dereq_,module,exports){
+},{"./lib/backoff":97,"./lib/function_call.js":98,"./lib/strategy/exponential":99,"./lib/strategy/fibonacci":100}],97:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
-var events = _dereq_('events');
-var util = _dereq_('util');
+var events = require('events');
+var util = require('util');
 
 /**
  * Backoff driver.
@@ -13592,17 +13599,17 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":20,"util":42}],98:[function(_dereq_,module,exports){
+},{"events":20,"util":42}],98:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
-var events = _dereq_('events');
-var util = _dereq_('util');
+var events = require('events');
+var util = require('util');
 
-var Backoff = _dereq_('./backoff');
-var FibonacciBackoffStrategy = _dereq_('./strategy/fibonacci');
+var Backoff = require('./backoff');
+var FibonacciBackoffStrategy = require('./strategy/fibonacci');
 
 /**
  * Returns true if the specified value is a function
@@ -13821,15 +13828,15 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":97,"./strategy/fibonacci":100,"events":20,"util":42}],99:[function(_dereq_,module,exports){
+},{"./backoff":97,"./strategy/fibonacci":100,"events":20,"util":42}],99:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
-var util = _dereq_('util');
+var util = require('util');
 
-var BackoffStrategy = _dereq_('./strategy');
+var BackoffStrategy = require('./strategy');
 
 /**
  * Exponential backoff strategy.
@@ -13857,15 +13864,15 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":101,"util":42}],100:[function(_dereq_,module,exports){
+},{"./strategy":101,"util":42}],100:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
-var util = _dereq_('util');
+var util = require('util');
 
-var BackoffStrategy = _dereq_('./strategy');
+var BackoffStrategy = require('./strategy');
 
 /**
  * Fibonacci backoff strategy.
@@ -13894,14 +13901,14 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":101,"util":42}],101:[function(_dereq_,module,exports){
+},{"./strategy":101,"util":42}],101:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
-var events = _dereq_('events');
-var util = _dereq_('util');
+var events = require('events');
+var util = require('util');
 
 function isDef(value) {
     return value !== undefined && value !== null;
@@ -13994,11 +14001,11 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":20,"util":42}],102:[function(_dereq_,module,exports){
+},{"events":20,"util":42}],102:[function(require,module,exports){
 (function (process){
-var through = _dereq_('through')
-var isBuffer = _dereq_('isbuffer')
-var WebSocketPoly = _dereq_('ws')
+var through = require('through')
+var isBuffer = require('isbuffer')
+var WebSocketPoly = require('ws')
 
 function WebsocketStream(server, options) {
   if (!(this instanceof WebsocketStream)) return new WebsocketStream(server, options)
@@ -14089,9 +14096,9 @@ WebsocketStream.prototype.end = function(data) {
   this._end = true
 }
 
-}).call(this,_dereq_("JkpR2F"))
-},{"JkpR2F":21,"isbuffer":103,"through":104,"ws":105}],103:[function(_dereq_,module,exports){
-var Buffer = _dereq_('buffer').Buffer;
+}).call(this,require('_process'))
+},{"_process":22,"isbuffer":103,"through":104,"ws":105}],103:[function(require,module,exports){
+var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
 
@@ -14100,9 +14107,9 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":16}],104:[function(_dereq_,module,exports){
+},{"buffer":16}],104:[function(require,module,exports){
 (function (process){
-var Stream = _dereq_('stream')
+var Stream = require('stream')
 
 // through
 //
@@ -14211,9 +14218,8 @@ function through (write, end, opts) {
 }
 
 
-}).call(this,_dereq_("JkpR2F"))
-},{"JkpR2F":21,"stream":39}],105:[function(_dereq_,module,exports){
-module.exports=_dereq_(92)
-},{}]},{},[1])
-(1)
+}).call(this,require('_process'))
+},{"_process":22,"stream":39}],105:[function(require,module,exports){
+module.exports=require(92)
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":92}]},{},[1])(1)
 });
