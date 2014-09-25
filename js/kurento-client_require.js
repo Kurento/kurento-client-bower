@@ -66,9 +66,11 @@ function serializeParams(params)
  */
 function getConstructor(type)
 {
-  return register.classes[type]
-      || register.abstracts[type]
-      || register.abstracts.MediaObject;
+  var result = register.classes[type] || register.abstracts[type];
+  if(result) return result;
+
+  console.warn("Unknown type '"+type+"', using MediaObject instead");
+  return register.abstracts.MediaObject;
 };
 
 function createConstructor(item)
@@ -435,9 +437,9 @@ var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
  * Connect the source of a media to the sink of the next one
  *
  * @param {...MediaObject} media - A media to be connected
- * @callback {createMediaObjectCallback} [callback]
+ * @callback {connectCallback} [callback]
  *
- * @return {module:KurentoClientApi~MediaPipeline} The pipeline itself
+ * @return {Promise}
  *
  * @throws {SyntaxError}
  */
