@@ -14223,5 +14223,5 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":22,"stream":39}],105:[function(require,module,exports){
 module.exports=require(92)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":92}]},{},[1])(1)
+},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":92}]},{},[1])(1)
 });
