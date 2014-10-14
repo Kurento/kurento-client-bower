@@ -14898,4 +14898,4 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":13,"stream":29}],101:[function(require,module,exports){
 module.exports=require(88)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":88}]},{},[1]);
+},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":88}]},{},[1]);
