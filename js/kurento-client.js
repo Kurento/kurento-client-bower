@@ -1,27 +1,6 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-/**
- * Loader for the kurento-client package on the browser
- */
-
-if(typeof kurentoClient == 'undefined')
-  window.kurentoClient = require('./index.js');
-
-var oldRequire = (require instanceof Function) ? require
-: function(id)
-{
-  throw new Error("require() is undefined, '"+id+"' couldn't be imported");
-};
-
-window.require = function(id)
-{
-  if(id === 'kurento-client') return kurentoClient;
-
-  return oldRequire(id);
-};
-
-},{"./index.js":2}],2:[function(require,module,exports){
+require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /*
- * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser General Public License
@@ -35,55 +14,18 @@ window.require = function(id)
  *
  */
 
-/**
- * Media API for the Kurento Web SDK
- *
- * @module KurentoClient
- *
- * @copyright 2013-2014 Kurento (http://kurento.org/)
- * @license LGPL
- */
+var checkParams = require('checktype').checkParams;
 
-var EventEmitter = require('events').EventEmitter;
-var extend       = require('extend');
-var inherits     = require('inherits');
-var url          = require('url');
+var createPromise = require('./createPromise');
+var register      = require('./register');
 
-var Promise = require('es6-promise').Promise;
+var Transaction = require('./TransactionsManager').Transaction;
 
-var async     = require('async');
-var reconnect = require('reconnect-ws');
-
-var RpcBuilder = require('kurento-jsonrpc');
-var JsonRPC    = RpcBuilder.packers.JsonRPC;
-
-var checkType   = require('checktype');
-var checkParams = checkType.checkParams;
-
-var promiseCallback = require('promisecallback');
-
-var register = require('./register');
-
-
-/**
- * Serialize objects using their id
- */
-function serializeParams(params)
-{
-  for(var key in params)
-  {
-    var param = params[key];
-    if(param instanceof register.abstracts.MediaObject)
-      params[key] = param.id;
-  };
-
-  return params;
-};
 
 /**
  * Get the constructor for a type
  *
- * If the type is not registered, use generic {MediaObject}
+ * If the type is not registered, use generic {module:core/abstracts.MediaObject}
  */
 function getConstructor(type)
 {
@@ -91,7 +33,7 @@ function getConstructor(type)
   if(result) return result;
 
   console.warn("Unknown type '"+type+"', using MediaObject instead");
-  return register.abstracts.MediaObject;
+  return MediaObject;
 };
 
 function createConstructor(item)
@@ -112,6 +54,290 @@ function createConstructor(item)
 
   return constructor;
 }
+
+
+function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction)
+{
+  function createObject(constructor)
+  {
+    var mediaObject = new constructor()
+
+    mediaObject.on('_rpc', encodeRpc);
+
+    if(mediaObject instanceof register.abstracts.Hub)
+      mediaObject.on('_create', encodeCreate);
+
+    if(mediaObject instanceof register.classes.MediaPipeline)
+      mediaObject.on('_transaction', encodeTransaction);
+
+    return mediaObject;
+  };
+
+  /**
+   * Request to the server to create a new MediaElement
+   */
+  function createMediaObject(item, callback)
+  {
+    var transaction = item.transaction;
+
+    var constructor = createConstructor(item);
+
+    item = constructor.item;
+    delete constructor.item;
+
+    if(host instanceof register.classes.MediaPipeline)
+      item.params.mediaPipeline = host;
+
+    item.constructorParams = checkParams(item.params,
+                                         constructor.constructorParams,
+                                         item.type);
+    delete item.params;
+
+    if(!Object.keys(item.constructorParams).length)
+      delete item.constructorParams;
+
+    var mediaObject = createObject(constructor)
+
+    Object.defineProperty(item, 'object', {value: mediaObject});
+
+    encodeCreate(transaction, item, callback);
+
+    return mediaObject
+  };
+
+
+  this.create = function(type, params, callback){
+    var transaction = (arguments[0] instanceof Transaction)
+                    ? Array.prototype.shift.apply(arguments)
+                    : undefined;
+
+    switch(arguments.length)
+    {
+      case 1: params = undefined;
+      case 2: callback = undefined;
+    };
+
+    // Fix optional parameters
+    if(params instanceof Function){
+      if(callback)
+        throw new SyntaxError("Nothing can be defined after the callback");
+
+      callback = params;
+      params   = undefined;
+    };
+
+    params = params || {};
+
+    if(type instanceof Array)
+      return createPromise(type, createMediaObject, callback)
+
+    type = {params: params, transaction: transaction, type: type};
+
+    return createMediaObject(type, callback)
+  };
+
+  this.createInmediate = function(item)
+  {
+    var constructor = createConstructor(item);
+    delete constructor.item;
+
+    return createObject(constructor);
+  }
+}
+
+
+module.exports = MediaObjectCreator;
+
+},{"./TransactionsManager":2,"./createPromise":4,"./register":5,"checktype":7}],2:[function(require,module,exports){
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var inherits = require('inherits');
+
+var Domain = require('domain').Domain || (function(){
+  function FakeDomain(){};
+  inherits(FakeDomain, require('events').EventEmitter);
+  FakeDomain.prototype.run = function(fn)
+  {
+    try{fn()}catch(err){this.emit('error', err)};
+    return this;
+  };
+  return FakeDomain;
+})();
+
+var Promise = require('es6-promise').Promise;
+
+var promiseCallback = require('promisecallback');
+
+
+function onerror(error)
+{
+  this._transactionError = error;
+}
+
+
+function Transaction(manager)
+{
+  Transaction.super_.call(this);
+
+  this.push           = manager.push.bind(manager);
+  this.endTransaction = manager.endTransaction.bind(manager);
+
+  // Errors during transaction execution go to the callback,
+  // user will register 'error' event for async errors later
+  this.once('error', onerror);
+  if(this.enter) this.enter();
+}
+inherits(Transaction, Domain);
+
+
+function TransactionsManager(host, commit)
+{
+  var transactions = [];
+
+
+  Object.defineProperty(this, 'length', {get: function(){return transactions.length}})
+
+
+  this.beginTransaction = function()
+  {
+    var d = new Transaction(this);
+
+    transactions.unshift({d: d, ops: []});
+
+    return d;
+  };
+
+  this.endTransaction = function(callback)
+  {
+    var transaction = transactions.shift();
+
+    var d = transaction.d;
+
+    if(d.exit) d.exit();
+    d.removeListener('error', onerror);
+
+    var promise;
+
+    if(d._transactionError)
+      promise = Promise.reject(d._transactionError)
+
+    else
+    {
+      var operations = transaction.ops;
+
+      promise = new Promise(function(resolve, reject)
+      {
+        function callback(error, result)
+        {
+          if(error) return reject(error);
+
+          resolve(result)
+        }
+
+        commit(operations, callback);
+      })
+    }
+
+    promise = promiseCallback(promise, callback)
+
+    d.catch = promise.catch.bind(promise);
+    d.then  = promise.then.bind(promise);
+
+    delete d.push;
+    delete d.endTransaction;
+
+    return d;
+  };
+
+  this.transaction = function(func, callback)
+  {
+    var d = this.beginTransaction();
+    d.run(func.bind(host));
+    return this.endTransaction(callback);
+  };
+
+
+  this.push = function(data)
+  {
+    transactions[0].ops.push(data);
+  };
+};
+
+
+function transactionOperation(method, params, callback)
+{
+  var operation =
+  {
+    method: method,
+    params: params,
+    callback: callback
+  }
+
+  this.push(operation);
+};
+
+
+module.exports = TransactionsManager;
+TransactionsManager.Transaction          = Transaction;
+TransactionsManager.transactionOperation = transactionOperation;
+
+},{"domain":14,"es6-promise":8,"events":15,"inherits":38,"promisecallback":97}],3:[function(require,module,exports){
+/**
+ * Loader for the kurento-client package on the browser
+ */
+
+if(typeof kurentoClient == 'undefined')
+  window.kurentoClient = require('kurento-client');
+//  window.kurentoClient = require('./index.js');
+
+var oldRequire = (require instanceof Function) ? require
+: function(id)
+{
+  throw new Error("require() is undefined, '"+id+"' couldn't be imported");
+};
+
+window.require = function(id)
+{
+  if(id === 'kurento-client') return kurentoClient;
+
+  return oldRequire(id);
+};
+
+},{"kurento-client":undefined}],4:[function(require,module,exports){
+/*
+ * (C) Copyright 2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var Promise = require('es6-promise').Promise;
+
+var async = require('async');
+
+var promiseCallback = require('promisecallback');
+
 
 function createPromise(data, func, callback)
 {
@@ -134,534 +360,9 @@ function createPromise(data, func, callback)
 };
 
 
-/**
- * Creates a connection with the Kurento Media Server
- *
- * @class
- *
- * @param {external:String} ws_uri - Address of the Kurento Media Server
- */
-function KurentoClient(ws_uri, options, callback)
-{
-  if(!(this instanceof KurentoClient))
-    return new KurentoClient(ws_uri, options, callback);
+module.exports = createPromise;
 
-  var self = this;
-
-  EventEmitter.call(this);
-
-
-  // Fix optional parameters
-  if(options instanceof Function)
-  {
-    callback = options;
-    options  = undefined;
-  };
-
-  options = options || {};
-
-  var failAfter = options.failAfter
-  if(failAfter == undefined) failAfter = 5
-
-
-  var objects = {};
-
-
-  function onNotification(message)
-  {
-    var method = message.method;
-    var params = message.params.value;
-
-    var id = params.object;
-
-    var object = objects[id];
-    if(!object)
-      return console.warn("Unknown object id '"+id+"'", message);
-
-    switch(method)
-    {
-      case 'onEvent':
-        object.emit(params.type, params.data);
-      break;
-
-//      case 'onError':
-//        object.emit('error', params.error);
-//      break;
-
-      default:
-        console.warn("Unknown message type '"+method+"'");
-    };
-  };
-
-
-  //
-  // JsonRPC
-  //
-
-  if(typeof ws_uri == 'string')
-  {
-    var access_token = options.access_token;
-    if(access_token != undefined)
-    {
-      ws_uri = url.parse(ws_uri, true);
-      ws_uri.query.access_token = access_token;
-      ws_uri = url.format(ws_uri);
-
-      delete options.access_token;
-    };
-  }
-
-  var rpc = new RpcBuilder(JsonRPC, function(request)
-  {
-    if(request instanceof RpcBuilder.RpcNotification)
-    {
-      // Message is an unexpected request, notify error
-      if(request.duplicated != undefined)
-        return console.warning('Unexpected request:', request);
-
-      // Message is a notification, process it
-      return onNotification(request);
-    };
-
-    // Invalid message, notify error
-    console.error('Invalid request instance', request);
-  });
-
-
-  // Reconnect websockets
-
-  var re = reconnect({failAfter: failAfter}, function(ws_stream)
-  {
-    rpc.transport = ws_stream;
-  })
-  .connect(ws_uri);
-
-  this.close = re.disconnect.bind(re);
-
-  re.on('fail', this.emit.bind(this, 'disconnect'));
-
-
-  // Promise interface ("thenable")
-
-  this.then = function(onFulfilled, onRejected)
-  {
-    return new Promise(function(resolve, reject)
-    {
-      function success()
-      {
-        re.removeListener('fail', failure);
-
-        var result;
-
-        if(onFulfilled)
-          try
-          {
-            result = onFulfilled.call(self, self);
-          }
-          catch(exception)
-          {
-            if(!onRejected)
-              console.trace('Uncaugh exception', exception)
-
-            return reject(exception);
-          }
-
-        resolve(result);
-      };
-      function failure()
-      {
-        re.removeListener('connection', success);
-
-        var result = new Error('Connection error');
-
-        if(onRejected)
-          try
-          {
-            result = onRejected.call(self, result);
-          }
-          catch(exception)
-          {
-            return reject(exception);
-          }
-        else
-          console.trace('Uncaugh exception', result)
-
-        reject(result);
-      };
-
-      if(re.connected)
-        success()
-      else if(!re.reconnect)
-        failure()
-      else
-      {
-        re.once('connection', success);
-        re.once('fail',       failure);
-      }
-    });
-  };
-
-  this.catch = this.then.bind(this, null);
-
-  if(callback)
-    this.then(callback.bind(undefined, null), callback);
-
-
-  function encode(method, params, callback)
-  {
-    self.then(function()
-    {
-      rpc.encode(method, params, function(error, result)
-      {
-        if(error)
-          error = extend(new Error(error.message || error), error);
-
-        callback(error, result);
-      });
-    },
-    callback)
-  }
-
-
-  function encodeCreate(mediaObject, params, callback)
-  {
-    callback = callback || function(){};
-
-    function callback2(error, result)
-    {
-      if(error)
-      {
-        mediaObject.emit('_id', error);
-        return callback(error);
-      }
-
-      var id = result.value;
-
-      callback(null, registerObject(mediaObject, id));
-    }
-
-    var promises = [];
-    for(var key in params.constructorParams)
-    {
-      var param = params.constructorParams[key];
-      if(param !== undefined)
-        promises.push(param);
-    };
-
-    Promise.all(promises).then(function()
-    {
-      params.constructorParams = serializeParams(params.constructorParams);
-
-      encode('create', params, callback2);
-    },
-    callback);
-  };
-
-  var encodeTransaction = encode.bind(undefined,'transaction');
-
-  function commit(operations, callback)
-  {
-    operations = operations.map(function(operation)
-    {
-      var mediaObject = operation.mediaObject;
-      var params      = operation.params;
-
-      params.object = mediaObject.id === undefined
-                    ? mediaObject
-                    : mediaObject.id;
-
-      // Serialize objects using their id
-      params.constructorParams = serializeParams(params.constructorParams);
-
-      operation.promises = [params.object];
-      for(var key in params.constructorParams)
-      {
-        var param = params.constructorParams[key];
-        if(param instanceof register.abstracts.MediaObject)
-          operation.promises.push(param.id === undefined
-                                ? param
-                                : param.id);
-      };
-
-      return operation;
-    });
-
-    var params =
-    {
-      operations: operations
-    }
-
-    encodeTransaction(params, function(error, result)
-    {
-      if(error) return callback(error);
-
-      console.log('transaction result:',result)
-
-      result.value.forEach(registerObject);
-
-      operations.forEach(function(operation, index)
-      {
-        var callback = operation.callback;
-        if(callback)
-        {
-          var item = resul.value[index] || {};
-
-          Promise.all(operation.promises).then(function()
-          {
-            operation.callback(item.error, item.result);
-          },
-          callback)
-        }
-      })
-
-      callback(null, result);
-    });
-  }
-
-
-  function createObject(constructor)
-  {
-    var mediaObject = new constructor()
-
-    if(mediaObject instanceof register.classes.MediaPipeline)
-      mediaObject.on('_commit', commit);
-
-    return mediaObject;
-  };
-
-  function registerObject(mediaObject, id)
-  {
-    var object = objects[id];
-    if(object) return object;
-
-    if(EventEmitter.listenerCount(mediaObject, '_rpc'))
-      mediaObject.removeAllListeners('_rpc');
-
-    /**
-     * Request a generic functionality to be procesed by the server
-     */
-    mediaObject.on('_rpc', function(method, params, callback)
-    {
-      if(!params.object) params.object = this;
-
-      var promises = [params.object];
-      for(var key in params.operationParams)
-      {
-        var param = params.operationParams[key];
-        if(param !== undefined)
-          promises.push(param);
-      };
-
-      Promise.all(promises).then(function()
-      {
-        // Serialize object using their id
-        params.object = params.object.id;
-        params.operationParams = serializeParams(params.operationParams);
-
-        encode(method, params, function(error, result)
-        {
-          if(error) return callback(error);
-
-          var operation = params.operation;
-
-          if(operation == 'getConnectedSinks'
-          || operation == 'getMediaSinks'
-          || operation == 'getMediaSrcs')
-          {
-            var sessionId = result.sessionId;
-
-            return self.getMediaobjectById(result.value, function(error, result)
-            {
-              var result =
-              {
-                sessionId: sessionId,
-                value: result
-              };
-
-              callback(error, result);
-            });
-          };
-
-          callback(null, result);
-        });
-      },
-      callback)
-    });
-
-
-    if(EventEmitter.listenerCount(mediaObject, '_create'))
-      mediaObject.removeAllListeners('_create');
-
-    if(mediaObject instanceof register.abstracts.Hub
-    || mediaObject instanceof register.classes.MediaPipeline)
-      mediaObject.on('_create', encodeCreate);
-
-
-    mediaObject.emit('_id', null, id);
-
-    objects[id] = mediaObject;
-
-    /**
-     * Request to release the object on the server and remove it from cache
-     */
-    mediaObject.once('release', function()
-    {
-      delete objects[id];
-    });
-
-    return mediaObject;
-  }
-
-
-  /**
-   * Request to the server to create a new MediaElement
-   */
-  function createMediaObject(item, callback)
-  {
-    var constructor = createConstructor(item);
-
-    item = constructor.item;
-    delete constructor.item;
-
-    item.constructorParams = checkParams(item.params,
-                                         constructor.constructorParams,
-                                         item.type);
-    delete item.params;
-
-    // Serialize objects using their id
-    item.constructorParams = serializeParams(item.constructorParams);
-
-    var mediaObject = createObject(constructor)
-
-    encodeCreate(mediaObject, item, callback);
-
-    return mediaObject
-  };
-
-  function describe(id, callback)
-  {
-    var mediaObject = objects[id];
-    if(mediaObject) return callback(null, mediaObject);
-
-    encode('describe', {object: id}, function(error, result)
-    {
-      if(error) return callback(error);
-
-      var constructor = createConstructor(result);
-      delete constructor.item;
-
-      var mediaObject = createObject(constructor);
-
-      return callback(null, registerObject(mediaObject, id));
-    });
-  };
-
-
-  this.getMediaobjectById = function(id, callback)
-  {
-    return createPromise(id, describe, callback)
-  };
-
-
-  /**
-   * Create a new instance of a MediaObject
-   *
-   * @param {external:String} type - Type of the element
-   * @param {external:string[]} [params]
-   * @callback {createMediaPipelineCallback} callback
-   *
-   * @return {module:KurentoClientApi~MediaPipeline} The pipeline itself
-   */
-  this.create = function(type, params, callback)
-  {
-    // Fix optional parameters
-    if(params instanceof Function)
-    {
-      if(callback)
-        throw new SyntaxError("Nothing can be defined after the callback");
-
-      callback = params;
-      params   = undefined;
-    };
-
-    params = params || {};
-
-    if(type instanceof Array)
-      return createPromise(type, createMediaObject, callback)
-
-    type = {params: params, type: type};
-
-    return createMediaObject(type, callback)
-  };
-};
-inherits(KurentoClient, EventEmitter);
-
-
-var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
-
-/**
- * Connect the source of a media to the sink of the next one
- *
- * @param {...MediaObject} media - A media to be connected
- * @callback {connectCallback} [callback]
- *
- * @return {Promise}
- *
- * @throws {SyntaxError}
- */
-KurentoClient.prototype.connect = function(media, callback)
-{
-  // Fix lenght-variable arguments
-  media = Array.prototype.slice.call(arguments, 0);
-  callback = (typeof media[media.length - 1] == 'function')
-           ? media.pop() : undefined;
-
-  // Check if we have enought media components
-  if(media.length < 2)
-    throw new SyntaxError("Need at least two media elements to connect");
-
-  // Check MediaElements are of the correct type
-  media.forEach(checkMediaElement);
-
-  // Generate promise
-  var promise = new Promise(function(resolve, reject)
-  {
-    function callback(error, result)
-    {
-      if(error) return reject(error);
-
-      resolve(result);
-    };
-
-    // Connect the media elements
-    var src = media[0];
-
-    async.each(media.slice(1), function(sink, callback)
-    {
-      src.connect(sink, callback);
-      src = sink;
-    }, callback);
-  });
-
-  return promiseCallback(promise, callback);
-};
-
-
-// Export KurentoClient
-
-module.exports = KurentoClient;
-KurentoClient.KurentoClient = KurentoClient;
-
-KurentoClient.register = register;
-
-
-// Register Kurento basic elements
-
-register(require('kurento-client-core'))
-register(require('kurento-client-elements'))
-register(require('kurento-client-filters'))
-
-},{"./register":3,"async":4,"checktype":5,"es6-promise":6,"events":12,"extend":7,"inherits":35,"kurento-client-core":62,"kurento-client-elements":79,"kurento-client-filters":85,"kurento-jsonrpc":89,"promisecallback":94,"reconnect-ws":95,"url":32}],3:[function(require,module,exports){
+},{"async":6,"es6-promise":8,"promisecallback":97}],5:[function(require,module,exports){
 var checkType   = require('checktype');
 
 
@@ -753,7 +454,7 @@ module.exports = register;
 register.abstracts = abstracts;
 register.classes = classes;
 
-},{"checktype":5}],4:[function(require,module,exports){
+},{"checktype":7}],6:[function(require,module,exports){
 (function (process){
 /*!
  * async
@@ -1880,7 +1581,7 @@ register.classes = classes;
 }());
 
 }).call(this,require('_process'))
-},{"_process":14}],5:[function(require,module,exports){
+},{"_process":17}],7:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -2052,7 +1753,7 @@ checkType.int     = checkInteger;
 checkType.Object  = checkObject;
 checkType.String  = checkString;
 
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function (process,global){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
@@ -3021,7 +2722,7 @@ checkType.String  = checkString;
     }
 }).call(this);
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":14}],7:[function(require,module,exports){
+},{"_process":17}],9:[function(require,module,exports){
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
 var undefined;
@@ -3104,7 +2805,7 @@ module.exports = function extend() {
 };
 
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -4156,7 +3857,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":9,"ieee754":10,"is-array":11}],9:[function(require,module,exports){
+},{"base64-js":11,"ieee754":12,"is-array":13}],11:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -4278,7 +3979,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],10:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -4364,7 +4065,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 
 /**
  * isArray
@@ -4399,7 +4100,45 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],12:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
+/*global define:false require:false */
+module.exports = (function(){
+	// Import Events
+	var events = require('events');
+
+	// Export Domain
+	var domain = {};
+	domain.createDomain = domain.create = function(){
+		var d = new events.EventEmitter();
+
+		function emitError(e) {
+			d.emit('error', e)
+		}
+
+		d.add = function(emitter){
+			emitter.on('error', emitError);
+		}
+		d.remove = function(emitter){
+			emitter.removeListener('error', emitError);
+		}
+		d.run = function(fn){
+			try {
+				fn();
+			}
+			catch (err) {
+				this.emit('error', err);
+			}
+			return this;
+		};
+		d.dispose = function(){
+			this.removeAllListeners();
+			return this;
+		};
+		return d;
+	};
+	return domain;
+}).call(this);
+},{"events":15}],15:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4702,12 +4441,12 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],13:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],14:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -4772,7 +4511,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],15:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 (function (global){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
@@ -5283,7 +5022,7 @@ process.chdir = function (dir) {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],16:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5369,7 +5108,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],17:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5456,16 +5195,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],18:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":16,"./encode":17}],19:[function(require,module,exports){
+},{"./decode":19,"./encode":20}],22:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":20}],20:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":23}],23:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -5558,7 +5297,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_readable":22,"./_stream_writable":24,"_process":14,"core-util-is":25,"inherits":35}],21:[function(require,module,exports){
+},{"./_stream_readable":25,"./_stream_writable":27,"_process":17,"core-util-is":28,"inherits":38}],24:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5606,7 +5345,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":23,"core-util-is":25,"inherits":35}],22:[function(require,module,exports){
+},{"./_stream_transform":26,"core-util-is":28,"inherits":38}],25:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6592,7 +6331,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"_process":14,"buffer":8,"core-util-is":25,"events":12,"inherits":35,"isarray":13,"stream":30,"string_decoder/":31}],23:[function(require,module,exports){
+},{"_process":17,"buffer":10,"core-util-is":28,"events":15,"inherits":38,"isarray":16,"stream":33,"string_decoder/":34}],26:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6804,7 +6543,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":20,"core-util-is":25,"inherits":35}],24:[function(require,module,exports){
+},{"./_stream_duplex":23,"core-util-is":28,"inherits":38}],27:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7194,7 +6933,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":20,"_process":14,"buffer":8,"core-util-is":25,"inherits":35,"stream":30}],25:[function(require,module,exports){
+},{"./_stream_duplex":23,"_process":17,"buffer":10,"core-util-is":28,"inherits":38,"stream":33}],28:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7304,10 +7043,10 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":8}],26:[function(require,module,exports){
+},{"buffer":10}],29:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":21}],27:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":24}],30:[function(require,module,exports){
 require('stream'); // hack to fix a circular dependency issue when used with browserify
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Readable = exports;
@@ -7316,13 +7055,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":20,"./lib/_stream_passthrough.js":21,"./lib/_stream_readable.js":22,"./lib/_stream_transform.js":23,"./lib/_stream_writable.js":24,"stream":30}],28:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":23,"./lib/_stream_passthrough.js":24,"./lib/_stream_readable.js":25,"./lib/_stream_transform.js":26,"./lib/_stream_writable.js":27,"stream":33}],31:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":23}],29:[function(require,module,exports){
+},{"./lib/_stream_transform.js":26}],32:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":24}],30:[function(require,module,exports){
+},{"./lib/_stream_writable.js":27}],33:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7451,7 +7190,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":12,"inherits":35,"readable-stream/duplex.js":19,"readable-stream/passthrough.js":26,"readable-stream/readable.js":27,"readable-stream/transform.js":28,"readable-stream/writable.js":29}],31:[function(require,module,exports){
+},{"events":15,"inherits":38,"readable-stream/duplex.js":22,"readable-stream/passthrough.js":29,"readable-stream/readable.js":30,"readable-stream/transform.js":31,"readable-stream/writable.js":32}],34:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7674,7 +7413,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":8}],32:[function(require,module,exports){
+},{"buffer":10}],35:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8383,14 +8122,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":15,"querystring":18}],33:[function(require,module,exports){
+},{"punycode":18,"querystring":21}],36:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],34:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -8980,7 +8719,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":33,"_process":14,"inherits":35}],35:[function(require,module,exports){
+},{"./support/isBuffer":36,"_process":17,"inherits":38}],38:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -9005,7 +8744,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],36:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9074,7 +8813,7 @@ HubPort.check = function(key, value)
     throw ChecktypeError(key, HubPort, value);
 };
 
-},{"./abstracts/MediaElement":41,"checktype":5,"inherits":35}],37:[function(require,module,exports){
+},{"./abstracts/MediaElement":44,"checktype":7,"inherits":38}],40:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9184,7 +8923,7 @@ MediaPipeline.check = function(key, value)
     throw ChecktypeError(key, MediaPipeline, value);
 };
 
-},{"./abstracts/MediaObject":42,"checktype":5,"es6-promise":6,"inherits":35,"promisecallback":94}],38:[function(require,module,exports){
+},{"./abstracts/MediaObject":45,"checktype":7,"es6-promise":8,"inherits":38,"promisecallback":97}],41:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9249,7 +8988,7 @@ Endpoint.check = function(key, value)
     throw ChecktypeError(key, Endpoint, value);
 };
 
-},{"./MediaElement":41,"checktype":5,"inherits":35}],39:[function(require,module,exports){
+},{"./MediaElement":44,"checktype":7,"inherits":38}],42:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9309,7 +9048,7 @@ Filter.check = function(key, value)
     throw ChecktypeError(key, Filter, value);
 };
 
-},{"./MediaElement":41,"checktype":5,"inherits":35}],40:[function(require,module,exports){
+},{"./MediaElement":44,"checktype":7,"inherits":38}],43:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9403,7 +9142,7 @@ Hub.check = function(key, value)
     throw ChecktypeError(key, Hub, value);
 };
 
-},{"./MediaObject":42,"checktype":5,"es6-promise":6,"inherits":35,"promisecallback":94}],41:[function(require,module,exports){
+},{"./MediaObject":45,"checktype":7,"es6-promise":8,"inherits":38,"promisecallback":97}],44:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9652,7 +9391,7 @@ MediaElement.check = function(key, value)
     throw ChecktypeError(key, MediaElement, value);
 };
 
-},{"./MediaObject":42,"checktype":5,"inherits":35}],42:[function(require,module,exports){
+},{"./MediaObject":45,"checktype":7,"inherits":38}],45:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9906,7 +9645,7 @@ MediaObject.check = function(key, value)
     throw ChecktypeError(key, MediaObject, value);
 };
 
-},{"checktype":5,"es6-promise":6,"events":12,"inherits":35,"promisecallback":94}],43:[function(require,module,exports){
+},{"checktype":7,"es6-promise":8,"events":15,"inherits":38,"promisecallback":97}],46:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10020,7 +9759,7 @@ MediaPad.check = function(key, value)
     throw ChecktypeError(key, MediaPad, value);
 };
 
-},{"./MediaObject":42,"checktype":5,"inherits":35}],44:[function(require,module,exports){
+},{"./MediaObject":45,"checktype":7,"inherits":38}],47:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10128,7 +9867,7 @@ MediaSink.check = function(key, value)
     throw ChecktypeError(key, MediaSink, value);
 };
 
-},{"./MediaPad":43,"checktype":5,"inherits":35}],45:[function(require,module,exports){
+},{"./MediaPad":46,"checktype":7,"inherits":38}],48:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10262,7 +10001,7 @@ MediaSource.check = function(key, value)
     throw ChecktypeError(key, MediaSource, value);
 };
 
-},{"./MediaPad":43,"checktype":5,"inherits":35}],46:[function(require,module,exports){
+},{"./MediaPad":46,"checktype":7,"inherits":38}],49:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10444,7 +10183,7 @@ SdpEndpoint.check = function(key, value)
     throw ChecktypeError(key, SdpEndpoint, value);
 };
 
-},{"./SessionEndpoint":48,"checktype":5,"inherits":35}],47:[function(require,module,exports){
+},{"./SessionEndpoint":51,"checktype":7,"inherits":38}],50:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10561,7 +10300,7 @@ Server.check = function(key, value)
     throw ChecktypeError(key, Server, value);
 };
 
-},{"./MediaObject":42,"checktype":5,"inherits":35}],48:[function(require,module,exports){
+},{"./MediaObject":45,"checktype":7,"inherits":38}],51:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10624,7 +10363,7 @@ SessionEndpoint.check = function(key, value)
     throw ChecktypeError(key, SessionEndpoint, value);
 };
 
-},{"./Endpoint":38,"checktype":5,"inherits":35}],49:[function(require,module,exports){
+},{"./Endpoint":41,"checktype":7,"inherits":38}],52:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10739,7 +10478,7 @@ UriEndpoint.check = function(key, value)
     throw ChecktypeError(key, UriEndpoint, value);
 };
 
-},{"./Endpoint":38,"checktype":5,"inherits":35}],50:[function(require,module,exports){
+},{"./Endpoint":41,"checktype":7,"inherits":38}],53:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10793,7 +10532,7 @@ exports.Server = Server;
 exports.SessionEndpoint = SessionEndpoint;
 exports.UriEndpoint = UriEndpoint;
 
-},{"./Endpoint":38,"./Filter":39,"./Hub":40,"./MediaElement":41,"./MediaObject":42,"./MediaPad":43,"./MediaSink":44,"./MediaSource":45,"./SdpEndpoint":46,"./Server":47,"./SessionEndpoint":48,"./UriEndpoint":49}],51:[function(require,module,exports){
+},{"./Endpoint":41,"./Filter":42,"./Hub":43,"./MediaElement":44,"./MediaObject":45,"./MediaPad":46,"./MediaSink":47,"./MediaSource":48,"./SdpEndpoint":49,"./Server":50,"./SessionEndpoint":51,"./UriEndpoint":52}],54:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10845,7 +10584,7 @@ function checkAudioCaps(key, value)
 
 module.exports = checkAudioCaps;
 
-},{"checktype":5}],52:[function(require,module,exports){
+},{"checktype":7}],55:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10895,7 +10634,7 @@ function checkAudioCodec(key, value)
 
 module.exports = checkAudioCodec;
 
-},{"checktype":5}],53:[function(require,module,exports){
+},{"checktype":7}],56:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10946,7 +10685,7 @@ function checkFilterType(key, value)
 
 module.exports = checkFilterType;
 
-},{"checktype":5}],54:[function(require,module,exports){
+},{"checktype":7}],57:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10998,7 +10737,7 @@ function checkFraction(key, value)
 
 module.exports = checkFraction;
 
-},{"checktype":5}],55:[function(require,module,exports){
+},{"checktype":7}],58:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11049,7 +10788,7 @@ function checkMediaType(key, value)
 
 module.exports = checkMediaType;
 
-},{"checktype":5}],56:[function(require,module,exports){
+},{"checktype":7}],59:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11104,7 +10843,7 @@ function checkModuleInfo(key, value)
 
 module.exports = checkModuleInfo;
 
-},{"checktype":5}],57:[function(require,module,exports){
+},{"checktype":7}],60:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11162,7 +10901,7 @@ function checkServerInfo(key, value)
 
 module.exports = checkServerInfo;
 
-},{"checktype":5}],58:[function(require,module,exports){
+},{"checktype":7}],61:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11212,7 +10951,7 @@ function checkServerType(key, value)
 
 module.exports = checkServerType;
 
-},{"checktype":5}],59:[function(require,module,exports){
+},{"checktype":7}],62:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11264,7 +11003,7 @@ function checkVideoCaps(key, value)
 
 module.exports = checkVideoCaps;
 
-},{"checktype":5}],60:[function(require,module,exports){
+},{"checktype":7}],63:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11314,7 +11053,7 @@ function checkVideoCodec(key, value)
 
 module.exports = checkVideoCodec;
 
-},{"checktype":5}],61:[function(require,module,exports){
+},{"checktype":7}],64:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11364,7 +11103,7 @@ exports.ServerType = ServerType;
 exports.VideoCaps = VideoCaps;
 exports.VideoCodec = VideoCodec;
 
-},{"./AudioCaps":51,"./AudioCodec":52,"./FilterType":53,"./Fraction":54,"./MediaType":55,"./ModuleInfo":56,"./ServerInfo":57,"./ServerType":58,"./VideoCaps":59,"./VideoCodec":60}],62:[function(require,module,exports){
+},{"./AudioCaps":54,"./AudioCodec":55,"./FilterType":56,"./Fraction":57,"./MediaType":58,"./ModuleInfo":59,"./ServerInfo":60,"./ServerType":61,"./VideoCaps":62,"./VideoCodec":63}],65:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11401,7 +11140,7 @@ exports.MediaPipeline = MediaPipeline;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./HubPort":36,"./MediaPipeline":37,"./abstracts":50,"./complexTypes":61}],63:[function(require,module,exports){
+},{"./HubPort":39,"./MediaPipeline":40,"./abstracts":53,"./complexTypes":64}],66:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11555,7 +11294,7 @@ AlphaBlending.check = function(key, value)
     throw ChecktypeError(key, AlphaBlending, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],64:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],67:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11624,7 +11363,7 @@ Composite.check = function(key, value)
     throw ChecktypeError(key, Composite, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],65:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],68:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11727,7 +11466,7 @@ Dispatcher.check = function(key, value)
     throw ChecktypeError(key, Dispatcher, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],66:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],69:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11842,7 +11581,7 @@ DispatcherOneToMany.check = function(key, value)
     throw ChecktypeError(key, DispatcherOneToMany, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],67:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],70:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11936,7 +11675,7 @@ HttpGetEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpGetEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":75,"checktype":5,"inherits":35}],68:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":78,"checktype":7,"inherits":38}],71:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12023,7 +11762,7 @@ HttpPostEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpPostEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":75,"checktype":5,"inherits":35}],69:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":78,"checktype":7,"inherits":38}],72:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12167,7 +11906,7 @@ Mixer.check = function(key, value)
     throw ChecktypeError(key, Mixer, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],70:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],73:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12282,7 +12021,7 @@ PlayerEndpoint.check = function(key, value)
     throw ChecktypeError(key, PlayerEndpoint, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],71:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],74:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12423,7 +12162,7 @@ PlumberEndpoint.check = function(key, value)
     throw ChecktypeError(key, PlumberEndpoint, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],72:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],75:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12534,7 +12273,7 @@ RecorderEndpoint.check = function(key, value)
     throw ChecktypeError(key, RecorderEndpoint, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],73:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],76:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12603,7 +12342,7 @@ RtpEndpoint.check = function(key, value)
     throw ChecktypeError(key, RtpEndpoint, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],74:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],77:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12672,7 +12411,7 @@ WebRtcEndpoint.check = function(key, value)
     throw ChecktypeError(key, WebRtcEndpoint, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],75:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],78:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12754,7 +12493,7 @@ HttpEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpEndpoint, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],76:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],79:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12786,7 +12525,7 @@ var HttpEndpoint = require('./HttpEndpoint');
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":75}],77:[function(require,module,exports){
+},{"./HttpEndpoint":78}],80:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12838,7 +12577,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"checktype":5}],78:[function(require,module,exports){
+},{"checktype":7}],81:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12870,7 +12609,7 @@ var MediaProfileSpecType = require('./MediaProfileSpecType');
 
 exports.MediaProfileSpecType = MediaProfileSpecType;
 
-},{"./MediaProfileSpecType":77}],79:[function(require,module,exports){
+},{"./MediaProfileSpecType":80}],82:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12927,7 +12666,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":63,"./Composite":64,"./Dispatcher":65,"./DispatcherOneToMany":66,"./HttpGetEndpoint":67,"./HttpPostEndpoint":68,"./Mixer":69,"./PlayerEndpoint":70,"./PlumberEndpoint":71,"./RecorderEndpoint":72,"./RtpEndpoint":73,"./WebRtcEndpoint":74,"./abstracts":76,"./complexTypes":78}],80:[function(require,module,exports){
+},{"./AlphaBlending":66,"./Composite":67,"./Dispatcher":68,"./DispatcherOneToMany":69,"./HttpGetEndpoint":70,"./HttpPostEndpoint":71,"./Mixer":72,"./PlayerEndpoint":73,"./PlumberEndpoint":74,"./RecorderEndpoint":75,"./RtpEndpoint":76,"./WebRtcEndpoint":77,"./abstracts":79,"./complexTypes":81}],83:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13082,7 +12821,7 @@ FaceOverlayFilter.check = function(key, value)
     throw ChecktypeError(key, FaceOverlayFilter, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],81:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],84:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13166,7 +12905,7 @@ GStreamerFilter.check = function(key, value)
     throw ChecktypeError(key, GStreamerFilter, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],82:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],85:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13237,7 +12976,7 @@ ZBarFilter.check = function(key, value)
     throw ChecktypeError(key, ZBarFilter, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],83:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],86:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13297,7 +13036,7 @@ OpenCVFilter.check = function(key, value)
     throw ChecktypeError(key, OpenCVFilter, value);
 };
 
-},{"checktype":5,"inherits":35,"kurento-client-core":62}],84:[function(require,module,exports){
+},{"checktype":7,"inherits":38,"kurento-client-core":65}],87:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13329,7 +13068,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":83}],85:[function(require,module,exports){
+},{"./OpenCVFilter":86}],88:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13367,7 +13106,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":80,"./GStreamerFilter":81,"./ZBarFilter":82,"./abstracts":84}],86:[function(require,module,exports){
+},{"./FaceOverlayFilter":83,"./GStreamerFilter":84,"./ZBarFilter":85,"./abstracts":87}],89:[function(require,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -13433,7 +13172,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],87:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -13454,7 +13193,7 @@ var JsonRpcClient  = require('./jsonrpcclient');
 
 exports.JsonRpcClient  = JsonRpcClient;
 
-},{"./jsonrpcclient":88}],88:[function(require,module,exports){
+},{"./jsonrpcclient":91}],91:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -13489,7 +13228,7 @@ function JsonRpcClient(wsUrl, onRequest, onerror)
 
 module.exports  = JsonRpcClient;
 
-},{"../..":89,"ws":93}],89:[function(require,module,exports){
+},{"../..":92,"ws":96}],92:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -14245,7 +13984,7 @@ var clients = require('./clients');
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":86,"./clients":87,"./packers":92,"events":12,"inherits":35}],90:[function(require,module,exports){
+},{"./Mapper":89,"./clients":90,"./packers":95,"events":15,"inherits":38}],93:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -14349,7 +14088,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],91:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -14364,7 +14103,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],92:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC  = require('./XmlRPC');
 
@@ -14372,7 +14111,7 @@ var XmlRPC  = require('./XmlRPC');
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":90,"./XmlRPC":91}],93:[function(require,module,exports){
+},{"./JsonRPC":93,"./XmlRPC":94}],96:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -14417,7 +14156,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],94:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -14455,7 +14194,7 @@ function promiseCallback(promise, callback)
       }
     };
 
-    promise.then(callback2.bind(undefined, null), callback2);
+    promise = promise.then(callback2.bind(undefined, null), callback2);
   };
 
   return promise
@@ -14464,7 +14203,7 @@ function promiseCallback(promise, callback)
 
 module.exports = promiseCallback;
 
-},{}],95:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -14483,7 +14222,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":96,"websocket-stream":103}],96:[function(require,module,exports){
+},{"reconnect-core":99,"websocket-stream":106}],99:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -14597,7 +14336,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":97,"events":12}],97:[function(require,module,exports){
+},{"backoff":100,"events":15}],100:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -14648,7 +14387,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":98,"./lib/function_call.js":99,"./lib/strategy/exponential":100,"./lib/strategy/fibonacci":101}],98:[function(require,module,exports){
+},{"./lib/backoff":101,"./lib/function_call.js":102,"./lib/strategy/exponential":103,"./lib/strategy/fibonacci":104}],101:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -14734,7 +14473,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":12,"util":34}],99:[function(require,module,exports){
+},{"events":15,"util":37}],102:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -14963,7 +14702,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":98,"./strategy/fibonacci":101,"events":12,"util":34}],100:[function(require,module,exports){
+},{"./backoff":101,"./strategy/fibonacci":104,"events":15,"util":37}],103:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -14999,7 +14738,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":102,"util":34}],101:[function(require,module,exports){
+},{"./strategy":105,"util":37}],104:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15036,7 +14775,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":102,"util":34}],102:[function(require,module,exports){
+},{"./strategy":105,"util":37}],105:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15136,7 +14875,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":12,"util":34}],103:[function(require,module,exports){
+},{"events":15,"util":37}],106:[function(require,module,exports){
 (function (process){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -15232,7 +14971,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,require('_process'))
-},{"_process":14,"isbuffer":104,"through":105,"ws":106}],104:[function(require,module,exports){
+},{"_process":17,"isbuffer":107,"through":108,"ws":109}],107:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -15242,7 +14981,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":8}],105:[function(require,module,exports){
+},{"buffer":10}],108:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -15354,6 +15093,766 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":14,"stream":30}],106:[function(require,module,exports){
-module.exports=require(93)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":93}]},{},[1]);
+},{"_process":17,"stream":33}],109:[function(require,module,exports){
+module.exports=require(96)
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+/**
+ * Media API for the Kurento Web SDK
+ *
+ * @module KurentoClient
+ *
+ * @copyright 2013-2014 Kurento (http://kurento.org/)
+ * @license LGPL
+ */
+
+var EventEmitter = require('events').EventEmitter;
+var url          = require('url');
+
+var Promise = require('es6-promise').Promise;
+
+var async     = require('async');
+var extend    = require('extend');
+var inherits  = require('inherits');
+var reconnect = require('reconnect-ws');
+
+var checkType   = require('checktype');
+
+var RpcBuilder = require('kurento-jsonrpc');
+var JsonRPC    = RpcBuilder.packers.JsonRPC;
+
+var promiseCallback = require('promisecallback');
+
+var createPromise       = require('./createPromise');
+var MediaObjectCreator  = require('./MediaObjectCreator');
+var register            = require('./register');
+var TransactionsManager = require('./TransactionsManager');
+
+var transactionOperation = TransactionsManager.transactionOperation;
+
+
+// Export KurentoClient
+
+module.exports = KurentoClient;
+KurentoClient.KurentoClient = KurentoClient;
+
+KurentoClient.checkType           = checkType;
+KurentoClient.MediaObjectCreator  = MediaObjectCreator;
+KurentoClient.register            = register;
+KurentoClient.TransactionsManager = TransactionsManager;
+
+
+var MediaObject = require('kurento-client-core').abstracts.MediaObject;
+
+
+/*
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex#Polyfill
+ */
+if (!Array.prototype.findIndex) {
+  Array.prototype.findIndex = function(predicate) {
+    if (this == null) {
+      throw new TypeError('Array.prototype.find called on null or undefined');
+    }
+    if (typeof predicate !== 'function') {
+      throw new TypeError('predicate must be a function');
+    }
+    var list = Object(this);
+    var length = list.length >>> 0;
+    var thisArg = arguments[1];
+    var value;
+
+    for (var i = 0; i < length; i++) {
+      value = list[i];
+      if (predicate.call(thisArg, value, i, list)) {
+        return i;
+      }
+    }
+    return -1;
+  };
+}
+
+
+/**
+ * Serialize objects using their id
+ */
+function serializeParams(params)
+{
+  for(var key in params)
+  {
+    var param = params[key];
+    if(param instanceof MediaObject)
+      params[key] = param.id;
+  };
+
+  return params;
+};
+
+function serializeOperation(operation, index)
+{
+  var params = operation.params;
+
+  switch(operation.method)
+  {
+    case 'create':
+      params.constructorParams = serializeParams(params.constructorParams);
+    break;
+
+//          case 'transaction':
+//          break;
+
+    default:
+      var id = params.object && params.object.id;
+      if(id !== undefined)
+        params.object = id;
+
+      params.operationParams = serializeParams(params.operationParams);
+  };
+
+  operation.jsonrpc = "2.0";
+
+  if(operation.callback)
+    operation.id = index;
+};
+
+
+function deferred(mediaObject, params, prevRpc, callback)
+{
+  var promises = [];
+
+  if(mediaObject != undefined)
+    promises.push(mediaObject);
+
+  for(var key in params)
+  {
+    var param = params[key];
+    if(param !== undefined)
+      promises.push(param);
+  };
+
+  if(prevRpc != undefined)
+    promises.push(prevRpc);
+
+  return promiseCallback(Promise.all(promises), callback);
+};
+
+function noop(error)
+{
+  if(error) console.trace(error);
+};
+
+
+function id2object(error, result, operation, id, callback)
+{
+  if(error) return callback(error);
+
+  if(operation == 'getConnectedSinks'
+  || operation == 'getMediaPipeline'
+  || operation == 'getMediaSinks'
+  || operation == 'getMediaSrcs'
+  || operation == 'getParent')
+  {
+    var sessionId = result.sessionId;
+
+    return this.getMediaobjectById(id, function(error, result)
+    {
+      if(error) return callback(error);
+
+      var result =
+      {
+        sessionId: sessionId,
+        value: result
+      };
+
+      callback(null, result);
+    });
+  };
+
+  callback(null, result)
+};
+
+
+/**
+ * Creates a connection with the Kurento Media Server
+ *
+ * @class
+ *
+ * @param {external:String} ws_uri - Address of the Kurento Media Server
+ */
+function KurentoClient(ws_uri, options, callback)
+{
+  if(!(this instanceof KurentoClient))
+    return new KurentoClient(ws_uri, options, callback);
+
+  var self = this;
+
+  EventEmitter.call(this);
+
+
+  // Fix optional parameters
+  if(options instanceof Function)
+  {
+    callback = options;
+    options  = undefined;
+  };
+
+  options = options || {};
+
+  var failAfter = options.failAfter
+  if(failAfter == undefined) failAfter = 5
+
+  options.enableTransactions = options.enableTransactions || true
+
+
+  var objects = {};
+
+
+  function onNotification(message)
+  {
+    var method = message.method;
+    var params = message.params.value;
+
+    var id = params.object;
+
+    var object = objects[id];
+    if(!object)
+      return console.warn("Unknown object id '"+id+"'", message);
+
+    switch(method)
+    {
+      case 'onEvent':
+        object.emit(params.type, params.data);
+      break;
+
+//      case 'onError':
+//        object.emit('error', params.error);
+//      break;
+
+      default:
+        console.warn("Unknown message type '"+method+"'");
+    };
+  };
+
+
+  //
+  // JsonRPC
+  //
+
+  if(typeof ws_uri == 'string')
+  {
+    var access_token = options.access_token;
+    if(access_token != undefined)
+    {
+      ws_uri = url.parse(ws_uri, true);
+      ws_uri.query.access_token = access_token;
+      ws_uri = url.format(ws_uri);
+
+      delete options.access_token;
+    };
+  }
+
+  var rpc = new RpcBuilder(JsonRPC, function(request)
+  {
+    if(request instanceof RpcBuilder.RpcNotification)
+    {
+      // Message is an unexpected request, notify error
+      if(request.duplicated != undefined)
+        return console.warning('Unexpected request:', request);
+
+      // Message is a notification, process it
+      return onNotification(request);
+    };
+
+    // Invalid message, notify error
+    console.error('Invalid request instance', request);
+  });
+
+
+  // Reconnect websockets
+
+  var re = reconnect({failAfter: failAfter}, function(ws_stream)
+  {
+    rpc.transport = ws_stream;
+  })
+  .connect(ws_uri);
+
+  this.close = re.disconnect.bind(re);
+
+  re.on('fail', this.emit.bind(this, 'disconnect'));
+
+
+  // Promise interface ("thenable")
+
+  this.then = function(onFulfilled, onRejected)
+  {
+    return new Promise(function(resolve, reject)
+    {
+      function success()
+      {
+        re.removeListener('fail', failure);
+
+        var result;
+
+        if(onFulfilled)
+          try
+          {
+            result = onFulfilled.call(self, self);
+          }
+          catch(exception)
+          {
+            if(!onRejected)
+              console.trace('Uncaugh exception', exception)
+
+            return reject(exception);
+          }
+
+        resolve(result);
+      };
+      function failure()
+      {
+        re.removeListener('connection', success);
+
+        var result = new Error('Connection error');
+
+        if(onRejected)
+          try
+          {
+            result = onRejected.call(self, result);
+          }
+          catch(exception)
+          {
+            return reject(exception);
+          }
+        else
+          console.trace('Uncaugh exception', result)
+
+        reject(result);
+      };
+
+      if(re.connected)
+        success()
+      else if(!re.reconnect)
+        failure()
+      else
+      {
+        re.once('connection', success);
+        re.once('fail',       failure);
+      }
+    });
+  };
+
+  this.catch = this.then.bind(this, null);
+
+  if(callback)
+    this.then(callback.bind(undefined, null), callback);
+
+
+  // Select what transactions mechanism to use
+  var encodeTransaction = options.enableTransactions ? commitTransactional : commitSerial;
+
+
+  // Transactional API
+
+  var transactionsManager = new TransactionsManager(this,
+  function(operations, callback)
+  {
+    var params =
+    {
+      object: self,
+      operations: operations
+    };
+
+    encodeTransaction(params, callback)
+  });
+
+  this.beginTransaction = transactionsManager.beginTransaction.bind(transactionsManager);
+  this.endTransaction   = transactionsManager.endTransaction.bind(transactionsManager);
+  this.transaction      = transactionsManager.transaction.bind(transactionsManager);
+
+
+  // Encode commands
+
+  function encode(method, params, callback)
+  {
+    self.then(function()
+    {
+      // [ToDo] Use stacktrace of caller, not from response
+      rpc.encode(method, params, function(error, result)
+      {
+        if(error)
+          error = extend(new Error(error.message || error), error);
+
+        callback(error, result);
+      });
+    },
+    callback)
+  }
+
+  function encodeCreate(transaction, params, callback)
+  {
+    if(transaction)
+      return transactionOperation.call(transaction, 'create', params, callback);
+
+    if(transactionsManager.length)
+      return transactionOperation.call(transactionsManager, 'create', params, callback);
+
+
+    callback = callback || noop;
+
+    function callback2(error, result)
+    {
+      var mediaObject = params.object;
+
+      if(error)
+      {
+        mediaObject.emit('_id', error);
+        return callback(error);
+      }
+
+      var id = result.value;
+
+      callback(null, registerObject(mediaObject, id));
+    }
+
+    deferred(null, params.constructorParams, null, function(error)
+    {
+      if(error) return callback(error);
+
+      params.constructorParams = serializeParams(params.constructorParams);
+
+      encode('create', params, callback2);
+    });
+  };
+
+  var prevRpc = Promise.resolve();
+
+  /**
+   * Request a generic functionality to be procesed by the server
+   */
+  function encodeRpc(transaction, method, params, callback)
+  {
+    if(transaction)
+      return transactionOperation.call(transaction, method, params, callback);
+
+    if(transactionsManager.length)
+      return transactionOperation.call(transactionsManager, method, params, callback);
+
+
+    var promise = new Promise(function(resolve, reject)
+    {
+      function callback2(error, result)
+      {
+        var operation = params.operation;
+        var id = result ? result.value : undefined;
+
+        id2object.call(self, error, result, operation, id, function(error, result)
+        {
+          if(error) return reject(error);
+
+          resolve(result);
+        });
+      };
+
+      prevRpc = deferred(params.object, params.operationParams, prevRpc, function(error)
+      {
+        if(error) return reject(error);
+
+        params.object = params.object.id;
+        params.operationParams = serializeParams(params.operationParams);
+
+        encode(method, params, callback2);
+      })
+    });
+
+    promiseCallback(promise, callback);
+  }
+
+
+  // Commit mechanisms
+
+  function commitTransactional(params, callback)
+  {
+    if(transactionsManager.length)
+      return transactionOperation.call(transactionsManager, 'transaction', params, callback);
+
+
+    var operations = params.operations;
+
+    var promises = [];
+//    var promises = [prevRpc];
+
+    function checkId(operation, param)
+    {
+      if(param instanceof MediaObject && param.id === undefined)
+      {
+        var index = operations.findIndex(function(element)
+        {
+          return operation != element && element.params.object === param;
+        });
+
+        // MediaObject dependency is created in this transaction,
+        // set a new reference ID
+        if(index >= 0)
+          return 'newref:'+index;
+
+        // MediaObject dependency is created outside this transaction,
+        // wait until it's ready
+        promises.push(param);
+      }
+
+      return param
+    }
+
+    // Fix references to uninitialized MediaObjects
+    operations.forEach(function(operation)
+    {
+      var params = operation.params;
+
+      switch(operation.method)
+      {
+        case 'create':
+          var constructorParams = params.constructorParams;
+          for(var key in constructorParams)
+            constructorParams[key] = checkId(operation, constructorParams[key]);
+        break;
+
+//        case 'transaction':
+//          commitTransactional(params.operations, operation.callback);
+//        break;
+
+        default:
+          params.object = checkId(operation, params.object);
+
+          var operationParams = params.operationParams;
+          for(var key in operationParams)
+            operationParams[key] = checkId(operation, operationParams[key]);
+      };
+    });
+
+    function callback2(error, transaction_result)
+    {
+      if(error) return callback(error);
+
+      operations.forEach(function(operation, index)
+      {
+        var callback = operation.callback || noop;
+
+        var operation_response = transaction_result.value[index];
+        if(operation_response == undefined)
+          return callback(new Error('Command not executed in the server'));
+
+        var error  = operation_response.error;
+        var result = operation_response.result;
+
+        var id;
+        if(result) id = result.value;
+
+        switch(operation.method)
+        {
+          case 'create':
+            var mediaObject = operation.params.object;
+
+            if(error)
+            {
+              mediaObject.emit('_id', error);
+              return callback(error)
+            }
+
+            callback(null, registerObject(mediaObject, id));
+          break;
+
+//          case 'transaction':
+//          break;
+
+          default:
+            id2object.call(self, error, result, operation, id, callback);
+        }
+      })
+
+      callback(null, transaction_result);
+    };
+
+    Promise.all(promises).then(function()
+//    prevRpc = Promise.all(promises).then(function()
+    {
+      operations.forEach(serializeOperation)
+
+      encode('transaction', params, callback2);
+    },
+    callback);
+  }
+
+  function commitSerial(params, callback)
+  {
+    if(transactionsManager.length)
+      return transactionOperation.call(transactionsManager, 'transaction', params, callback);
+
+    var operations = params.operations;
+
+    async.each(operations, function(operation)
+    {
+      switch(operation.method)
+      {
+        case 'create':
+          encodeCreate(undefined, operation.params, operation.callback);
+        break;
+
+        case 'transaction':
+          commitSerial(operation.params.operations, operation.callback);
+        break;
+
+        default:
+          encodeRpc(undefined, operation.method, operation.params, operation.callback);
+      }
+    },
+    callback)
+  }
+
+
+  function registerObject(mediaObject, id)
+  {
+    var object = objects[id];
+    if(object) return object;
+
+    if(mediaObject instanceof register.abstracts.Hub
+    || mediaObject instanceof register.classes.MediaPipeline)
+      mediaObject.on('_create', encodeCreate);
+
+    mediaObject.emit('_id', null, id);
+
+    objects[id] = mediaObject;
+
+    /**
+     * Request to release the object on the server and remove it from cache
+     */
+    mediaObject.once('release', function()
+    {
+      delete objects[id];
+    });
+
+    return mediaObject;
+  }
+
+
+  // Creation of objects
+
+  var mediaObjectCreator = new MediaObjectCreator(undefined, encodeCreate, encodeRpc, encodeTransaction);
+
+  function describe(id, callback)
+  {
+    var mediaObject = objects[id];
+    if(mediaObject) return callback(null, mediaObject);
+
+    var params =
+    {
+      object: id
+    };
+
+    function callback2(error, result)
+    {
+      if(error) return callback(error);
+
+      var mediaObject = mediaObjectCreator.createInmediate(result);
+
+      return callback(null, registerObject(mediaObject, id));
+    }
+
+    encode('describe', params, callback2);
+  };
+
+  this.getMediaobjectById = function(id, callback)
+  {
+    return createPromise(id, describe, callback)
+  };
+
+
+  /**
+   * Create a new instance of a MediaObject
+   *
+   * @param {external:String} type - Type of the element
+   * @param {external:string[]} [params]
+   * @callback {createMediaPipelineCallback} callback
+   *
+   * @return {module:KurentoClientApi~MediaPipeline} The pipeline itself
+   */
+  this.create = mediaObjectCreator.create.bind(mediaObjectCreator);
+  /**
+   * @callback KurentoClientApi~createCallback
+   * @param {external:Error} error
+   * @param {module:core/abstract~MediaElement} result
+   *  The created MediaElement
+   */
+};
+inherits(KurentoClient, EventEmitter);
+
+
+var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
+
+/**
+ * Connect the source of a media to the sink of the next one
+ *
+ * @param {...MediaObject} media - A media to be connected
+ * @callback {connectCallback} [callback]
+ *
+ * @return {Promise}
+ *
+ * @throws {SyntaxError}
+ */
+KurentoClient.prototype.connect = function(media, callback)
+{
+  // Fix lenght-variable arguments
+  media = Array.prototype.slice.call(arguments, 0);
+  callback = (typeof media[media.length - 1] == 'function')
+           ? media.pop() : undefined;
+
+  // Check if we have enought media components
+  if(media.length < 2)
+    throw new SyntaxError("Need at least two media elements to connect");
+
+  // Check MediaElements are of the correct type
+  media.forEach(checkMediaElement);
+
+  // Generate promise
+  var promise = new Promise(function(resolve, reject)
+  {
+    function callback(error, result)
+    {
+      if(error) return reject(error);
+
+      resolve(result);
+    };
+
+    // Connect the media elements
+    var src = media[0];
+
+    async.each(media.slice(1), function(sink, callback)
+    {
+      src.connect(sink, callback);
+      src = sink;
+    }, callback);
+  });
+
+  return promiseCallback(promise, callback);
+};
+
+
+// Register Kurento basic elements
+
+register(require('kurento-client-core'))
+register(require('kurento-client-elements'))
+register(require('kurento-client-filters'))
+
+},{"./MediaObjectCreator":1,"./TransactionsManager":2,"./createPromise":4,"./register":5,"async":6,"checktype":7,"es6-promise":8,"events":15,"extend":9,"inherits":38,"kurento-client-core":65,"kurento-client-elements":82,"kurento-client-filters":88,"kurento-jsonrpc":92,"promisecallback":97,"reconnect-ws":98,"url":35}]},{},[3]);
