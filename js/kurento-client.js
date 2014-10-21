@@ -8060,9 +8060,11 @@ var MediaElement = require('./abstracts/MediaElement');
  * @extends module:core/abstracts.MediaElement
  *
  * @constructor module:core.HubPort
+ *
+ * @param {external:String} id
  */
-function HubPort(){
-  HubPort.super_.call(this);
+function HubPort(id){
+  HubPort.super_.call(this, id);
 };
 inherits(HubPort, MediaElement);
 
@@ -8118,25 +8120,6 @@ var Promise = require('es6-promise').Promise;
 
 var promiseCallback = require('promisecallback');
 
-var checkParams = require('checktype').checkParams;
-
-var kurentoClient = require('kurento-client');
-var register = kurentoClient.register;
-
-/**
- * Get the constructor for a type
- *
- * If the type is not registered, use generic {MediaObject}
- */
-function getConstructor(type)
-{
-  var result = register.classes[type] || register.abstracts[type];
-  if(result) return result;
-
-  console.warn("Unknown type '"+type+"', using MediaObject instead");
-  return MediaObject;
-};
-
 var ChecktypeError = require('checktype').ChecktypeError;
 
 var MediaObject = require('./abstracts/MediaObject');
@@ -8150,178 +8133,58 @@ var MediaObject = require('./abstracts/MediaObject');
  * @extends module:core/abstracts.MediaObject
  *
  * @constructor module:core.MediaPipeline
+ *
+ * @param {external:String} id
  */
-function MediaPipeline(){
-  MediaPipeline.super_.call(this);
-
-
-  var self = this;
-
-
-  // Transactional API
-
-  var transactions = [];
-
-  function transactionOperation(method, params, callback)
-  {
-    var message =
-    {
-      method: method,
-      params: params,
-      callback: callback
-    }
-
-    transactions[0].push(message);
-  }
-
-  this.beginTransaction = function()
-  {
-    transactions.unshift([]);
-  };
-
-  this.endTransaction = function(callback)
-  {
-    var operations = transactions.shift();
-
-    var promise = new Promise(function(resolve, reject)
-    {
-      function callback(error, result)
-      {
-        if(error) return reject(error);
-
-        resolve(result)
-      };
-
-      encodeTransaction({operations: operations}, callback);
-    })
-
-    return promiseCallback(promise, callback)
-  };
-
-  this.transaction = function(transaction, callback)
-  {
-    this.beginTransaction();
-    transaction.call(this);
-    return this.endTransaction(callback);
-  };
-
-
-  // Encode commands
-
-  function encodeCreate(params, callback)
-  {
-    if(transactions.length)
-      transactionOperation('create', params, callback);
-    else
-      self.emit('_create', params, callback)
-  }
-
-  function encodeRpc(method, params, callback)
-  {
-    if(transactions.length)
-      transactionOperation(method, params, callback);
-    else
-      self.emit('_rpc', method, params, callback)
-  }
-
-  function encodeTransaction(params, callback)
-  {
-    if(transactions.length)
-      transactionOperation('transaction', params, callback);
-    else
-      self.then(function()
-      {
-        params.object = self.id;
-
-        self.emit('_transaction', params, callback);
-      })
-  }
-
-
-  /**
-   * Request to the server to create a new MediaElement
-   */
-  function createMediaObject(item, callback)
-  {
-    var constructor = getConstructor(item.type);
-
-    if(constructor.create)
-    {
-      item = constructor.create(item.params);
-
-      // Apply inheritance
-      var prototype = constructor.prototype;
-      inherits(constructor, getConstructor(item.type));
-      extend(constructor.prototype, prototype);
-    };
-
-    item.params.mediaPipeline = self;
-
-    item.constructorParams = checkParams(item.params,
-                                         constructor.constructorParams,
-                                         item.type);
-    delete item.params;
-
-    var mediaObject = new constructor()
-
-    /**
-     * Request a generic functionality to be procesed by the server
-     */
-    mediaObject.on('_rpc', function(method, params, callback)
-    {
-      params.object = mediaObject;
-
-      encodeRpc(method, params, callback);
-    });
-
-    if(mediaObject instanceof Hub)
-      mediaObject.on('_create', encodeCreate);
-
-    Object.defineProperty(item, 'object', {value: mediaObject});
-
-    encodeCreate(item, callback);
-
-    return mediaObject
-  };
-
-  /**
-   * Create a new instance of a {module:core/abstract.MediaObject} attached to
-   *  this {module:core.MediaPipeline}
-   *
-   * @param {external:String} type - Type of the
-   *  {module:core/abstract.MediaObject}
-   * @param {external:String[]} [params]
-   * @param {module:core.MediaPipeline~createCallback} callback
-   *
-   * @return {external:Promise}
-   */
-  this.create = function(type, params, callback){
-    // Fix optional parameters
-    if(params instanceof Function){
-      if(callback)
-        throw new SyntaxError("Nothing can be defined after the callback");
-
-      callback = params;
-      params = undefined;
-    };
-
-    params = params || {};
-
-    if(type instanceof Array)
-      return createPromise(type, createMediaObject, callback)
-
-    type = {params: params, type: type};
-
-    return createMediaObject(type, callback)
-  };
-  /**
-   * @callback core.MediaPipeline~createCallback
-   * @param {external:Error} error
-   * @param {module:core/abstract~MediaElement} result
-   *  The created MediaElement
-   */
+function MediaPipeline(id){
+  MediaPipeline.super_.call(this, id);
 };
 inherits(MediaPipeline, MediaObject);
+
+
+/**
+ * Create a new instance of a {module:core/abstract.MediaObject} attached to this {module:core.MediaPipeline}
+ *
+ * @param {external:String} type - Type of the {module:core/abstract.MediaObject}
+ * @param {external:String[]} [params]
+ * @param {module:core.MediaPipeline~createCallback} callback
+ *
+ * @return {external:Promise}
+ */
+MediaPipeline.prototype.create = function(type, params, callback){
+  var self = this;
+
+  // Fix optional parameters
+  if(params instanceof Function){
+    if(callback)
+      throw new SyntaxError("Nothing can be defined after the callback");
+
+    callback = params;
+    params = undefined;
+  };
+
+  params = params || {};
+
+  var promise = new Promise(function(resolve, reject)
+  {
+    params.mediaPipeline = self;
+
+    self.emit('_create', type, params, function(error, result)
+    {
+      if(error) return reject(error);
+
+      resolve(result);
+    });
+  });
+
+  return promiseCallback(promise, callback);
+};
+/**
+ * @callback core.MediaPipeline~createCallback
+ * @param {external:Error} error
+ * @param {module:core/abstract~MediaElement} result
+ *  The created MediaElement
+ */
 
 /**
  * @alias module:core.MediaPipeline.constructorParams
@@ -8343,7 +8206,7 @@ MediaPipeline.check = function(key, value)
     throw ChecktypeError(key, MediaPipeline, value);
 };
 
-},{"./abstracts/MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"kurento-client":undefined,"promisecallback":102}],46:[function(require,module,exports){
+},{"./abstracts/MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"promisecallback":102}],46:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8380,9 +8243,11 @@ var MediaElement = require('./MediaElement');
  * @extends module:core/abstracts.MediaElement
  *
  * @constructor module:core/abstracts.Endpoint
+ *
+ * @param {external:String} id
  */
-function Endpoint(){
-  Endpoint.super_.call(this);
+function Endpoint(id){
+  Endpoint.super_.call(this, id);
 };
 inherits(Endpoint, MediaElement);
 
@@ -8438,9 +8303,11 @@ var MediaElement = require('./MediaElement');
  * @extends module:core/abstracts.MediaElement
  *
  * @constructor module:core/abstracts.Filter
+ *
+ * @param {external:String} id
  */
-function Filter(){
-  Filter.super_.call(this);
+function Filter(id){
+  Filter.super_.call(this, id);
 };
 inherits(Filter, MediaElement);
 
@@ -8488,8 +8355,6 @@ var Promise = require('es6-promise').Promise;
 
 var promiseCallback = require('promisecallback');
 
-var HubPort = require('../HubPort');
-
 var ChecktypeError = require('checktype').ChecktypeError;
 
 var MediaObject = require('./MediaObject');
@@ -8502,9 +8367,11 @@ var MediaObject = require('./MediaObject');
  * @extends module:core/abstracts.MediaObject
  *
  * @constructor module:core/abstracts.Hub
+ *
+ * @param {external:String} id
  */
-function Hub(){
-  Hub.super_.call(this);
+function Hub(id){
+  Hub.super_.call(this, id);
 };
 inherits(Hub, MediaObject);
 
@@ -8517,17 +8384,19 @@ inherits(Hub, MediaObject);
  * @return {external:Promise}
  */
 Hub.prototype.createHubPort = function(callback){
-  var mediaObject = new HubPort()
+  var self = this;
 
-  var params =
+  var promise = new Promise(function(resolve, reject)
   {
-    type: 'HubPort',
-    hub: this
-  };
+    self.emit('_create', 'HubPort', {hub: self}, function(error, result)
+    {
+      if(error) return reject(error);
 
-  this.emit('_create', mediaObject, params, callback);
+      resolve(result);
+    });
+  });
 
-  return mediaObject
+  return promiseCallback(promise, callback);
 };
 /**
  * @callback core/abstract.Hub~createHubCallback
@@ -8556,7 +8425,7 @@ Hub.check = function(key, value)
     throw ChecktypeError(key, Hub, value);
 };
 
-},{"../HubPort":44,"./MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"promisecallback":102}],49:[function(require,module,exports){
+},{"./MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"promisecallback":102}],49:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8592,9 +8461,11 @@ var MediaObject = require('./MediaObject');
  * @extends module:core/abstracts.MediaObject
  *
  * @constructor module:core/abstracts.MediaElement
+ *
+ * @param {external:String} id
  */
-function MediaElement(){
-  MediaElement.super_.call(this);
+function MediaElement(id){
+  MediaElement.super_.call(this, id);
 };
 inherits(MediaElement, MediaObject);
 
@@ -8844,10 +8715,12 @@ var EventEmitter = require('events').EventEmitter;
  *
  * @constructor module:core/abstracts.MediaObject
  *
+ * @param {external:String} id
+ *
  * @fires {@link module:core#event:Error Error}
  */
-function MediaObject(){
-  MediaObject.super_.call(this);
+function MediaObject(id){
+  MediaObject.super_.call(this, id);
 
 
   //
@@ -8859,14 +8732,10 @@ function MediaObject(){
    *
    * @public
    * @readonly
-   * @member {external:Number} id
+   * @member {external:Number}
    */
-  this.once('_id', function(error, id)
-  {
-    if(error) return Object.defineProperty(this, 'id', {value: null});
+  Object.defineProperty(this, "id", {value: id});
 
-    Object.defineProperty(this, 'id', {value: id, enumerable: true});
-  })
 
   //
   // Subscribe and unsubscribe events on the server when adding and removing
@@ -8878,8 +8747,8 @@ function MediaObject(){
   this.on('removeListener', function(event, listener)
   {
     // Blacklisted events
-    if(event[0] == '_'
-    || event == 'release'
+    if(event == 'release'
+    || event == '_rpc'
     || event == 'newListener')
       return;
 
@@ -8899,8 +8768,9 @@ function MediaObject(){
   this.on('newListener', function(event, listener)
   {
     // Blacklisted events
-    if(event[0] == '_'
-    || event == 'release')
+    if(event == 'release'
+    || event == '_rpc'
+    || event == '_create')
       return;
 
     var constructor = this.constructor;
@@ -9044,66 +8914,6 @@ MediaObject.prototype.release = function(callback){
  * @param {external:Error} error
  */
 
-
-// Promise interface ("thenable")
-
-MediaObject.prototype.then = function(onFulfilled, onRejected)
-{
-  var self = this;
-
-  return new Promise(function(resolve, reject)
-  {
-    function success(id)
-    {
-      var result;
-
-      if(onFulfilled)
-        try
-        {
-          result = onFulfilled.call(self, id);
-        }
-        catch(exception)
-        {
-          if(!onRejected)
-            console.trace('Uncaugh exception', exception)
-
-          return reject(exception);
-        }
-
-      resolve(result);
-    };
-    function failure(error)
-    {
-      var result = new Error(error);
-
-      if(onRejected)
-        try
-        {
-          result = onRejected.call(self, result);
-        }
-        catch(exception)
-        {
-          return reject(exception);
-        }
-      else
-        console.trace('Uncaugh exception', result)
-
-      reject(result);
-    };
-
-    if(self.id === null)
-      failure()
-    else if(self.id !== undefined)
-      success(self)
-    else
-      self.once('_id', function(error, id)
-      {
-        if(error) return failure(error);
-
-        success(self);
-      })
-  })
-}
 /**
  * @alias module:core/abstracts.MediaObject.constructorParams
  */
@@ -9154,9 +8964,11 @@ var MediaObject = require('./MediaObject');
  * @extends module:core/abstracts.MediaObject
  *
  * @constructor module:core/abstracts.MediaPad
+ *
+ * @param {external:String} id
  */
-function MediaPad(){
-  MediaPad.super_.call(this);
+function MediaPad(id){
+  MediaPad.super_.call(this, id);
 };
 inherits(MediaPad, MediaObject);
 
@@ -9268,9 +9080,11 @@ var MediaPad = require('./MediaPad');
  * @extends module:core/abstracts.MediaPad
  *
  * @constructor module:core/abstracts.MediaSink
+ *
+ * @param {external:String} id
  */
-function MediaSink(){
-  MediaSink.super_.call(this);
+function MediaSink(id){
+  MediaSink.super_.call(this, id);
 };
 inherits(MediaSink, MediaPad);
 
@@ -9374,9 +9188,11 @@ var MediaPad = require('./MediaPad');
  * @extends module:core/abstracts.MediaPad
  *
  * @constructor module:core/abstracts.MediaSource
+ *
+ * @param {external:String} id
  */
-function MediaSource(){
-  MediaSource.super_.call(this);
+function MediaSource(id){
+  MediaSource.super_.call(this, id);
 };
 inherits(MediaSource, MediaPad);
 
@@ -9510,9 +9326,11 @@ var SessionEndpoint = require('./SessionEndpoint');
  * @extends module:core/abstracts.SessionEndpoint
  *
  * @constructor module:core/abstracts.SdpEndpoint
+ *
+ * @param {external:String} id
  */
-function SdpEndpoint(){
-  SdpEndpoint.super_.call(this);
+function SdpEndpoint(id){
+  SdpEndpoint.super_.call(this, id);
 };
 inherits(SdpEndpoint, SessionEndpoint);
 
@@ -9689,11 +9507,13 @@ var MediaObject = require('./MediaObject');
  *
  * @constructor module:core/abstracts.Server
  *
+ * @param {external:String} id
+ *
  * @fires {@link module:core#event:ObjectCreated ObjectCreated}
  * @fires {@link module:core#event:ObjectDestroyed ObjectDestroyed}
  */
-function Server(){
-  Server.super_.call(this);
+function Server(id){
+  Server.super_.call(this, id);
 };
 inherits(Server, MediaObject);
 
@@ -9804,11 +9624,13 @@ var Endpoint = require('./Endpoint');
  *
  * @constructor module:core/abstracts.SessionEndpoint
  *
+ * @param {external:String} id
+ *
  * @fires {@link module:core#event:MediaSessionStarted MediaSessionStarted}
  * @fires {@link module:core#event:MediaSessionTerminated MediaSessionTerminated}
  */
-function SessionEndpoint(){
-  SessionEndpoint.super_.call(this);
+function SessionEndpoint(id){
+  SessionEndpoint.super_.call(this, id);
 };
 inherits(SessionEndpoint, Endpoint);
 
@@ -9866,9 +9688,11 @@ var Endpoint = require('./Endpoint');
  * @extends module:core/abstracts.Endpoint
  *
  * @constructor module:core/abstracts.UriEndpoint
+ *
+ * @param {external:String} id
  */
-function UriEndpoint(){
-  UriEndpoint.super_.call(this);
+function UriEndpoint(id){
+  UriEndpoint.super_.call(this, id);
 };
 inherits(UriEndpoint, Endpoint);
 
@@ -14536,7 +14360,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":22,"stream":38}],114:[function(require,module,exports){
 module.exports=require(101)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":101}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":101}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
