@@ -1,4 +1,4 @@
-require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /**
  * Loader for the kurento-client package on the browser
  */
@@ -19,7 +19,504 @@ window.require = function(id)
   return oldRequire(id);
 };
 
-},{"./index.js":undefined}],2:[function(require,module,exports){
+},{"./index.js":2}],2:[function(require,module,exports){
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+/**
+ * Media API for the Kurento Web SDK
+ *
+ * @module KurentoClient
+ *
+ * @copyright 2013-2014 Kurento (http://kurento.org/)
+ * @license LGPL
+ */
+
+var EventEmitter = require('events').EventEmitter;
+var extend       = require('extend');
+var inherits     = require('inherits');
+var url          = require('url');
+
+var Promise = require('es6-promise').Promise;
+
+var async     = require('async');
+var reconnect = require('reconnect-ws');
+
+var RpcBuilder = require('kurento-jsonrpc');
+var JsonRPC    = RpcBuilder.packers.JsonRPC;
+
+var checkType   = require('checktype');
+var checkParams = checkType.checkParams;
+
+var promiseCallback = require('promisecallback');
+
+var register = require('./register');
+
+
+/**
+ * Serialize objects using their id
+ */
+function serializeParams(params)
+{
+  for(var key in params)
+  {
+    var param = params[key];
+    if(param instanceof register.abstracts.MediaObject)
+      params[key] = param.id;
+  };
+
+  return params;
+};
+
+/**
+ * Get the constructor for a type
+ *
+ * If the type is not registered, use generic {MediaObject}
+ */
+function getConstructor(type)
+{
+  var result = register.classes[type] || register.abstracts[type];
+  if(result) return result;
+
+  console.warn("Unknown type '"+type+"', using MediaObject instead");
+  return register.abstracts.MediaObject;
+};
+
+function createConstructor(item)
+{
+  var constructor = getConstructor(item.type);
+
+  if(constructor.create)
+  {
+    item = constructor.create(item.params);
+
+    // Apply inheritance
+    var prototype = constructor.prototype;
+    inherits(constructor, getConstructor(item.type));
+    extend(constructor.prototype, prototype);
+  };
+
+  constructor.item = item;
+
+  return constructor;
+}
+
+function createPromise(data, func, callback)
+{
+  var promise = new Promise(function(resolve, reject)
+  {
+    function callback2(error, result)
+    {
+      if(error) return reject(error);
+
+      resolve(result);
+    };
+
+    if(data instanceof Array)
+      async.map(data, func, callback2);
+    else
+      func(data, callback2);
+  });
+
+  return promiseCallback(promise, callback);
+};
+
+
+/**
+ * Creates a connection with the Kurento Media Server
+ *
+ * @class
+ *
+ * @param {external:String} ws_uri - Address of the Kurento Media Server
+ */
+function KurentoClient(ws_uri, options, callback)
+{
+  if(!(this instanceof KurentoClient))
+    return new KurentoClient(ws_uri, options, callback);
+
+  var self = this;
+
+  EventEmitter.call(this);
+
+
+  // Fix optional parameters
+  if(options instanceof Function)
+  {
+    callback = options;
+    options  = undefined;
+  };
+
+  options = options || {};
+
+  var failAfter = options.failAfter
+  if(failAfter == undefined) failAfter = 5
+
+
+  var objects = {};
+
+
+  function onNotification(message)
+  {
+    var method = message.method;
+    var params = message.params.value;
+
+    var id = params.object;
+
+    var object = objects[id];
+    if(!object)
+      return console.warn("Unknown object id '"+id+"'", message);
+
+    switch(method)
+    {
+      case 'onEvent':
+        object.emit(params.type, params.data);
+      break;
+
+//      case 'onError':
+//        object.emit('error', params.error);
+//      break;
+
+      default:
+        console.warn("Unknown message type '"+method+"'");
+    };
+  };
+
+
+  //
+  // JsonRPC
+  //
+
+  if(typeof ws_uri == 'string')
+  {
+    var access_token = options.access_token;
+    if(access_token != undefined)
+    {
+      ws_uri = url.parse(ws_uri, true);
+      ws_uri.query.access_token = access_token;
+      ws_uri = url.format(ws_uri);
+
+      delete options.access_token;
+    };
+  }
+
+  var rpc = new RpcBuilder(JsonRPC, function(request)
+  {
+    if(request instanceof RpcBuilder.RpcNotification)
+    {
+      // Message is an unexpected request, notify error
+      if(request.duplicated != undefined)
+        return console.warning('Unexpected request:', request);
+
+      // Message is a notification, process it
+      return onNotification(request);
+    };
+
+    // Invalid message, notify error
+    console.error('Invalid request instance', request);
+  });
+
+
+  // Reconnect websockets
+
+  var re = reconnect({failAfter: failAfter}, function(ws_stream)
+  {
+    rpc.transport = ws_stream;
+  })
+  .connect(ws_uri);
+
+  this.close = re.disconnect.bind(re);
+
+  re.on('fail', this.emit.bind(this, 'disconnect'));
+
+
+  // Promise interface ("thenable")
+
+  this.then = function(onFulfilled, onRejected)
+  {
+    return new Promise(function(resolve, reject)
+    {
+      function removeListeners()
+      {
+        re.removeListener('connection', success);
+        re.removeListener('fail',       failure);
+      }
+
+      function success()
+      {
+        removeListeners()
+
+        var result;
+
+        if(onFulfilled)
+          try
+          {
+            result = onFulfilled(self);
+          }
+          catch(exception)
+          {
+            if(!onRejected)
+              console.trace('Uncaugh exception', exception)
+
+            return reject(exception);
+          }
+
+        resolve(result);
+      };
+      function failure()
+      {
+        removeListeners()
+
+        var result = new Error('Connection error');
+
+        if(onRejected)
+          try
+          {
+            result = onRejected(result);
+          }
+          catch(exception)
+          {
+            return reject(exception);
+          }
+        else
+          console.trace('Uncaugh exception', result)
+
+        reject(result);
+      };
+
+      if(re.connected)
+        success()
+      else if(!re.reconnect)
+        failure()
+      else
+      {
+        re.on('connection', success);
+        re.on('fail',       failure);
+      }
+    });
+  };
+
+  this.catch = this.then.bind(this, null);
+
+  if(callback)
+    this.then(callback.bind(undefined, null), callback);
+
+
+  function createObject(constructor, id, params)
+  {
+    var mediaObject = new constructor(id, params);
+
+    /**
+     * Request to release the object on the server and remove it from cache
+     */
+    mediaObject.on('release', function()
+    {
+      delete objects[id];
+    });
+
+    /**
+     * Request a generic functionality to be procesed by the server
+     */
+    mediaObject.on('_rpc', function(method, params, callback)
+    {
+      params.object = id;
+
+      // Serialize objects using their id
+      params.operationParams = serializeParams(params.operationParams);
+
+      rpc.encode(method, params, function(error, result)
+      {
+        if(error) return callback(error);
+
+        var operation = params.operation;
+
+        if(operation == 'getConnectedSinks'
+        || operation == 'getMediaSinks'
+        || operation == 'getMediaSrcs')
+        {
+          var sessionId = result.sessionId;
+
+          return self.getMediaobjectById(result.value, function(error, result)
+          {
+            var result =
+            {
+              sessionId: sessionId,
+              value: result
+            };
+
+            callback(error, result);
+          });
+        };
+
+        callback(null, result);
+      });
+    });
+
+    if(mediaObject instanceof register.abstracts.Hub
+    || mediaObject instanceof register.classes.MediaPipeline)
+      mediaObject.on('_create', self.create.bind(self));
+
+    objects[id] = mediaObject;
+
+    return mediaObject;
+  };
+
+  /**
+   * Request to the server to create a new MediaElement
+   */
+  function createMediaObject(item, callback)
+  {
+    var constructor = createConstructor(item);
+
+    item = constructor.item;
+    delete constructor.item;
+
+    item.constructorParams = checkParams(item.params,
+                                      constructor.constructorParams, item.type);
+    delete item.params;
+
+    // Serialize objects using their id
+    item.constructorParams = serializeParams(item.constructorParams);
+
+    rpc.encode('create', item, function(error, result)
+    {
+      if(error) return callback(error);
+
+      var id = result.value;
+
+      callback(null, objects[id] || createObject(constructor, id));
+    });
+  };
+
+  function describe(id, callback)
+  {
+    var mediaObject = objects[id];
+    if(mediaObject) return callback(null, mediaObject);
+
+    rpc.encode('describe', {object: id}, function(error, result)
+    {
+      if(error) return callback(error);
+
+      var constructor = createConstructor(result);
+      delete constructor.item;
+
+      return callback(null, createObject(constructor, id));
+    });
+  };
+
+
+  this.getMediaobjectById = function(id, callback)
+  {
+    return createPromise(id, describe, callback)
+  };
+
+
+  /**
+   * Create a new instance of a MediaObject
+   *
+   * @param {external:String} type - Type of the element
+   * @param {external:string[]} [params]
+   * @callback {createMediaPipelineCallback} callback
+   *
+   * @return {module:KurentoClientApi~MediaPipeline} The pipeline itself
+   */
+  this.create = function(type, params, callback)
+  {
+    // Fix optional parameters
+    if(params instanceof Function)
+    {
+      if(callback)
+        throw new SyntaxError("Nothing can be defined after the callback");
+
+      callback = params;
+      params   = undefined;
+    };
+
+    if(!(type instanceof Array))
+      type = {params: params || {}, type: type};
+
+    return createPromise(type, createMediaObject, callback)
+  };
+};
+inherits(KurentoClient, EventEmitter);
+
+
+var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
+
+/**
+ * Connect the source of a media to the sink of the next one
+ *
+ * @param {...MediaObject} media - A media to be connected
+ * @callback {connectCallback} [callback]
+ *
+ * @return {Promise}
+ *
+ * @throws {SyntaxError}
+ */
+KurentoClient.prototype.connect = function(media, callback)
+{
+  // Fix lenght-variable arguments
+  media = Array.prototype.slice.call(arguments, 0);
+  callback = (typeof media[media.length - 1] == 'function')
+           ? media.pop() : undefined;
+
+  // Check if we have enought media components
+  if(media.length < 2)
+    throw new SyntaxError("Need at least two media elements to connect");
+
+  // Check MediaElements are of the correct type
+  media.forEach(checkMediaElement);
+
+  // Generate promise
+  var promise = new Promise(function(resolve, reject)
+  {
+    function callback(error, result)
+    {
+      if(error) return reject(error);
+
+      resolve(result);
+    };
+
+    // Connect the media elements
+    var src = media[0];
+
+    async.each(media.slice(1), function(sink, callback)
+    {
+      src.connect(sink, callback);
+      src = sink;
+    }, callback);
+  });
+
+  return promiseCallback(promise, callback);
+};
+
+
+// Export KurentoClient
+
+module.exports = KurentoClient;
+KurentoClient.KurentoClient = KurentoClient;
+
+KurentoClient.register = register;
+
+
+// Register Kurento basic elements
+
+register(require('kurento-client-core'))
+register(require('kurento-client-elements'))
+register(require('kurento-client-filters'))
+
+},{"./register":3,"async":4,"checktype":5,"es6-promise":6,"events":12,"extend":7,"inherits":35,"kurento-client-core":62,"kurento-client-elements":79,"kurento-client-filters":85,"kurento-jsonrpc":89,"promisecallback":94,"reconnect-ws":95,"url":32}],3:[function(require,module,exports){
 var checkType   = require('checktype');
 
 
@@ -111,7 +608,7 @@ module.exports = register;
 register.abstracts = abstracts;
 register.classes = classes;
 
-},{"checktype":4}],3:[function(require,module,exports){
+},{"checktype":5}],4:[function(require,module,exports){
 (function (process){
 /*!
  * async
@@ -1238,7 +1735,7 @@ register.classes = classes;
 }());
 
 }).call(this,require('_process'))
-},{"_process":22}],4:[function(require,module,exports){
+},{"_process":14}],5:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -1410,617 +1907,976 @@ checkType.int     = checkInteger;
 checkType.Object  = checkObject;
 checkType.String  = checkString;
 
-},{}],5:[function(require,module,exports){
-"use strict";
-var Promise = require("./promise/promise").Promise;
-var polyfill = require("./promise/polyfill").polyfill;
-exports.Promise = Promise;
-exports.polyfill = polyfill;
-},{"./promise/polyfill":9,"./promise/promise":10}],6:[function(require,module,exports){
-"use strict";
-/* global toString */
+},{}],6:[function(require,module,exports){
+(function (process,global){
+/*!
+ * @overview es6-promise - a tiny implementation of Promises/A+.
+ * @copyright Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors (Conversion to ES6 API by Jake Archibald)
+ * @license   Licensed under MIT license
+ *            See https://raw.githubusercontent.com/jakearchibald/es6-promise/master/LICENSE
+ * @version   2.0.0
+ */
 
-var isArray = require("./utils").isArray;
-var isFunction = require("./utils").isFunction;
+(function() {
+    "use strict";
 
-/**
-  Returns a promise that is fulfilled when all the given promises have been
-  fulfilled, or rejected if any of them become rejected. The return promise
-  is fulfilled with an array that gives all the values in the order they were
-  passed in the `promises` array argument.
-
-  Example:
-
-  ```javascript
-  var promise1 = RSVP.resolve(1);
-  var promise2 = RSVP.resolve(2);
-  var promise3 = RSVP.resolve(3);
-  var promises = [ promise1, promise2, promise3 ];
-
-  RSVP.all(promises).then(function(array){
-    // The array here would be [ 1, 2, 3 ];
-  });
-  ```
-
-  If any of the `promises` given to `RSVP.all` are rejected, the first promise
-  that is rejected will be given as an argument to the returned promises's
-  rejection handler. For example:
-
-  Example:
-
-  ```javascript
-  var promise1 = RSVP.resolve(1);
-  var promise2 = RSVP.reject(new Error("2"));
-  var promise3 = RSVP.reject(new Error("3"));
-  var promises = [ promise1, promise2, promise3 ];
-
-  RSVP.all(promises).then(function(array){
-    // Code here never runs because there are rejected promises!
-  }, function(error) {
-    // error.message === "2"
-  });
-  ```
-
-  @method all
-  @for RSVP
-  @param {Array} promises
-  @param {String} label
-  @return {Promise} promise that is fulfilled when all `promises` have been
-  fulfilled, or rejected if any of them become rejected.
-*/
-function all(promises) {
-  /*jshint validthis:true */
-  var Promise = this;
-
-  if (!isArray(promises)) {
-    throw new TypeError('You must pass an array to all.');
-  }
-
-  return new Promise(function(resolve, reject) {
-    var results = [], remaining = promises.length,
-    promise;
-
-    if (remaining === 0) {
-      resolve([]);
+    function $$utils$$objectOrFunction(x) {
+      return typeof x === 'function' || (typeof x === 'object' && x !== null);
     }
 
-    function resolver(index) {
-      return function(value) {
-        resolveAll(index, value);
+    function $$utils$$isFunction(x) {
+      return typeof x === 'function';
+    }
+
+    function $$utils$$isMaybeThenable(x) {
+      return typeof x === 'object' && x !== null;
+    }
+
+    var $$utils$$_isArray;
+
+    if (!Array.isArray) {
+      $$utils$$_isArray = function (x) {
+        return Object.prototype.toString.call(x) === '[object Array]';
+      };
+    } else {
+      $$utils$$_isArray = Array.isArray;
+    }
+
+    var $$utils$$isArray = $$utils$$_isArray;
+    var $$utils$$now = Date.now || function() { return new Date().getTime(); };
+    function $$utils$$F() { }
+
+    var $$utils$$o_create = (Object.create || function (o) {
+      if (arguments.length > 1) {
+        throw new Error('Second argument not supported');
+      }
+      if (typeof o !== 'object') {
+        throw new TypeError('Argument must be an object');
+      }
+      $$utils$$F.prototype = o;
+      return new $$utils$$F();
+    });
+
+    var $$asap$$len = 0;
+
+    var $$asap$$default = function asap(callback, arg) {
+      $$asap$$queue[$$asap$$len] = callback;
+      $$asap$$queue[$$asap$$len + 1] = arg;
+      $$asap$$len += 2;
+      if ($$asap$$len === 2) {
+        // If len is 1, that means that we need to schedule an async flush.
+        // If additional callbacks are queued before the queue is flushed, they
+        // will be processed by this flush that we are scheduling.
+        $$asap$$scheduleFlush();
+      }
+    };
+
+    var $$asap$$browserGlobal = (typeof window !== 'undefined') ? window : {};
+    var $$asap$$BrowserMutationObserver = $$asap$$browserGlobal.MutationObserver || $$asap$$browserGlobal.WebKitMutationObserver;
+
+    // test for web worker but not in IE10
+    var $$asap$$isWorker = typeof Uint8ClampedArray !== 'undefined' &&
+      typeof importScripts !== 'undefined' &&
+      typeof MessageChannel !== 'undefined';
+
+    // node
+    function $$asap$$useNextTick() {
+      return function() {
+        process.nextTick($$asap$$flush);
       };
     }
 
-    function resolveAll(index, value) {
-      results[index] = value;
-      if (--remaining === 0) {
-        resolve(results);
+    function $$asap$$useMutationObserver() {
+      var iterations = 0;
+      var observer = new $$asap$$BrowserMutationObserver($$asap$$flush);
+      var node = document.createTextNode('');
+      observer.observe(node, { characterData: true });
+
+      return function() {
+        node.data = (iterations = ++iterations % 2);
+      };
+    }
+
+    // web worker
+    function $$asap$$useMessageChannel() {
+      var channel = new MessageChannel();
+      channel.port1.onmessage = $$asap$$flush;
+      return function () {
+        channel.port2.postMessage(0);
+      };
+    }
+
+    function $$asap$$useSetTimeout() {
+      return function() {
+        setTimeout($$asap$$flush, 1);
+      };
+    }
+
+    var $$asap$$queue = new Array(1000);
+
+    function $$asap$$flush() {
+      for (var i = 0; i < $$asap$$len; i+=2) {
+        var callback = $$asap$$queue[i];
+        var arg = $$asap$$queue[i+1];
+
+        callback(arg);
+
+        $$asap$$queue[i] = undefined;
+        $$asap$$queue[i+1] = undefined;
       }
+
+      $$asap$$len = 0;
     }
 
-    for (var i = 0; i < promises.length; i++) {
-      promise = promises[i];
+    var $$asap$$scheduleFlush;
 
-      if (promise && isFunction(promise.then)) {
-        promise.then(resolver(i), reject);
-      } else {
-        resolveAll(i, promise);
-      }
-    }
-  });
-}
-
-exports.all = all;
-},{"./utils":14}],7:[function(require,module,exports){
-(function (process,global){
-"use strict";
-var browserGlobal = (typeof window !== 'undefined') ? window : {};
-var BrowserMutationObserver = browserGlobal.MutationObserver || browserGlobal.WebKitMutationObserver;
-var local = (typeof global !== 'undefined') ? global : (this === undefined? window:this);
-
-// node
-function useNextTick() {
-  return function() {
-    process.nextTick(flush);
-  };
-}
-
-function useMutationObserver() {
-  var iterations = 0;
-  var observer = new BrowserMutationObserver(flush);
-  var node = document.createTextNode('');
-  observer.observe(node, { characterData: true });
-
-  return function() {
-    node.data = (iterations = ++iterations % 2);
-  };
-}
-
-function useSetTimeout() {
-  return function() {
-    local.setTimeout(flush, 1);
-  };
-}
-
-var queue = [];
-function flush() {
-  for (var i = 0; i < queue.length; i++) {
-    var tuple = queue[i];
-    var callback = tuple[0], arg = tuple[1];
-    callback(arg);
-  }
-  queue = [];
-}
-
-var scheduleFlush;
-
-// Decide what async method to use to triggering processing of queued callbacks:
-if (typeof process !== 'undefined' && {}.toString.call(process) === '[object process]') {
-  scheduleFlush = useNextTick();
-} else if (BrowserMutationObserver) {
-  scheduleFlush = useMutationObserver();
-} else {
-  scheduleFlush = useSetTimeout();
-}
-
-function asap(callback, arg) {
-  var length = queue.push([callback, arg]);
-  if (length === 1) {
-    // If length is 1, that means that we need to schedule an async flush.
-    // If additional callbacks are queued before the queue is flushed, they
-    // will be processed by this flush that we are scheduling.
-    scheduleFlush();
-  }
-}
-
-exports.asap = asap;
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":22}],8:[function(require,module,exports){
-"use strict";
-var config = {
-  instrument: false
-};
-
-function configure(name, value) {
-  if (arguments.length === 2) {
-    config[name] = value;
-  } else {
-    return config[name];
-  }
-}
-
-exports.config = config;
-exports.configure = configure;
-},{}],9:[function(require,module,exports){
-(function (global){
-"use strict";
-/*global self*/
-var RSVPPromise = require("./promise").Promise;
-var isFunction = require("./utils").isFunction;
-
-function polyfill() {
-  var local;
-
-  if (typeof global !== 'undefined') {
-    local = global;
-  } else if (typeof window !== 'undefined' && window.document) {
-    local = window;
-  } else {
-    local = self;
-  }
-
-  var es6PromiseSupport = 
-    "Promise" in local &&
-    // Some of these methods are missing from
-    // Firefox/Chrome experimental implementations
-    "resolve" in local.Promise &&
-    "reject" in local.Promise &&
-    "all" in local.Promise &&
-    "race" in local.Promise &&
-    // Older version of the spec had a resolver object
-    // as the arg rather than a function
-    (function() {
-      var resolve;
-      new local.Promise(function(r) { resolve = r; });
-      return isFunction(resolve);
-    }());
-
-  if (!es6PromiseSupport) {
-    local.Promise = RSVPPromise;
-  }
-}
-
-exports.polyfill = polyfill;
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./promise":10,"./utils":14}],10:[function(require,module,exports){
-"use strict";
-var config = require("./config").config;
-var configure = require("./config").configure;
-var objectOrFunction = require("./utils").objectOrFunction;
-var isFunction = require("./utils").isFunction;
-var now = require("./utils").now;
-var all = require("./all").all;
-var race = require("./race").race;
-var staticResolve = require("./resolve").resolve;
-var staticReject = require("./reject").reject;
-var asap = require("./asap").asap;
-
-var counter = 0;
-
-config.async = asap; // default async is asap;
-
-function Promise(resolver) {
-  if (!isFunction(resolver)) {
-    throw new TypeError('You must pass a resolver function as the first argument to the promise constructor');
-  }
-
-  if (!(this instanceof Promise)) {
-    throw new TypeError("Failed to construct 'Promise': Please use the 'new' operator, this object constructor cannot be called as a function.");
-  }
-
-  this._subscribers = [];
-
-  invokeResolver(resolver, this);
-}
-
-function invokeResolver(resolver, promise) {
-  function resolvePromise(value) {
-    resolve(promise, value);
-  }
-
-  function rejectPromise(reason) {
-    reject(promise, reason);
-  }
-
-  try {
-    resolver(resolvePromise, rejectPromise);
-  } catch(e) {
-    rejectPromise(e);
-  }
-}
-
-function invokeCallback(settled, promise, callback, detail) {
-  var hasCallback = isFunction(callback),
-      value, error, succeeded, failed;
-
-  if (hasCallback) {
-    try {
-      value = callback(detail);
-      succeeded = true;
-    } catch(e) {
-      failed = true;
-      error = e;
-    }
-  } else {
-    value = detail;
-    succeeded = true;
-  }
-
-  if (handleThenable(promise, value)) {
-    return;
-  } else if (hasCallback && succeeded) {
-    resolve(promise, value);
-  } else if (failed) {
-    reject(promise, error);
-  } else if (settled === FULFILLED) {
-    resolve(promise, value);
-  } else if (settled === REJECTED) {
-    reject(promise, value);
-  }
-}
-
-var PENDING   = void 0;
-var SEALED    = 0;
-var FULFILLED = 1;
-var REJECTED  = 2;
-
-function subscribe(parent, child, onFulfillment, onRejection) {
-  var subscribers = parent._subscribers;
-  var length = subscribers.length;
-
-  subscribers[length] = child;
-  subscribers[length + FULFILLED] = onFulfillment;
-  subscribers[length + REJECTED]  = onRejection;
-}
-
-function publish(promise, settled) {
-  var child, callback, subscribers = promise._subscribers, detail = promise._detail;
-
-  for (var i = 0; i < subscribers.length; i += 3) {
-    child = subscribers[i];
-    callback = subscribers[i + settled];
-
-    invokeCallback(settled, child, callback, detail);
-  }
-
-  promise._subscribers = null;
-}
-
-Promise.prototype = {
-  constructor: Promise,
-
-  _state: undefined,
-  _detail: undefined,
-  _subscribers: undefined,
-
-  then: function(onFulfillment, onRejection) {
-    var promise = this;
-
-    var thenPromise = new this.constructor(function() {});
-
-    if (this._state) {
-      var callbacks = arguments;
-      config.async(function invokePromiseCallback() {
-        invokeCallback(promise._state, thenPromise, callbacks[promise._state - 1], promise._detail);
-      });
+    // Decide what async method to use to triggering processing of queued callbacks:
+    if (typeof process !== 'undefined' && {}.toString.call(process) === '[object process]') {
+      $$asap$$scheduleFlush = $$asap$$useNextTick();
+    } else if ($$asap$$BrowserMutationObserver) {
+      $$asap$$scheduleFlush = $$asap$$useMutationObserver();
+    } else if ($$asap$$isWorker) {
+      $$asap$$scheduleFlush = $$asap$$useMessageChannel();
     } else {
-      subscribe(this, thenPromise, onFulfillment, onRejection);
+      $$asap$$scheduleFlush = $$asap$$useSetTimeout();
     }
 
-    return thenPromise;
-  },
+    function $$$internal$$noop() {}
+    var $$$internal$$PENDING   = void 0;
+    var $$$internal$$FULFILLED = 1;
+    var $$$internal$$REJECTED  = 2;
+    var $$$internal$$GET_THEN_ERROR = new $$$internal$$ErrorObject();
 
-  'catch': function(onRejection) {
-    return this.then(null, onRejection);
-  }
-};
-
-Promise.all = all;
-Promise.race = race;
-Promise.resolve = staticResolve;
-Promise.reject = staticReject;
-
-function handleThenable(promise, value) {
-  var then = null,
-  resolved;
-
-  try {
-    if (promise === value) {
-      throw new TypeError("A promises callback cannot return that same promise.");
+    function $$$internal$$selfFullfillment() {
+      return new TypeError("You cannot resolve a promise with itself");
     }
 
-    if (objectOrFunction(value)) {
-      then = value.then;
+    function $$$internal$$cannotReturnOwn() {
+      return new TypeError('A promises callback cannot return that same promise.')
+    }
 
-      if (isFunction(then)) {
-        then.call(value, function(val) {
-          if (resolved) { return true; }
-          resolved = true;
+    function $$$internal$$getThen(promise) {
+      try {
+        return promise.then;
+      } catch(error) {
+        $$$internal$$GET_THEN_ERROR.error = error;
+        return $$$internal$$GET_THEN_ERROR;
+      }
+    }
 
-          if (value !== val) {
-            resolve(promise, val);
+    function $$$internal$$tryThen(then, value, fulfillmentHandler, rejectionHandler) {
+      try {
+        then.call(value, fulfillmentHandler, rejectionHandler);
+      } catch(e) {
+        return e;
+      }
+    }
+
+    function $$$internal$$handleForeignThenable(promise, thenable, then) {
+       $$asap$$default(function(promise) {
+        var sealed = false;
+        var error = $$$internal$$tryThen(then, thenable, function(value) {
+          if (sealed) { return; }
+          sealed = true;
+          if (thenable !== value) {
+            $$$internal$$resolve(promise, value);
           } else {
-            fulfill(promise, val);
+            $$$internal$$fulfill(promise, value);
           }
-        }, function(val) {
-          if (resolved) { return true; }
-          resolved = true;
+        }, function(reason) {
+          if (sealed) { return; }
+          sealed = true;
 
-          reject(promise, val);
-        });
+          $$$internal$$reject(promise, reason);
+        }, 'Settle: ' + (promise._label || ' unknown promise'));
 
-        return true;
-      }
+        if (!sealed && error) {
+          sealed = true;
+          $$$internal$$reject(promise, error);
+        }
+      }, promise);
     }
-  } catch (error) {
-    if (resolved) { return true; }
-    reject(promise, error);
-    return true;
-  }
 
-  return false;
-}
-
-function resolve(promise, value) {
-  if (promise === value) {
-    fulfill(promise, value);
-  } else if (!handleThenable(promise, value)) {
-    fulfill(promise, value);
-  }
-}
-
-function fulfill(promise, value) {
-  if (promise._state !== PENDING) { return; }
-  promise._state = SEALED;
-  promise._detail = value;
-
-  config.async(publishFulfillment, promise);
-}
-
-function reject(promise, reason) {
-  if (promise._state !== PENDING) { return; }
-  promise._state = SEALED;
-  promise._detail = reason;
-
-  config.async(publishRejection, promise);
-}
-
-function publishFulfillment(promise) {
-  publish(promise, promise._state = FULFILLED);
-}
-
-function publishRejection(promise) {
-  publish(promise, promise._state = REJECTED);
-}
-
-exports.Promise = Promise;
-},{"./all":6,"./asap":7,"./config":8,"./race":11,"./reject":12,"./resolve":13,"./utils":14}],11:[function(require,module,exports){
-"use strict";
-/* global toString */
-var isArray = require("./utils").isArray;
-
-/**
-  `RSVP.race` allows you to watch a series of promises and act as soon as the
-  first promise given to the `promises` argument fulfills or rejects.
-
-  Example:
-
-  ```javascript
-  var promise1 = new RSVP.Promise(function(resolve, reject){
-    setTimeout(function(){
-      resolve("promise 1");
-    }, 200);
-  });
-
-  var promise2 = new RSVP.Promise(function(resolve, reject){
-    setTimeout(function(){
-      resolve("promise 2");
-    }, 100);
-  });
-
-  RSVP.race([promise1, promise2]).then(function(result){
-    // result === "promise 2" because it was resolved before promise1
-    // was resolved.
-  });
-  ```
-
-  `RSVP.race` is deterministic in that only the state of the first completed
-  promise matters. For example, even if other promises given to the `promises`
-  array argument are resolved, but the first completed promise has become
-  rejected before the other promises became fulfilled, the returned promise
-  will become rejected:
-
-  ```javascript
-  var promise1 = new RSVP.Promise(function(resolve, reject){
-    setTimeout(function(){
-      resolve("promise 1");
-    }, 200);
-  });
-
-  var promise2 = new RSVP.Promise(function(resolve, reject){
-    setTimeout(function(){
-      reject(new Error("promise 2"));
-    }, 100);
-  });
-
-  RSVP.race([promise1, promise2]).then(function(result){
-    // Code here never runs because there are rejected promises!
-  }, function(reason){
-    // reason.message === "promise2" because promise 2 became rejected before
-    // promise 1 became fulfilled
-  });
-  ```
-
-  @method race
-  @for RSVP
-  @param {Array} promises array of promises to observe
-  @param {String} label optional string for describing the promise returned.
-  Useful for tooling.
-  @return {Promise} a promise that becomes fulfilled with the value the first
-  completed promises is resolved with if the first completed promise was
-  fulfilled, or rejected with the reason that the first completed promise
-  was rejected with.
-*/
-function race(promises) {
-  /*jshint validthis:true */
-  var Promise = this;
-
-  if (!isArray(promises)) {
-    throw new TypeError('You must pass an array to race.');
-  }
-  return new Promise(function(resolve, reject) {
-    var results = [], promise;
-
-    for (var i = 0; i < promises.length; i++) {
-      promise = promises[i];
-
-      if (promise && typeof promise.then === 'function') {
-        promise.then(resolve, reject);
+    function $$$internal$$handleOwnThenable(promise, thenable) {
+      if (thenable._state === $$$internal$$FULFILLED) {
+        $$$internal$$fulfill(promise, thenable._result);
+      } else if (promise._state === $$$internal$$REJECTED) {
+        $$$internal$$reject(promise, thenable._result);
       } else {
-        resolve(promise);
+        $$$internal$$subscribe(thenable, undefined, function(value) {
+          $$$internal$$resolve(promise, value);
+        }, function(reason) {
+          $$$internal$$reject(promise, reason);
+        });
       }
     }
-  });
-}
 
-exports.race = race;
-},{"./utils":14}],12:[function(require,module,exports){
-"use strict";
-/**
-  `RSVP.reject` returns a promise that will become rejected with the passed
-  `reason`. `RSVP.reject` is essentially shorthand for the following:
+    function $$$internal$$handleMaybeThenable(promise, maybeThenable) {
+      if (maybeThenable.constructor === promise.constructor) {
+        $$$internal$$handleOwnThenable(promise, maybeThenable);
+      } else {
+        var then = $$$internal$$getThen(maybeThenable);
 
-  ```javascript
-  var promise = new RSVP.Promise(function(resolve, reject){
-    reject(new Error('WHOOPS'));
-  });
+        if (then === $$$internal$$GET_THEN_ERROR) {
+          $$$internal$$reject(promise, $$$internal$$GET_THEN_ERROR.error);
+        } else if (then === undefined) {
+          $$$internal$$fulfill(promise, maybeThenable);
+        } else if ($$utils$$isFunction(then)) {
+          $$$internal$$handleForeignThenable(promise, maybeThenable, then);
+        } else {
+          $$$internal$$fulfill(promise, maybeThenable);
+        }
+      }
+    }
 
-  promise.then(function(value){
-    // Code here doesn't run because the promise is rejected!
-  }, function(reason){
-    // reason.message === 'WHOOPS'
-  });
-  ```
+    function $$$internal$$resolve(promise, value) {
+      if (promise === value) {
+        $$$internal$$reject(promise, $$$internal$$selfFullfillment());
+      } else if ($$utils$$objectOrFunction(value)) {
+        $$$internal$$handleMaybeThenable(promise, value);
+      } else {
+        $$$internal$$fulfill(promise, value);
+      }
+    }
 
-  Instead of writing the above, your code now simply becomes the following:
+    function $$$internal$$publishRejection(promise) {
+      if (promise._onerror) {
+        promise._onerror(promise._result);
+      }
 
-  ```javascript
-  var promise = RSVP.reject(new Error('WHOOPS'));
+      $$$internal$$publish(promise);
+    }
 
-  promise.then(function(value){
-    // Code here doesn't run because the promise is rejected!
-  }, function(reason){
-    // reason.message === 'WHOOPS'
-  });
-  ```
+    function $$$internal$$fulfill(promise, value) {
+      if (promise._state !== $$$internal$$PENDING) { return; }
 
-  @method reject
-  @for RSVP
-  @param {Any} reason value that the returned promise will be rejected with.
-  @param {String} label optional string for identifying the returned promise.
-  Useful for tooling.
-  @return {Promise} a promise that will become rejected with the given
-  `reason`.
-*/
-function reject(reason) {
-  /*jshint validthis:true */
-  var Promise = this;
+      promise._result = value;
+      promise._state = $$$internal$$FULFILLED;
 
-  return new Promise(function (resolve, reject) {
-    reject(reason);
-  });
-}
+      if (promise._subscribers.length === 0) {
+      } else {
+        $$asap$$default($$$internal$$publish, promise);
+      }
+    }
 
-exports.reject = reject;
-},{}],13:[function(require,module,exports){
-"use strict";
-function resolve(value) {
-  /*jshint validthis:true */
-  if (value && typeof value === 'object' && value.constructor === this) {
-    return value;
-  }
+    function $$$internal$$reject(promise, reason) {
+      if (promise._state !== $$$internal$$PENDING) { return; }
+      promise._state = $$$internal$$REJECTED;
+      promise._result = reason;
 
-  var Promise = this;
+      $$asap$$default($$$internal$$publishRejection, promise);
+    }
 
-  return new Promise(function(resolve) {
-    resolve(value);
-  });
-}
+    function $$$internal$$subscribe(parent, child, onFulfillment, onRejection) {
+      var subscribers = parent._subscribers;
+      var length = subscribers.length;
 
-exports.resolve = resolve;
-},{}],14:[function(require,module,exports){
-"use strict";
-function objectOrFunction(x) {
-  return isFunction(x) || (typeof x === "object" && x !== null);
-}
+      parent._onerror = null;
 
-function isFunction(x) {
-  return typeof x === "function";
-}
+      subscribers[length] = child;
+      subscribers[length + $$$internal$$FULFILLED] = onFulfillment;
+      subscribers[length + $$$internal$$REJECTED]  = onRejection;
 
-function isArray(x) {
-  return Object.prototype.toString.call(x) === "[object Array]";
-}
+      if (length === 0 && parent._state) {
+        $$asap$$default($$$internal$$publish, parent);
+      }
+    }
 
-// Date.now is not available in browsers < IE9
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now#Compatibility
-var now = Date.now || function() { return new Date().getTime(); };
+    function $$$internal$$publish(promise) {
+      var subscribers = promise._subscribers;
+      var settled = promise._state;
+
+      if (subscribers.length === 0) { return; }
+
+      var child, callback, detail = promise._result;
+
+      for (var i = 0; i < subscribers.length; i += 3) {
+        child = subscribers[i];
+        callback = subscribers[i + settled];
+
+        if (child) {
+          $$$internal$$invokeCallback(settled, child, callback, detail);
+        } else {
+          callback(detail);
+        }
+      }
+
+      promise._subscribers.length = 0;
+    }
+
+    function $$$internal$$ErrorObject() {
+      this.error = null;
+    }
+
+    var $$$internal$$TRY_CATCH_ERROR = new $$$internal$$ErrorObject();
+
+    function $$$internal$$tryCatch(callback, detail) {
+      try {
+        return callback(detail);
+      } catch(e) {
+        $$$internal$$TRY_CATCH_ERROR.error = e;
+        return $$$internal$$TRY_CATCH_ERROR;
+      }
+    }
+
+    function $$$internal$$invokeCallback(settled, promise, callback, detail) {
+      var hasCallback = $$utils$$isFunction(callback),
+          value, error, succeeded, failed;
+
+      if (hasCallback) {
+        value = $$$internal$$tryCatch(callback, detail);
+
+        if (value === $$$internal$$TRY_CATCH_ERROR) {
+          failed = true;
+          error = value.error;
+          value = null;
+        } else {
+          succeeded = true;
+        }
+
+        if (promise === value) {
+          $$$internal$$reject(promise, $$$internal$$cannotReturnOwn());
+          return;
+        }
+
+      } else {
+        value = detail;
+        succeeded = true;
+      }
+
+      if (promise._state !== $$$internal$$PENDING) {
+        // noop
+      } else if (hasCallback && succeeded) {
+        $$$internal$$resolve(promise, value);
+      } else if (failed) {
+        $$$internal$$reject(promise, error);
+      } else if (settled === $$$internal$$FULFILLED) {
+        $$$internal$$fulfill(promise, value);
+      } else if (settled === $$$internal$$REJECTED) {
+        $$$internal$$reject(promise, value);
+      }
+    }
+
+    function $$$internal$$initializePromise(promise, resolver) {
+      try {
+        resolver(function resolvePromise(value){
+          $$$internal$$resolve(promise, value);
+        }, function rejectPromise(reason) {
+          $$$internal$$reject(promise, reason);
+        });
+      } catch(e) {
+        $$$internal$$reject(promise, e);
+      }
+    }
+
+    function $$$enumerator$$makeSettledResult(state, position, value) {
+      if (state === $$$internal$$FULFILLED) {
+        return {
+          state: 'fulfilled',
+          value: value
+        };
+      } else {
+        return {
+          state: 'rejected',
+          reason: value
+        };
+      }
+    }
+
+    function $$$enumerator$$Enumerator(Constructor, input, abortOnReject, label) {
+      this._instanceConstructor = Constructor;
+      this.promise = new Constructor($$$internal$$noop, label);
+      this._abortOnReject = abortOnReject;
+
+      if (this._validateInput(input)) {
+        this._input     = input;
+        this.length     = input.length;
+        this._remaining = input.length;
+
+        this._init();
+
+        if (this.length === 0) {
+          $$$internal$$fulfill(this.promise, this._result);
+        } else {
+          this.length = this.length || 0;
+          this._enumerate();
+          if (this._remaining === 0) {
+            $$$internal$$fulfill(this.promise, this._result);
+          }
+        }
+      } else {
+        $$$internal$$reject(this.promise, this._validationError());
+      }
+    }
+
+    $$$enumerator$$Enumerator.prototype._validateInput = function(input) {
+      return $$utils$$isArray(input);
+    };
+
+    $$$enumerator$$Enumerator.prototype._validationError = function() {
+      return new Error('Array Methods must be provided an Array');
+    };
+
+    $$$enumerator$$Enumerator.prototype._init = function() {
+      this._result = new Array(this.length);
+    };
+
+    var $$$enumerator$$default = $$$enumerator$$Enumerator;
+
+    $$$enumerator$$Enumerator.prototype._enumerate = function() {
+      var length  = this.length;
+      var promise = this.promise;
+      var input   = this._input;
+
+      for (var i = 0; promise._state === $$$internal$$PENDING && i < length; i++) {
+        this._eachEntry(input[i], i);
+      }
+    };
+
+    $$$enumerator$$Enumerator.prototype._eachEntry = function(entry, i) {
+      var c = this._instanceConstructor;
+      if ($$utils$$isMaybeThenable(entry)) {
+        if (entry.constructor === c && entry._state !== $$$internal$$PENDING) {
+          entry._onerror = null;
+          this._settledAt(entry._state, i, entry._result);
+        } else {
+          this._willSettleAt(c.resolve(entry), i);
+        }
+      } else {
+        this._remaining--;
+        this._result[i] = this._makeResult($$$internal$$FULFILLED, i, entry);
+      }
+    };
+
+    $$$enumerator$$Enumerator.prototype._settledAt = function(state, i, value) {
+      var promise = this.promise;
+
+      if (promise._state === $$$internal$$PENDING) {
+        this._remaining--;
+
+        if (this._abortOnReject && state === $$$internal$$REJECTED) {
+          $$$internal$$reject(promise, value);
+        } else {
+          this._result[i] = this._makeResult(state, i, value);
+        }
+      }
+
+      if (this._remaining === 0) {
+        $$$internal$$fulfill(promise, this._result);
+      }
+    };
+
+    $$$enumerator$$Enumerator.prototype._makeResult = function(state, i, value) {
+      return value;
+    };
+
+    $$$enumerator$$Enumerator.prototype._willSettleAt = function(promise, i) {
+      var enumerator = this;
+
+      $$$internal$$subscribe(promise, undefined, function(value) {
+        enumerator._settledAt($$$internal$$FULFILLED, i, value);
+      }, function(reason) {
+        enumerator._settledAt($$$internal$$REJECTED, i, reason);
+      });
+    };
+
+    var $$promise$all$$default = function all(entries, label) {
+      return new $$$enumerator$$default(this, entries, true /* abort on reject */, label).promise;
+    };
+
+    var $$promise$race$$default = function race(entries, label) {
+      /*jshint validthis:true */
+      var Constructor = this;
+
+      var promise = new Constructor($$$internal$$noop, label);
+
+      if (!$$utils$$isArray(entries)) {
+        $$$internal$$reject(promise, new TypeError('You must pass an array to race.'));
+        return promise;
+      }
+
+      var length = entries.length;
+
+      function onFulfillment(value) {
+        $$$internal$$resolve(promise, value);
+      }
+
+      function onRejection(reason) {
+        $$$internal$$reject(promise, reason);
+      }
+
+      for (var i = 0; promise._state === $$$internal$$PENDING && i < length; i++) {
+        $$$internal$$subscribe(Constructor.resolve(entries[i]), undefined, onFulfillment, onRejection);
+      }
+
+      return promise;
+    };
+
+    var $$promise$resolve$$default = function resolve(object, label) {
+      /*jshint validthis:true */
+      var Constructor = this;
+
+      if (object && typeof object === 'object' && object.constructor === Constructor) {
+        return object;
+      }
+
+      var promise = new Constructor($$$internal$$noop, label);
+      $$$internal$$resolve(promise, object);
+      return promise;
+    };
+
+    var $$promise$reject$$default = function reject(reason, label) {
+      /*jshint validthis:true */
+      var Constructor = this;
+      var promise = new Constructor($$$internal$$noop, label);
+      $$$internal$$reject(promise, reason);
+      return promise;
+    };
+
+    var $$es6$promise$promise$$counter = 0;
+
+    function $$es6$promise$promise$$needsResolver() {
+      throw new TypeError('You must pass a resolver function as the first argument to the promise constructor');
+    }
+
+    function $$es6$promise$promise$$needsNew() {
+      throw new TypeError("Failed to construct 'Promise': Please use the 'new' operator, this object constructor cannot be called as a function.");
+    }
+
+    var $$es6$promise$promise$$default = $$es6$promise$promise$$Promise;
+
+    /**
+      Promise objects represent the eventual result of an asynchronous operation. The
+      primary way of interacting with a promise is through its `then` method, which
+      registers callbacks to receive either a promise’s eventual value or the reason
+      why the promise cannot be fulfilled.
+
+      Terminology
+      -----------
+
+      - `promise` is an object or function with a `then` method whose behavior conforms to this specification.
+      - `thenable` is an object or function that defines a `then` method.
+      - `value` is any legal JavaScript value (including undefined, a thenable, or a promise).
+      - `exception` is a value that is thrown using the throw statement.
+      - `reason` is a value that indicates why a promise was rejected.
+      - `settled` the final resting state of a promise, fulfilled or rejected.
+
+      A promise can be in one of three states: pending, fulfilled, or rejected.
+
+      Promises that are fulfilled have a fulfillment value and are in the fulfilled
+      state.  Promises that are rejected have a rejection reason and are in the
+      rejected state.  A fulfillment value is never a thenable.
+
+      Promises can also be said to *resolve* a value.  If this value is also a
+      promise, then the original promise's settled state will match the value's
+      settled state.  So a promise that *resolves* a promise that rejects will
+      itself reject, and a promise that *resolves* a promise that fulfills will
+      itself fulfill.
 
 
-exports.objectOrFunction = objectOrFunction;
-exports.isFunction = isFunction;
-exports.isArray = isArray;
-exports.now = now;
-},{}],15:[function(require,module,exports){
+      Basic Usage:
+      ------------
+
+      ```js
+      var promise = new Promise(function(resolve, reject) {
+        // on success
+        resolve(value);
+
+        // on failure
+        reject(reason);
+      });
+
+      promise.then(function(value) {
+        // on fulfillment
+      }, function(reason) {
+        // on rejection
+      });
+      ```
+
+      Advanced Usage:
+      ---------------
+
+      Promises shine when abstracting away asynchronous interactions such as
+      `XMLHttpRequest`s.
+
+      ```js
+      function getJSON(url) {
+        return new Promise(function(resolve, reject){
+          var xhr = new XMLHttpRequest();
+
+          xhr.open('GET', url);
+          xhr.onreadystatechange = handler;
+          xhr.responseType = 'json';
+          xhr.setRequestHeader('Accept', 'application/json');
+          xhr.send();
+
+          function handler() {
+            if (this.readyState === this.DONE) {
+              if (this.status === 200) {
+                resolve(this.response);
+              } else {
+                reject(new Error('getJSON: `' + url + '` failed with status: [' + this.status + ']'));
+              }
+            }
+          };
+        });
+      }
+
+      getJSON('/posts.json').then(function(json) {
+        // on fulfillment
+      }, function(reason) {
+        // on rejection
+      });
+      ```
+
+      Unlike callbacks, promises are great composable primitives.
+
+      ```js
+      Promise.all([
+        getJSON('/posts'),
+        getJSON('/comments')
+      ]).then(function(values){
+        values[0] // => postsJSON
+        values[1] // => commentsJSON
+
+        return values;
+      });
+      ```
+
+      @class Promise
+      @param {function} resolver
+      @param {String} label optional string for labeling the promise.
+      Useful for tooling.
+      @constructor
+    */
+    function $$es6$promise$promise$$Promise(resolver, label) {
+      this._id = $$es6$promise$promise$$counter++;
+      this._label = label;
+      this._state = undefined;
+      this._result = undefined;
+      this._subscribers = [];
+
+      if ($$$internal$$noop !== resolver) {
+        if (!$$utils$$isFunction(resolver)) {
+          $$es6$promise$promise$$needsResolver();
+        }
+
+        if (!(this instanceof $$es6$promise$promise$$Promise)) {
+          $$es6$promise$promise$$needsNew();
+        }
+
+        $$$internal$$initializePromise(this, resolver);
+      }
+    }
+
+    $$es6$promise$promise$$Promise.all = $$promise$all$$default;
+    $$es6$promise$promise$$Promise.race = $$promise$race$$default;
+    $$es6$promise$promise$$Promise.resolve = $$promise$resolve$$default;
+    $$es6$promise$promise$$Promise.reject = $$promise$reject$$default;
+
+    $$es6$promise$promise$$Promise.prototype = {
+      constructor: $$es6$promise$promise$$Promise,
+
+    /**
+      The primary way of interacting with a promise is through its `then` method,
+      which registers callbacks to receive either a promise's eventual value or the
+      reason why the promise cannot be fulfilled.
+
+      ```js
+      findUser().then(function(user){
+        // user is available
+      }, function(reason){
+        // user is unavailable, and you are given the reason why
+      });
+      ```
+
+      Chaining
+      --------
+
+      The return value of `then` is itself a promise.  This second, 'downstream'
+      promise is resolved with the return value of the first promise's fulfillment
+      or rejection handler, or rejected if the handler throws an exception.
+
+      ```js
+      findUser().then(function (user) {
+        return user.name;
+      }, function (reason) {
+        return 'default name';
+      }).then(function (userName) {
+        // If `findUser` fulfilled, `userName` will be the user's name, otherwise it
+        // will be `'default name'`
+      });
+
+      findUser().then(function (user) {
+        throw new Error('Found user, but still unhappy');
+      }, function (reason) {
+        throw new Error('`findUser` rejected and we're unhappy');
+      }).then(function (value) {
+        // never reached
+      }, function (reason) {
+        // if `findUser` fulfilled, `reason` will be 'Found user, but still unhappy'.
+        // If `findUser` rejected, `reason` will be '`findUser` rejected and we're unhappy'.
+      });
+      ```
+      If the downstream promise does not specify a rejection handler, rejection reasons will be propagated further downstream.
+
+      ```js
+      findUser().then(function (user) {
+        throw new PedagogicalException('Upstream error');
+      }).then(function (value) {
+        // never reached
+      }).then(function (value) {
+        // never reached
+      }, function (reason) {
+        // The `PedgagocialException` is propagated all the way down to here
+      });
+      ```
+
+      Assimilation
+      ------------
+
+      Sometimes the value you want to propagate to a downstream promise can only be
+      retrieved asynchronously. This can be achieved by returning a promise in the
+      fulfillment or rejection handler. The downstream promise will then be pending
+      until the returned promise is settled. This is called *assimilation*.
+
+      ```js
+      findUser().then(function (user) {
+        return findCommentsByAuthor(user);
+      }).then(function (comments) {
+        // The user's comments are now available
+      });
+      ```
+
+      If the assimliated promise rejects, then the downstream promise will also reject.
+
+      ```js
+      findUser().then(function (user) {
+        return findCommentsByAuthor(user);
+      }).then(function (comments) {
+        // If `findCommentsByAuthor` fulfills, we'll have the value here
+      }, function (reason) {
+        // If `findCommentsByAuthor` rejects, we'll have the reason here
+      });
+      ```
+
+      Simple Example
+      --------------
+
+      Synchronous Example
+
+      ```javascript
+      var result;
+
+      try {
+        result = findResult();
+        // success
+      } catch(reason) {
+        // failure
+      }
+      ```
+
+      Errback Example
+
+      ```js
+      findResult(function(result, err){
+        if (err) {
+          // failure
+        } else {
+          // success
+        }
+      });
+      ```
+
+      Promise Example;
+
+      ```javascript
+      findResult().then(function(result){
+        // success
+      }, function(reason){
+        // failure
+      });
+      ```
+
+      Advanced Example
+      --------------
+
+      Synchronous Example
+
+      ```javascript
+      var author, books;
+
+      try {
+        author = findAuthor();
+        books  = findBooksByAuthor(author);
+        // success
+      } catch(reason) {
+        // failure
+      }
+      ```
+
+      Errback Example
+
+      ```js
+
+      function foundBooks(books) {
+
+      }
+
+      function failure(reason) {
+
+      }
+
+      findAuthor(function(author, err){
+        if (err) {
+          failure(err);
+          // failure
+        } else {
+          try {
+            findBoooksByAuthor(author, function(books, err) {
+              if (err) {
+                failure(err);
+              } else {
+                try {
+                  foundBooks(books);
+                } catch(reason) {
+                  failure(reason);
+                }
+              }
+            });
+          } catch(error) {
+            failure(err);
+          }
+          // success
+        }
+      });
+      ```
+
+      Promise Example;
+
+      ```javascript
+      findAuthor().
+        then(findBooksByAuthor).
+        then(function(books){
+          // found books
+      }).catch(function(reason){
+        // something went wrong
+      });
+      ```
+
+      @method then
+      @param {Function} onFulfilled
+      @param {Function} onRejected
+      @param {String} label optional string for labeling the promise.
+      Useful for tooling.
+      @return {Promise}
+    */
+      then: function(onFulfillment, onRejection, label) {
+        var parent = this;
+        var state = parent._state;
+
+        if (state === $$$internal$$FULFILLED && !onFulfillment || state === $$$internal$$REJECTED && !onRejection) {
+          return this;
+        }
+
+        parent._onerror = null;
+
+        var child = new this.constructor($$$internal$$noop, label);
+        var result = parent._result;
+
+        if (state) {
+          var callback = arguments[state - 1];
+          $$asap$$default(function(){
+            $$$internal$$invokeCallback(state, child, callback, result);
+          });
+        } else {
+          $$$internal$$subscribe(parent, child, onFulfillment, onRejection);
+        }
+
+        return child;
+      },
+
+    /**
+      `catch` is simply sugar for `then(undefined, onRejection)` which makes it the same
+      as the catch block of a try/catch statement.
+
+      ```js
+      function findAuthor(){
+        throw new Error('couldn't find that author');
+      }
+
+      // synchronous
+      try {
+        findAuthor();
+      } catch(reason) {
+        // something went wrong
+      }
+
+      // async with promises
+      findAuthor().catch(function(reason){
+        // something went wrong
+      });
+      ```
+
+      @method catch
+      @param {Function} onRejection
+      @param {String} label optional string for labeling the promise.
+      Useful for tooling.
+      @return {Promise}
+    */
+      'catch': function(onRejection, label) {
+        return this.then(null, onRejection, label);
+      }
+    };
+
+    var $$es6$promise$polyfill$$default = function polyfill() {
+      var local;
+
+      if (typeof global !== 'undefined') {
+        local = global;
+      } else if (typeof window !== 'undefined' && window.document) {
+        local = window;
+      } else {
+        local = self;
+      }
+
+      var es6PromiseSupport =
+        "Promise" in local &&
+        // Some of these methods are missing from
+        // Firefox/Chrome experimental implementations
+        "resolve" in local.Promise &&
+        "reject" in local.Promise &&
+        "all" in local.Promise &&
+        "race" in local.Promise &&
+        // Older version of the spec had a resolver object
+        // as the arg rather than a function
+        (function() {
+          var resolve;
+          new local.Promise(function(r) { resolve = r; });
+          return $$utils$$isFunction(resolve);
+        }());
+
+      if (!es6PromiseSupport) {
+        local.Promise = $$es6$promise$promise$$default;
+      }
+    };
+
+    var es6$promise$umd$$ES6Promise = {
+      Promise: $$es6$promise$promise$$default,
+      polyfill: $$es6$promise$polyfill$$default
+    };
+
+    /* global define:true module:true window: true */
+    if (typeof define === 'function' && define['amd']) {
+      define(function() { return es6$promise$umd$$ES6Promise; });
+    } else if (typeof module !== 'undefined' && module['exports']) {
+      module['exports'] = es6$promise$umd$$ES6Promise;
+    } else if (typeof this !== 'undefined') {
+      this['ES6Promise'] = es6$promise$umd$$ES6Promise;
+    }
+}).call(this);
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"_process":14}],7:[function(require,module,exports){
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
 var undefined;
@@ -2103,7 +2959,7 @@ module.exports = function extend() {
 };
 
 
-},{}],16:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -3155,7 +4011,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":17,"ieee754":18,"is-array":19}],17:[function(require,module,exports){
+},{"base64-js":9,"ieee754":10,"is-array":11}],9:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -3277,7 +4133,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],18:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -3363,7 +4219,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],19:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 
 /**
  * isArray
@@ -3398,7 +4254,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],20:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3701,12 +4557,12 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],21:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],22:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -3794,7 +4650,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],23:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 (function (global){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
@@ -4305,7 +5161,7 @@ process.chdir = function (dir) {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],24:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4391,7 +5247,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],25:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4478,16 +5334,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],26:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":24,"./encode":25}],27:[function(require,module,exports){
+},{"./decode":16,"./encode":17}],19:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":28}],28:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":20}],20:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -4580,7 +5436,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_readable":30,"./_stream_writable":32,"_process":22,"core-util-is":33,"inherits":43}],29:[function(require,module,exports){
+},{"./_stream_readable":22,"./_stream_writable":24,"_process":14,"core-util-is":25,"inherits":35}],21:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4628,7 +5484,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":31,"core-util-is":33,"inherits":43}],30:[function(require,module,exports){
+},{"./_stream_transform":23,"core-util-is":25,"inherits":35}],22:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -5614,7 +6470,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"_process":22,"buffer":16,"core-util-is":33,"events":20,"inherits":43,"isarray":21,"stream":38,"string_decoder/":39}],31:[function(require,module,exports){
+},{"_process":14,"buffer":8,"core-util-is":25,"events":12,"inherits":35,"isarray":13,"stream":30,"string_decoder/":31}],23:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5826,7 +6682,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":28,"core-util-is":33,"inherits":43}],32:[function(require,module,exports){
+},{"./_stream_duplex":20,"core-util-is":25,"inherits":35}],24:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6216,7 +7072,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":28,"_process":22,"buffer":16,"core-util-is":33,"inherits":43,"stream":38}],33:[function(require,module,exports){
+},{"./_stream_duplex":20,"_process":14,"buffer":8,"core-util-is":25,"inherits":35,"stream":30}],25:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6326,10 +7182,10 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":16}],34:[function(require,module,exports){
+},{"buffer":8}],26:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":29}],35:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":21}],27:[function(require,module,exports){
 require('stream'); // hack to fix a circular dependency issue when used with browserify
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Readable = exports;
@@ -6338,13 +7194,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":28,"./lib/_stream_passthrough.js":29,"./lib/_stream_readable.js":30,"./lib/_stream_transform.js":31,"./lib/_stream_writable.js":32,"stream":38}],36:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":20,"./lib/_stream_passthrough.js":21,"./lib/_stream_readable.js":22,"./lib/_stream_transform.js":23,"./lib/_stream_writable.js":24,"stream":30}],28:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":31}],37:[function(require,module,exports){
+},{"./lib/_stream_transform.js":23}],29:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":32}],38:[function(require,module,exports){
+},{"./lib/_stream_writable.js":24}],30:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6473,7 +7329,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":20,"inherits":43,"readable-stream/duplex.js":27,"readable-stream/passthrough.js":34,"readable-stream/readable.js":35,"readable-stream/transform.js":36,"readable-stream/writable.js":37}],39:[function(require,module,exports){
+},{"events":12,"inherits":35,"readable-stream/duplex.js":19,"readable-stream/passthrough.js":26,"readable-stream/readable.js":27,"readable-stream/transform.js":28,"readable-stream/writable.js":29}],31:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6696,7 +7552,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":16}],40:[function(require,module,exports){
+},{"buffer":8}],32:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7405,14 +8261,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":23,"querystring":26}],41:[function(require,module,exports){
+},{"punycode":15,"querystring":18}],33:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],42:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -8002,7 +8858,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":41,"_process":22,"inherits":43}],43:[function(require,module,exports){
+},{"./support/isBuffer":33,"_process":14,"inherits":35}],35:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -8027,7 +8883,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],44:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8096,7 +8952,7 @@ HubPort.check = function(key, value)
     throw ChecktypeError(key, HubPort, value);
 };
 
-},{"./abstracts/MediaElement":49,"checktype":4,"inherits":43}],45:[function(require,module,exports){
+},{"./abstracts/MediaElement":41,"checktype":5,"inherits":35}],37:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8206,7 +9062,7 @@ MediaPipeline.check = function(key, value)
     throw ChecktypeError(key, MediaPipeline, value);
 };
 
-},{"./abstracts/MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"promisecallback":102}],46:[function(require,module,exports){
+},{"./abstracts/MediaObject":42,"checktype":5,"es6-promise":6,"inherits":35,"promisecallback":94}],38:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8271,7 +9127,7 @@ Endpoint.check = function(key, value)
     throw ChecktypeError(key, Endpoint, value);
 };
 
-},{"./MediaElement":49,"checktype":4,"inherits":43}],47:[function(require,module,exports){
+},{"./MediaElement":41,"checktype":5,"inherits":35}],39:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8331,7 +9187,7 @@ Filter.check = function(key, value)
     throw ChecktypeError(key, Filter, value);
 };
 
-},{"./MediaElement":49,"checktype":4,"inherits":43}],48:[function(require,module,exports){
+},{"./MediaElement":41,"checktype":5,"inherits":35}],40:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8425,7 +9281,7 @@ Hub.check = function(key, value)
     throw ChecktypeError(key, Hub, value);
 };
 
-},{"./MediaObject":50,"checktype":4,"es6-promise":5,"inherits":43,"promisecallback":102}],49:[function(require,module,exports){
+},{"./MediaObject":42,"checktype":5,"es6-promise":6,"inherits":35,"promisecallback":94}],41:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8678,7 +9534,7 @@ MediaElement.check = function(key, value)
     throw ChecktypeError(key, MediaElement, value);
 };
 
-},{"./MediaObject":50,"checktype":4,"inherits":43}],50:[function(require,module,exports){
+},{"./MediaObject":42,"checktype":5,"inherits":35}],42:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8932,7 +9788,7 @@ MediaObject.check = function(key, value)
     throw ChecktypeError(key, MediaObject, value);
 };
 
-},{"checktype":4,"es6-promise":5,"events":20,"inherits":43,"promisecallback":102}],51:[function(require,module,exports){
+},{"checktype":5,"es6-promise":6,"events":12,"inherits":35,"promisecallback":94}],43:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9046,7 +9902,7 @@ MediaPad.check = function(key, value)
     throw ChecktypeError(key, MediaPad, value);
 };
 
-},{"./MediaObject":50,"checktype":4,"inherits":43}],52:[function(require,module,exports){
+},{"./MediaObject":42,"checktype":5,"inherits":35}],44:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9154,7 +10010,7 @@ MediaSink.check = function(key, value)
     throw ChecktypeError(key, MediaSink, value);
 };
 
-},{"./MediaPad":51,"checktype":4,"inherits":43}],53:[function(require,module,exports){
+},{"./MediaPad":43,"checktype":5,"inherits":35}],45:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9292,7 +10148,7 @@ MediaSource.check = function(key, value)
     throw ChecktypeError(key, MediaSource, value);
 };
 
-},{"./MediaPad":51,"checktype":4,"inherits":43}],54:[function(require,module,exports){
+},{"./MediaPad":43,"checktype":5,"inherits":35}],46:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9474,7 +10330,7 @@ SdpEndpoint.check = function(key, value)
     throw ChecktypeError(key, SdpEndpoint, value);
 };
 
-},{"./SessionEndpoint":56,"checktype":4,"inherits":43}],55:[function(require,module,exports){
+},{"./SessionEndpoint":48,"checktype":5,"inherits":35}],47:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9591,7 +10447,7 @@ Server.check = function(key, value)
     throw ChecktypeError(key, Server, value);
 };
 
-},{"./MediaObject":50,"checktype":4,"inherits":43}],56:[function(require,module,exports){
+},{"./MediaObject":42,"checktype":5,"inherits":35}],48:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9654,7 +10510,7 @@ SessionEndpoint.check = function(key, value)
     throw ChecktypeError(key, SessionEndpoint, value);
 };
 
-},{"./Endpoint":46,"checktype":4,"inherits":43}],57:[function(require,module,exports){
+},{"./Endpoint":38,"checktype":5,"inherits":35}],49:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9769,7 +10625,7 @@ UriEndpoint.check = function(key, value)
     throw ChecktypeError(key, UriEndpoint, value);
 };
 
-},{"./Endpoint":46,"checktype":4,"inherits":43}],58:[function(require,module,exports){
+},{"./Endpoint":38,"checktype":5,"inherits":35}],50:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9823,7 +10679,7 @@ exports.Server = Server;
 exports.SessionEndpoint = SessionEndpoint;
 exports.UriEndpoint = UriEndpoint;
 
-},{"./Endpoint":46,"./Filter":47,"./Hub":48,"./MediaElement":49,"./MediaObject":50,"./MediaPad":51,"./MediaSink":52,"./MediaSource":53,"./SdpEndpoint":54,"./Server":55,"./SessionEndpoint":56,"./UriEndpoint":57}],59:[function(require,module,exports){
+},{"./Endpoint":38,"./Filter":39,"./Hub":40,"./MediaElement":41,"./MediaObject":42,"./MediaPad":43,"./MediaSink":44,"./MediaSource":45,"./SdpEndpoint":46,"./Server":47,"./SessionEndpoint":48,"./UriEndpoint":49}],51:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9875,7 +10731,7 @@ function checkAudioCaps(key, value)
 
 module.exports = checkAudioCaps;
 
-},{"checktype":4}],60:[function(require,module,exports){
+},{"checktype":5}],52:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9925,7 +10781,7 @@ function checkAudioCodec(key, value)
 
 module.exports = checkAudioCodec;
 
-},{"checktype":4}],61:[function(require,module,exports){
+},{"checktype":5}],53:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9976,7 +10832,7 @@ function checkFilterType(key, value)
 
 module.exports = checkFilterType;
 
-},{"checktype":4}],62:[function(require,module,exports){
+},{"checktype":5}],54:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10028,7 +10884,7 @@ function checkFraction(key, value)
 
 module.exports = checkFraction;
 
-},{"checktype":4}],63:[function(require,module,exports){
+},{"checktype":5}],55:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10079,7 +10935,7 @@ function checkMediaType(key, value)
 
 module.exports = checkMediaType;
 
-},{"checktype":4}],64:[function(require,module,exports){
+},{"checktype":5}],56:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10134,7 +10990,7 @@ function checkModuleInfo(key, value)
 
 module.exports = checkModuleInfo;
 
-},{"checktype":4}],65:[function(require,module,exports){
+},{"checktype":5}],57:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10192,7 +11048,7 @@ function checkServerInfo(key, value)
 
 module.exports = checkServerInfo;
 
-},{"checktype":4}],66:[function(require,module,exports){
+},{"checktype":5}],58:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10242,7 +11098,7 @@ function checkServerType(key, value)
 
 module.exports = checkServerType;
 
-},{"checktype":4}],67:[function(require,module,exports){
+},{"checktype":5}],59:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10294,7 +11150,7 @@ function checkVideoCaps(key, value)
 
 module.exports = checkVideoCaps;
 
-},{"checktype":4}],68:[function(require,module,exports){
+},{"checktype":5}],60:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10344,7 +11200,7 @@ function checkVideoCodec(key, value)
 
 module.exports = checkVideoCodec;
 
-},{"checktype":4}],69:[function(require,module,exports){
+},{"checktype":5}],61:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10394,7 +11250,7 @@ exports.ServerType = ServerType;
 exports.VideoCaps = VideoCaps;
 exports.VideoCodec = VideoCodec;
 
-},{"./AudioCaps":59,"./AudioCodec":60,"./FilterType":61,"./Fraction":62,"./MediaType":63,"./ModuleInfo":64,"./ServerInfo":65,"./ServerType":66,"./VideoCaps":67,"./VideoCodec":68}],70:[function(require,module,exports){
+},{"./AudioCaps":51,"./AudioCodec":52,"./FilterType":53,"./Fraction":54,"./MediaType":55,"./ModuleInfo":56,"./ServerInfo":57,"./ServerType":58,"./VideoCaps":59,"./VideoCodec":60}],62:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10431,7 +11287,7 @@ exports.MediaPipeline = MediaPipeline;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./HubPort":44,"./MediaPipeline":45,"./abstracts":58,"./complexTypes":69}],71:[function(require,module,exports){
+},{"./HubPort":36,"./MediaPipeline":37,"./abstracts":50,"./complexTypes":61}],63:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10583,7 +11439,7 @@ AlphaBlending.check = function(key, value)
     throw ChecktypeError(key, AlphaBlending, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],72:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],64:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10650,7 +11506,7 @@ Composite.check = function(key, value)
     throw ChecktypeError(key, Composite, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],73:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],65:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10755,7 +11611,7 @@ Dispatcher.check = function(key, value)
     throw ChecktypeError(key, Dispatcher, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],74:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],66:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10868,7 +11724,7 @@ DispatcherOneToMany.check = function(key, value)
     throw ChecktypeError(key, DispatcherOneToMany, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],75:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],67:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10960,7 +11816,7 @@ HttpGetEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpGetEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":83,"checktype":4,"inherits":43}],76:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":75,"checktype":5,"inherits":35}],68:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11045,7 +11901,7 @@ HttpPostEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpPostEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":83,"checktype":4,"inherits":43}],77:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":75,"checktype":5,"inherits":35}],69:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11191,7 +12047,7 @@ Mixer.check = function(key, value)
     throw ChecktypeError(key, Mixer, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],78:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],70:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11304,7 +12160,7 @@ PlayerEndpoint.check = function(key, value)
     throw ChecktypeError(key, PlayerEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],79:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],71:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11443,7 +12299,7 @@ PlumberEndpoint.check = function(key, value)
     throw ChecktypeError(key, PlumberEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],80:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],72:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11552,7 +12408,7 @@ RecorderEndpoint.check = function(key, value)
     throw ChecktypeError(key, RecorderEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],81:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],73:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11619,7 +12475,7 @@ RtpEndpoint.check = function(key, value)
     throw ChecktypeError(key, RtpEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],82:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],74:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11686,7 +12542,7 @@ WebRtcEndpoint.check = function(key, value)
     throw ChecktypeError(key, WebRtcEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],83:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],75:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11766,7 +12622,7 @@ HttpEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpEndpoint, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],84:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],76:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11798,7 +12654,7 @@ var HttpEndpoint = require('./HttpEndpoint');
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":83}],85:[function(require,module,exports){
+},{"./HttpEndpoint":75}],77:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11850,7 +12706,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"checktype":4}],86:[function(require,module,exports){
+},{"checktype":5}],78:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11882,7 +12738,7 @@ var MediaProfileSpecType = require('./MediaProfileSpecType');
 
 exports.MediaProfileSpecType = MediaProfileSpecType;
 
-},{"./MediaProfileSpecType":85}],87:[function(require,module,exports){
+},{"./MediaProfileSpecType":77}],79:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11939,7 +12795,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":71,"./Composite":72,"./Dispatcher":73,"./DispatcherOneToMany":74,"./HttpGetEndpoint":75,"./HttpPostEndpoint":76,"./Mixer":77,"./PlayerEndpoint":78,"./PlumberEndpoint":79,"./RecorderEndpoint":80,"./RtpEndpoint":81,"./WebRtcEndpoint":82,"./abstracts":84,"./complexTypes":86}],88:[function(require,module,exports){
+},{"./AlphaBlending":63,"./Composite":64,"./Dispatcher":65,"./DispatcherOneToMany":66,"./HttpGetEndpoint":67,"./HttpPostEndpoint":68,"./Mixer":69,"./PlayerEndpoint":70,"./PlumberEndpoint":71,"./RecorderEndpoint":72,"./RtpEndpoint":73,"./WebRtcEndpoint":74,"./abstracts":76,"./complexTypes":78}],80:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12092,7 +12948,7 @@ FaceOverlayFilter.check = function(key, value)
     throw ChecktypeError(key, FaceOverlayFilter, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],89:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],81:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12174,7 +13030,7 @@ GStreamerFilter.check = function(key, value)
     throw ChecktypeError(key, GStreamerFilter, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],90:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],82:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12243,7 +13099,7 @@ ZBarFilter.check = function(key, value)
     throw ChecktypeError(key, ZBarFilter, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],91:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],83:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12301,7 +13157,7 @@ OpenCVFilter.check = function(key, value)
     throw ChecktypeError(key, OpenCVFilter, value);
 };
 
-},{"checktype":4,"inherits":43,"kurento-client-core":70}],92:[function(require,module,exports){
+},{"checktype":5,"inherits":35,"kurento-client-core":62}],84:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12333,7 +13189,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":91}],93:[function(require,module,exports){
+},{"./OpenCVFilter":83}],85:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12371,7 +13227,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":88,"./GStreamerFilter":89,"./ZBarFilter":90,"./abstracts":92}],94:[function(require,module,exports){
+},{"./FaceOverlayFilter":80,"./GStreamerFilter":81,"./ZBarFilter":82,"./abstracts":84}],86:[function(require,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -12437,7 +13293,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],95:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -12458,7 +13314,7 @@ var JsonRpcClient  = require('./jsonrpcclient');
 
 exports.JsonRpcClient  = JsonRpcClient;
 
-},{"./jsonrpcclient":96}],96:[function(require,module,exports){
+},{"./jsonrpcclient":88}],88:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -12493,7 +13349,7 @@ function JsonRpcClient(wsUrl, onRequest, onerror)
 
 module.exports  = JsonRpcClient;
 
-},{"../..":97,"ws":101}],97:[function(require,module,exports){
+},{"../..":89,"ws":93}],89:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -13249,7 +14105,7 @@ var clients = require('./clients');
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":94,"./clients":95,"./packers":100,"events":20,"inherits":43}],98:[function(require,module,exports){
+},{"./Mapper":86,"./clients":87,"./packers":92,"events":12,"inherits":35}],90:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -13353,7 +14209,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],99:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -13368,7 +14224,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],100:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC  = require('./XmlRPC');
 
@@ -13376,7 +14232,7 @@ var XmlRPC  = require('./XmlRPC');
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":98,"./XmlRPC":99}],101:[function(require,module,exports){
+},{"./JsonRPC":90,"./XmlRPC":91}],93:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -13421,7 +14277,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],102:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -13468,7 +14324,7 @@ function promiseCallback(promise, callback)
 
 module.exports = promiseCallback;
 
-},{}],103:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -13487,7 +14343,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":104,"websocket-stream":111}],104:[function(require,module,exports){
+},{"reconnect-core":96,"websocket-stream":103}],96:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -13601,7 +14457,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":105,"events":20}],105:[function(require,module,exports){
+},{"backoff":97,"events":12}],97:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -13652,7 +14508,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":106,"./lib/function_call.js":107,"./lib/strategy/exponential":108,"./lib/strategy/fibonacci":109}],106:[function(require,module,exports){
+},{"./lib/backoff":98,"./lib/function_call.js":99,"./lib/strategy/exponential":100,"./lib/strategy/fibonacci":101}],98:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -13738,7 +14594,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":20,"util":42}],107:[function(require,module,exports){
+},{"events":12,"util":34}],99:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -13967,7 +14823,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":106,"./strategy/fibonacci":109,"events":20,"util":42}],108:[function(require,module,exports){
+},{"./backoff":98,"./strategy/fibonacci":101,"events":12,"util":34}],100:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -14003,7 +14859,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":110,"util":42}],109:[function(require,module,exports){
+},{"./strategy":102,"util":34}],101:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -14040,7 +14896,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":110,"util":42}],110:[function(require,module,exports){
+},{"./strategy":102,"util":34}],102:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -14140,7 +14996,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":20,"util":42}],111:[function(require,module,exports){
+},{"events":12,"util":34}],103:[function(require,module,exports){
 (function (process){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -14236,7 +15092,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,require('_process'))
-},{"_process":22,"isbuffer":112,"through":113,"ws":114}],112:[function(require,module,exports){
+},{"_process":14,"isbuffer":104,"through":105,"ws":106}],104:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -14246,7 +15102,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":16}],113:[function(require,module,exports){
+},{"buffer":8}],105:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -14358,503 +15214,6 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":22,"stream":38}],114:[function(require,module,exports){
-module.exports=require(101)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":101}],"kurento-client":[function(require,module,exports){
-/*
- * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- */
-
-/**
- * Media API for the Kurento Web SDK
- *
- * @module KurentoClient
- *
- * @copyright 2013-2014 Kurento (http://kurento.org/)
- * @license LGPL
- */
-
-var EventEmitter = require('events').EventEmitter;
-var extend       = require('extend');
-var inherits     = require('inherits');
-var url          = require('url');
-
-var Promise = require('es6-promise').Promise;
-
-var async     = require('async');
-var reconnect = require('reconnect-ws');
-
-var RpcBuilder = require('kurento-jsonrpc');
-var JsonRPC    = RpcBuilder.packers.JsonRPC;
-
-var checkType   = require('checktype');
-var checkParams = checkType.checkParams;
-
-var promiseCallback = require('promisecallback');
-
-var register = require('./register');
-
-
-/**
- * Serialize objects using their id
- */
-function serializeParams(params)
-{
-  for(var key in params)
-  {
-    var param = params[key];
-    if(param instanceof register.abstracts.MediaObject)
-      params[key] = param.id;
-  };
-
-  return params;
-};
-
-/**
- * Get the constructor for a type
- *
- * If the type is not registered, use generic {MediaObject}
- */
-function getConstructor(type)
-{
-  var result = register.classes[type] || register.abstracts[type];
-  if(result) return result;
-
-  console.warn("Unknown type '"+type+"', using MediaObject instead");
-  return register.abstracts.MediaObject;
-};
-
-function createConstructor(item)
-{
-  var constructor = getConstructor(item.type);
-
-  if(constructor.create)
-  {
-    item = constructor.create(item.params);
-
-    // Apply inheritance
-    var prototype = constructor.prototype;
-    inherits(constructor, getConstructor(item.type));
-    extend(constructor.prototype, prototype);
-  };
-
-  constructor.item = item;
-
-  return constructor;
-}
-
-function createPromise(data, func, callback)
-{
-  var promise = new Promise(function(resolve, reject)
-  {
-    function callback2(error, result)
-    {
-      if(error) return reject(error);
-
-      resolve(result);
-    };
-
-    if(data instanceof Array)
-      async.map(data, func, callback2);
-    else
-      func(data, callback2);
-  });
-
-  return promiseCallback(promise, callback);
-};
-
-
-/**
- * Creates a connection with the Kurento Media Server
- *
- * @class
- *
- * @param {external:String} ws_uri - Address of the Kurento Media Server
- */
-function KurentoClient(ws_uri, options, callback)
-{
-  if(!(this instanceof KurentoClient))
-    return new KurentoClient(ws_uri, options, callback);
-
-  var self = this;
-
-  EventEmitter.call(this);
-
-
-  // Fix optional parameters
-  if(options instanceof Function)
-  {
-    callback = options;
-    options  = undefined;
-  };
-
-  options = options || {};
-
-  var failAfter = options.failAfter
-  if(failAfter == undefined) failAfter = 5
-
-
-  var objects = {};
-
-
-  function onNotification(message)
-  {
-    var method = message.method;
-    var params = message.params.value;
-
-    var id = params.object;
-
-    var object = objects[id];
-    if(!object)
-      return console.warn("Unknown object id '"+id+"'", message);
-
-    switch(method)
-    {
-      case 'onEvent':
-        object.emit(params.type, params.data);
-      break;
-
-//      case 'onError':
-//        object.emit('error', params.error);
-//      break;
-
-      default:
-        console.warn("Unknown message type '"+method+"'");
-    };
-  };
-
-
-  //
-  // JsonRPC
-  //
-
-  if(typeof ws_uri == 'string')
-  {
-    var access_token = options.access_token;
-    if(access_token != undefined)
-    {
-      ws_uri = url.parse(ws_uri, true);
-      ws_uri.query.access_token = access_token;
-      ws_uri = url.format(ws_uri);
-
-      delete options.access_token;
-    };
-  }
-
-  var rpc = new RpcBuilder(JsonRPC, function(request)
-  {
-    if(request instanceof RpcBuilder.RpcNotification)
-    {
-      // Message is an unexpected request, notify error
-      if(request.duplicated != undefined)
-        return console.warning('Unexpected request:', request);
-
-      // Message is a notification, process it
-      return onNotification(request);
-    };
-
-    // Invalid message, notify error
-    console.error('Invalid request instance', request);
-  });
-
-
-  // Reconnect websockets
-
-  var re = reconnect({failAfter: failAfter}, function(ws_stream)
-  {
-    rpc.transport = ws_stream;
-  })
-  .connect(ws_uri);
-
-  this.close = re.disconnect.bind(re);
-
-  re.on('fail', this.emit.bind(this, 'disconnect'));
-
-
-  // Promise interface ("thenable")
-
-  this.then = function(onFulfilled, onRejected)
-  {
-    return new Promise(function(resolve, reject)
-    {
-      function removeListeners()
-      {
-        re.removeListener('connection', success);
-        re.removeListener('fail',       failure);
-      }
-
-      function success()
-      {
-        removeListeners()
-
-        var result;
-
-        if(onFulfilled)
-          try
-          {
-            result = onFulfilled(self);
-          }
-          catch(exception)
-          {
-            if(!onRejected)
-              console.trace('Uncaugh exception', exception)
-
-            return reject(exception);
-          }
-
-        resolve(result);
-      };
-      function failure()
-      {
-        removeListeners()
-
-        var result = new Error('Connection error');
-
-        if(onRejected)
-          try
-          {
-            result = onRejected(result);
-          }
-          catch(exception)
-          {
-            return reject(exception);
-          }
-        else
-          console.trace('Uncaugh exception', result)
-
-        reject(result);
-      };
-
-      if(re.connected)
-        success()
-      else if(!re.reconnect)
-        failure()
-      else
-      {
-        re.on('connection', success);
-        re.on('fail',       failure);
-      }
-    });
-  };
-
-  this.catch = this.then.bind(this, null);
-
-  if(callback)
-    this.then(callback.bind(undefined, null), callback);
-
-
-  function createObject(constructor, id, params)
-  {
-    var mediaObject = new constructor(id, params);
-
-    /**
-     * Request to release the object on the server and remove it from cache
-     */
-    mediaObject.on('release', function()
-    {
-      delete objects[id];
-    });
-
-    /**
-     * Request a generic functionality to be procesed by the server
-     */
-    mediaObject.on('_rpc', function(method, params, callback)
-    {
-      params.object = id;
-
-      // Serialize objects using their id
-      params.operationParams = serializeParams(params.operationParams);
-
-      rpc.encode(method, params, function(error, result)
-      {
-        if(error) return callback(error);
-
-        var operation = params.operation;
-
-        if(operation == 'getConnectedSinks'
-        || operation == 'getMediaSinks'
-        || operation == 'getMediaSrcs')
-        {
-          var sessionId = result.sessionId;
-
-          return self.getMediaobjectById(result.value, function(error, result)
-          {
-            var result =
-            {
-              sessionId: sessionId,
-              value: result
-            };
-
-            callback(error, result);
-          });
-        };
-
-        callback(null, result);
-      });
-    });
-
-    if(mediaObject instanceof register.abstracts.Hub
-    || mediaObject instanceof register.classes.MediaPipeline)
-      mediaObject.on('_create', self.create.bind(self));
-
-    objects[id] = mediaObject;
-
-    return mediaObject;
-  };
-
-  /**
-   * Request to the server to create a new MediaElement
-   */
-  function createMediaObject(item, callback)
-  {
-    var constructor = createConstructor(item);
-
-    item = constructor.item;
-    delete constructor.item;
-
-    item.constructorParams = checkParams(item.params,
-                                      constructor.constructorParams, item.type);
-    delete item.params;
-
-    // Serialize objects using their id
-    item.constructorParams = serializeParams(item.constructorParams);
-
-    rpc.encode('create', item, function(error, result)
-    {
-      if(error) return callback(error);
-
-      var id = result.value;
-
-      callback(null, objects[id] || createObject(constructor, id));
-    });
-  };
-
-  function describe(id, callback)
-  {
-    var mediaObject = objects[id];
-    if(mediaObject) return callback(null, mediaObject);
-
-    rpc.encode('describe', {object: id}, function(error, result)
-    {
-      if(error) return callback(error);
-
-      var constructor = createConstructor(result);
-      delete constructor.item;
-
-      return callback(null, createObject(constructor, id));
-    });
-  };
-
-
-  this.getMediaobjectById = function(id, callback)
-  {
-    return createPromise(id, describe, callback)
-  };
-
-
-  /**
-   * Create a new instance of a MediaObject
-   *
-   * @param {external:String} type - Type of the element
-   * @param {external:string[]} [params]
-   * @callback {createMediaPipelineCallback} callback
-   *
-   * @return {module:KurentoClientApi~MediaPipeline} The pipeline itself
-   */
-  this.create = function(type, params, callback)
-  {
-    // Fix optional parameters
-    if(params instanceof Function)
-    {
-      if(callback)
-        throw new SyntaxError("Nothing can be defined after the callback");
-
-      callback = params;
-      params   = undefined;
-    };
-
-    if(!(type instanceof Array))
-      type = {params: params || {}, type: type};
-
-    return createPromise(type, createMediaObject, callback)
-  };
-};
-inherits(KurentoClient, EventEmitter);
-
-
-var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
-
-/**
- * Connect the source of a media to the sink of the next one
- *
- * @param {...MediaObject} media - A media to be connected
- * @callback {connectCallback} [callback]
- *
- * @return {Promise}
- *
- * @throws {SyntaxError}
- */
-KurentoClient.prototype.connect = function(media, callback)
-{
-  // Fix lenght-variable arguments
-  media = Array.prototype.slice.call(arguments, 0);
-  callback = (typeof media[media.length - 1] == 'function')
-           ? media.pop() : undefined;
-
-  // Check if we have enought media components
-  if(media.length < 2)
-    throw new SyntaxError("Need at least two media elements to connect");
-
-  // Check MediaElements are of the correct type
-  media.forEach(checkMediaElement);
-
-  // Generate promise
-  var promise = new Promise(function(resolve, reject)
-  {
-    function callback(error, result)
-    {
-      if(error) return reject(error);
-
-      resolve(result);
-    };
-
-    // Connect the media elements
-    var src = media[0];
-
-    async.each(media.slice(1), function(sink, callback)
-    {
-      src.connect(sink, callback);
-      src = sink;
-    }, callback);
-  });
-
-  return promiseCallback(promise, callback);
-};
-
-
-// Export KurentoClient
-
-module.exports = KurentoClient;
-KurentoClient.KurentoClient = KurentoClient;
-
-KurentoClient.register = register;
-
-
-// Register Kurento basic elements
-
-register(require('kurento-client-core'))
-register(require('kurento-client-elements'))
-register(require('kurento-client-filters'))
-
-},{"./register":2,"async":3,"checktype":4,"es6-promise":5,"events":20,"extend":15,"inherits":43,"kurento-client-core":70,"kurento-client-elements":87,"kurento-client-filters":93,"kurento-jsonrpc":97,"promisecallback":102,"reconnect-ws":103,"url":40}]},{},[1]);
+},{"_process":14,"stream":30}],106:[function(require,module,exports){
+module.exports=require(93)
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":93}]},{},[1]);
