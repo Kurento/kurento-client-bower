@@ -3638,7 +3638,7 @@ Buffer.prototype.copy = function (target, target_start, start, end) {
 
   var len = end - start
 
-  if (len < 100 || !Buffer.TYPED_ARRAY_SUPPORT) {
+  if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
     for (var i = 0; i < len; i++) {
       target[i + target_start] = this[i + start]
     }
@@ -3707,6 +3707,7 @@ var BP = Buffer.prototype
  * Augment a Uint8Array *instance* (not the Uint8Array class!) with Buffer methods
  */
 Buffer._augment = function (arr) {
+  arr.constructor = Buffer
   arr._isBuffer = true
 
   // save reference to original Uint8Array get/set methods before overwriting
