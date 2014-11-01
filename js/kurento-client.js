@@ -9626,6 +9626,30 @@ function MediaObject(){
 inherits(MediaObject, EventEmitter);
 
 /**
+ * Childs of current object, all returned objects have parent set to current object
+ *
+ * @alias module:core/abstracts.MediaObject#getChilds
+ *
+ * @param {module:core/abstracts.MediaObject~getChildsCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.getChilds = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getChilds', callback);
+};
+/**
+ * @callback module:core/abstracts.MediaObject~getChildsCallback
+ * @param {external:Error} error
+ * @param {module:core/abstracts.MediaObject} result
+ */
+
+/**
  * {@link module:core.MediaPipeline MediaPipeline} to which this MediaObject belong, or the pipeline itself if invoked over a {@link module:core.MediaPipeline MediaPipeline}
  *
  * @alias module:core/abstracts.MediaObject#getMediaPipeline
@@ -9647,6 +9671,30 @@ MediaObject.prototype.getMediaPipeline = function(callback){
  * @callback module:core/abstracts.MediaObject~getMediaPipelineCallback
  * @param {external:Error} error
  * @param {module:core.MediaPipeline} result
+ */
+
+/**
+ * Object name. This is just a comodity to simplify developers life debugging, it is not used internally for indexing nor idenfiying the objects. By default is the object type followed by the object id.
+ *
+ * @alias module:core/abstracts.MediaObject#getName
+ *
+ * @param {module:core/abstracts.MediaObject~getNameCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.getName = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getName', callback);
+};
+/**
+ * @callback module:core/abstracts.MediaObject~getNameCallback
+ * @param {external:Error} error
+ * @param {external:String} result
  */
 
 /**
