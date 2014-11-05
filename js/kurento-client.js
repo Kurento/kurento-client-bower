@@ -9161,7 +9161,7 @@ Hub.prototype.createHubPort = function(callback){
   var params =
   {
     type: 'HubPort',
-    hub: this
+    constructorParams: {hub: this}
   };
 
   Object.defineProperty(params, 'object', {value: mediaObject});
