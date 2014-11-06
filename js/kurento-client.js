@@ -64,7 +64,8 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction)
 
     mediaObject.on('_rpc', encodeRpc);
 
-    if(mediaObject instanceof register.abstracts.Hub)
+    if(mediaObject instanceof register.abstracts.Hub
+    || mediaObject instanceof register.classes.MediaPipeline)
       mediaObject.on('_create', encodeCreate);
 
     if(mediaObject instanceof register.classes.MediaPipeline)
@@ -79,6 +80,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction)
   function createMediaObject(item, callback)
   {
     var transaction = item.transaction;
+    delete item.transaction;
 
     var constructor = createConstructor(item);
 
@@ -15557,7 +15559,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],109:[function(require,module,exports){
 module.exports=require(96)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -15686,7 +15688,7 @@ function serializeOperation(operation, index)
 
   operation.jsonrpc = "2.0";
 
-  if(operation.callback)
+//  if(operation.callback)
     operation.id = index;
 };
 
@@ -15762,6 +15764,11 @@ function KurentoClient(ws_uri, options, callback)
   var self = this;
 
   EventEmitter.call(this);
+
+
+  // Promises to check previous RPC calls
+  var prevRpc        = Promise.resolve(); // request has been send
+  var prevRpc_result = Promise.resolve(); // response has been received
 
 
   // Fix optional parameters
@@ -15845,13 +15852,22 @@ function KurentoClient(ws_uri, options, callback)
 
   // Reconnect websockets
 
+  var closed = false;
   var re = reconnect({failAfter: failAfter}, function(ws_stream)
   {
+    if(closed)
+      ws_stream.writable = false;
+
     rpc.transport = ws_stream;
   })
   .connect(ws_uri);
 
-  this.close = re.disconnect.bind(re);
+  this.close = function()
+  {
+    closed = true;
+
+    prevRpc_result.then(re.disconnect.bind(re));
+  };
 
   re.on('fail', this.emit.bind(this, 'disconnect'));
 
@@ -15999,8 +16015,6 @@ function KurentoClient(ws_uri, options, callback)
     });
   };
 
-  var prevRpc = Promise.resolve();
-
   /**
    * Request a generic functionality to be procesed by the server
    */
@@ -16039,7 +16053,7 @@ function KurentoClient(ws_uri, options, callback)
       })
     });
 
-    promiseCallback(promise, callback);
+    prevRpc_result = promiseCallback(promise, callback);
   }
 
 
@@ -16188,10 +16202,6 @@ function KurentoClient(ws_uri, options, callback)
   {
     var object = objects[id];
     if(object) return object;
-
-    if(mediaObject instanceof register.abstracts.Hub
-    || mediaObject instanceof register.classes.MediaPipeline)
-      mediaObject.on('_create', encodeCreate);
 
     mediaObject.emit('_id', null, id);
 
