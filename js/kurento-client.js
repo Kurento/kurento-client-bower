@@ -9160,6 +9160,8 @@ Hub.prototype.createHubPort = function(callback){
 
   var mediaObject = new HubPort()
 
+  mediaObject.on('_rpc', this.emit.bind(this, '_rpc'));
+
   var params =
   {
     type: 'HubPort',
@@ -15559,7 +15561,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],109:[function(require,module,exports){
 module.exports=require(96)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -15675,9 +15677,6 @@ function serializeOperation(operation, index)
       params.constructorParams = serializeParams(params.constructorParams);
     break;
 
-//          case 'transaction':
-//          break;
-
     default:
       var id = params.object && params.object.id;
       if(id !== undefined)
@@ -15688,8 +15687,7 @@ function serializeOperation(operation, index)
 
   operation.jsonrpc = "2.0";
 
-//  if(operation.callback)
-    operation.id = index;
+  operation.id = index;
 };
 
 
@@ -16068,7 +16066,6 @@ function KurentoClient(ws_uri, options, callback)
     var operations = params.operations;
 
     var promises = [];
-//    var promises = [prevRpc];
 
     function checkId(operation, param)
     {
@@ -16104,10 +16101,6 @@ function KurentoClient(ws_uri, options, callback)
           for(var key in constructorParams)
             constructorParams[key] = checkId(operation, constructorParams[key]);
         break;
-
-//        case 'transaction':
-//          commitTransactional(params.operations, operation.callback);
-//        break;
 
         default:
           params.object = checkId(operation, params.object);
@@ -16150,9 +16143,6 @@ function KurentoClient(ws_uri, options, callback)
             callback(null, registerObject(mediaObject, id));
           break;
 
-//          case 'transaction':
-//          break;
-
           default:
             id2object.call(self, error, result, operation, id, callback);
         }
@@ -16162,7 +16152,6 @@ function KurentoClient(ws_uri, options, callback)
     };
 
     Promise.all(promises).then(function()
-//    prevRpc = Promise.all(promises).then(function()
     {
       operations.forEach(serializeOperation)
 
