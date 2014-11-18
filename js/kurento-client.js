@@ -17,31 +17,27 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 var checkParams = require('checktype').checkParams;
 
 var createPromise = require('./createPromise');
-var register      = require('./register');
+var register = require('./register');
 
 var Transaction = require('./TransactionsManager').Transaction;
-
 
 /**
  * Get the constructor for a type
  *
  * If the type is not registered, use generic {module:core/abstracts.MediaObject}
  */
-function getConstructor(type)
-{
+function getConstructor(type) {
   var result = register.classes[type] || register.abstracts[type];
-  if(result) return result;
+  if (result) return result;
 
-  console.warn("Unknown type '"+type+"', using MediaObject instead");
+  console.warn("Unknown type '" + type + "', using MediaObject instead");
   return MediaObject;
 };
 
-function createConstructor(item)
-{
+function createConstructor(item) {
   var constructor = getConstructor(item.type);
 
-  if(constructor.create)
-  {
+  if (constructor.create) {
     item = constructor.create(item.params);
 
     // Apply inheritance
@@ -55,20 +51,17 @@ function createConstructor(item)
   return constructor;
 }
 
-
-function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction)
-{
-  function createObject(constructor)
-  {
+function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction) {
+  function createObject(constructor) {
     var mediaObject = new constructor()
 
     mediaObject.on('_rpc', encodeRpc);
 
-    if(mediaObject instanceof register.abstracts.Hub
-    || mediaObject instanceof register.classes.MediaPipeline)
+    if (mediaObject instanceof register.abstracts.Hub || mediaObject instanceof register
+      .classes.MediaPipeline)
       mediaObject.on('_create', encodeCreate);
 
-    if(mediaObject instanceof register.classes.MediaPipeline)
+    if (mediaObject instanceof register.classes.MediaPipeline)
       mediaObject.on('_transaction', encodeTransaction);
 
     return mediaObject;
@@ -77,8 +70,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction)
   /**
    * Request to the server to create a new MediaElement
    */
-  function createMediaObject(item, callback)
-  {
+  function createMediaObject(item, callback) {
     var transaction = item.transaction;
     delete item.transaction;
 
@@ -87,73 +79,73 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction)
     item = constructor.item;
     delete constructor.item;
 
-    if(host instanceof register.classes.MediaPipeline)
+    if (host instanceof register.classes.MediaPipeline)
       item.params.mediaPipeline = host;
 
     item.constructorParams = checkParams(item.params,
-                                         constructor.constructorParams,
-                                         item.type);
+      constructor.constructorParams,
+      item.type);
     delete item.params;
 
-    if(!Object.keys(item.constructorParams).length)
+    if (!Object.keys(item.constructorParams).length)
       delete item.constructorParams;
 
-    try
-    {
+    try {
       var mediaObject = createObject(constructor)
-    }
-    catch(error)
-    {
+    } catch (error) {
       return callback(error)
     };
 
-    Object.defineProperty(item, 'object', {value: mediaObject});
+    Object.defineProperty(item, 'object', {
+      value: mediaObject
+    });
 
     encodeCreate(transaction, item, callback);
 
     return mediaObject
   };
 
+  this.create = function (type, params, callback) {
+    var transaction = (arguments[0] instanceof Transaction) ? Array.prototype
+      .shift.apply(arguments) : undefined;
 
-  this.create = function(type, params, callback){
-    var transaction = (arguments[0] instanceof Transaction)
-                    ? Array.prototype.shift.apply(arguments)
-                    : undefined;
-
-    switch(arguments.length)
-    {
-      case 1: params = undefined;
-      case 2: callback = undefined;
+    switch (arguments.length) {
+    case 1:
+      params = undefined;
+    case 2:
+      callback = undefined;
     };
 
     // Fix optional parameters
-    if(params instanceof Function){
-      if(callback)
+    if (params instanceof Function) {
+      if (callback)
         throw new SyntaxError("Nothing can be defined after the callback");
 
       callback = params;
-      params   = undefined;
+      params = undefined;
     };
 
     params = params || {};
 
-    if(type instanceof Array)
+    if (type instanceof Array)
       return createPromise(type, createMediaObject, callback)
 
-    type = {params: params, transaction: transaction, type: type};
+    type = {
+      params: params,
+      transaction: transaction,
+      type: type
+    };
 
     return createMediaObject(type, callback)
   };
 
-  this.createInmediate = function(item)
-  {
+  this.createInmediate = function (item) {
     var constructor = createConstructor(item);
     delete constructor.item;
 
     return createObject(constructor);
   }
 }
-
 
 module.exports = MediaObjectCreator;
 
@@ -175,12 +167,15 @@ module.exports = MediaObjectCreator;
 
 var inherits = require('inherits');
 
-var Domain = require('domain').Domain || (function(){
-  function FakeDomain(){};
+var Domain = require('domain').Domain || (function () {
+  function FakeDomain() {};
   inherits(FakeDomain, require('events').EventEmitter);
-  FakeDomain.prototype.run = function(fn)
-  {
-    try{fn()}catch(err){this.emit('error', err)};
+  FakeDomain.prototype.run = function (fn) {
+    try {
+      fn()
+    } catch (err) {
+      this.emit('error', err)
+    };
     return this;
   };
   return FakeDomain;
@@ -190,68 +185,62 @@ var Promise = require('es6-promise').Promise;
 
 var promiseCallback = require('promisecallback');
 
-
-function onerror(error)
-{
+function onerror(error) {
   this._transactionError = error;
 }
 
-
-function Transaction(manager)
-{
+function Transaction(manager) {
   Transaction.super_.call(this);
 
-  this.push           = manager.push.bind(manager);
+  this.push = manager.push.bind(manager);
   this.endTransaction = manager.endTransaction.bind(manager);
 
   // Errors during transaction execution go to the callback,
   // user will register 'error' event for async errors later
   this.once('error', onerror);
-  if(this.enter) this.enter();
+  if (this.enter) this.enter();
 }
 inherits(Transaction, Domain);
 
-
-function TransactionsManager(host, commit)
-{
+function TransactionsManager(host, commit) {
   var transactions = [];
 
+  Object.defineProperty(this, 'length', {
+    get: function () {
+      return transactions.length
+    }
+  })
 
-  Object.defineProperty(this, 'length', {get: function(){return transactions.length}})
-
-
-  this.beginTransaction = function()
-  {
+  this.beginTransaction = function () {
     var d = new Transaction(this);
 
-    transactions.unshift({d: d, ops: []});
+    transactions.unshift({
+      d: d,
+      ops: []
+    });
 
     return d;
   };
 
-  this.endTransaction = function(callback)
-  {
+  this.endTransaction = function (callback) {
     var transaction = transactions.shift();
 
     var d = transaction.d;
 
-    if(d.exit) d.exit();
+    if (d.exit) d.exit();
     d.removeListener('error', onerror);
 
     var promise;
 
-    if(d._transactionError)
+    if (d._transactionError)
       promise = Promise.reject(d._transactionError)
 
-    else
-    {
+    else {
       var operations = transaction.ops;
 
-      promise = new Promise(function(resolve, reject)
-      {
-        function callback(error, result)
-        {
-          if(error) return reject(error);
+      promise = new Promise(function (resolve, reject) {
+        function callback(error, result) {
+          if (error) return reject(error);
 
           resolve(result)
         }
@@ -263,7 +252,7 @@ function TransactionsManager(host, commit)
     promise = promiseCallback(promise, callback)
 
     d.catch = promise.catch.bind(promise);
-    d.then  = promise.then.bind(promise);
+    d.then = promise.then.bind(promise);
 
     delete d.push;
     delete d.endTransaction;
@@ -271,25 +260,19 @@ function TransactionsManager(host, commit)
     return d;
   };
 
-  this.transaction = function(func, callback)
-  {
+  this.transaction = function (func, callback) {
     var d = this.beginTransaction();
     d.run(func.bind(host));
     return this.endTransaction(callback);
   };
 
-
-  this.push = function(data)
-  {
+  this.push = function (data) {
     transactions[0].ops.push(data);
   };
 };
 
-
-function transactionOperation(method, params, callback)
-{
-  var operation =
-  {
+function transactionOperation(method, params, callback) {
+  var operation = {
     method: method,
     params: params,
     callback: callback
@@ -298,9 +281,8 @@ function transactionOperation(method, params, callback)
   this.push(operation);
 };
 
-
 module.exports = TransactionsManager;
-TransactionsManager.Transaction          = Transaction;
+TransactionsManager.Transaction = Transaction;
 TransactionsManager.transactionOperation = transactionOperation;
 
 },{"domain":14,"es6-promise":8,"events":15,"inherits":38,"promisecallback":97}],3:[function(require,module,exports){
@@ -308,7 +290,7 @@ TransactionsManager.transactionOperation = transactionOperation;
  * Loader for the kurento-client package on the browser
  */
 
-if(typeof kurentoClient == 'undefined')
+if (typeof kurentoClient == 'undefined')
   window.kurentoClient = require('kurento-client');
 
 },{"kurento-client":undefined}],4:[function(require,module,exports){
@@ -333,19 +315,15 @@ var async = require('async');
 
 var promiseCallback = require('promisecallback');
 
-
-function createPromise(data, func, callback)
-{
-  var promise = new Promise(function(resolve, reject)
-  {
-    function callback2(error, result)
-    {
-      if(error) return reject(error);
+function createPromise(data, func, callback) {
+  var promise = new Promise(function (resolve, reject) {
+    function callback2(error, result) {
+      if (error) return reject(error);
 
       resolve(result);
     };
 
-    if(data instanceof Array)
+    if (data instanceof Array)
       async.map(data, func, callback2);
     else
       func(data, callback2);
@@ -354,72 +332,58 @@ function createPromise(data, func, callback)
   return promiseCallback(promise, callback);
 };
 
-
 module.exports = createPromise;
 
 },{"async":6,"es6-promise":8,"promisecallback":97}],5:[function(require,module,exports){
-var checkType   = require('checktype');
-
+var checkType = require('checktype');
 
 var abstracts = {};
 var classes = {};
 
-
-function registerAbstracts(classes)
-{
-  for(var name in classes)
-  {
+function registerAbstracts(classes) {
+  for (var name in classes) {
     var constructor = classes[name]
 
     // Register constructor checker
     var check = constructor.check;
-    if(check) checkType[name] = check;
+    if (check) checkType[name] = check;
 
     // Register constructor
     abstracts[name] = constructor;
   }
 }
 
-function registerClass(name, constructor)
-{
+function registerClass(name, constructor) {
   // Register constructor checker
   var check = constructor.check;
-  if(check) checkType[name] = check;
+  if (check) checkType[name] = check;
 
   // Register constructor
   classes[name] = constructor;
 }
 
-function registerComplexTypes(complexTypes)
-{
-  for(var name in complexTypes)
+function registerComplexTypes(complexTypes) {
+  for (var name in complexTypes)
     checkType[name] = complexTypes[name];
 }
 
-
-function register(name, constructor)
-{
+function register(name, constructor) {
   // Adjust parameters
-  if(typeof name != 'string')
-  {
+  if (typeof name != 'string') {
     constructor = name
     name = undefined
-  }
-
-  else if (constructor == undefined)
-  {
-     // Execute require if we only have a name
-     return register (name, require (name));
+  } else if (constructor == undefined) {
+    // Execute require if we only have a name
+    return register(name, require(name));
   }
 
   // Registering a function
-  if(constructor instanceof Function)
-  {
+  if (constructor instanceof Function) {
     // Registration name
-    if(!name)
+    if (!name)
       name = constructor.name
 
-    if(name == undefined)
+    if (name == undefined)
       throw new Error("Can't register an anonymous module");
 
     registerClass(name, constructor)
@@ -427,22 +391,20 @@ function register(name, constructor)
 
   // Registering a plugin
   else
-    for(key in constructor)
-      switch(key)
-      {
-        case 'abstracts':
-          registerAbstracts(constructor[key])
+    for (key in constructor)
+      switch (key) {
+      case 'abstracts':
+        registerAbstracts(constructor[key])
         break
 
-        case 'complexTypes':
-          registerComplexTypes(constructor[key])
+      case 'complexTypes':
+        registerComplexTypes(constructor[key])
         break
 
-        default:
-          registerClass(key, constructor[key])
+      default:
+        registerClass(key, constructor[key])
       }
 };
-
 
 module.exports = register;
 
@@ -15561,7 +15523,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],109:[function(require,module,exports){
 module.exports=require(96)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project@2/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project@5/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -15587,49 +15549,46 @@ module.exports=require(96)
  */
 
 var EventEmitter = require('events').EventEmitter;
-var url          = require('url');
+var url = require('url');
 
 var Promise = require('es6-promise').Promise;
 
-var async     = require('async');
-var extend    = require('extend');
-var inherits  = require('inherits');
+var async = require('async');
+var extend = require('extend');
+var inherits = require('inherits');
 var reconnect = require('reconnect-ws');
 
-var checkType   = require('checktype');
+var checkType = require('checktype');
 
 var RpcBuilder = require('kurento-jsonrpc');
-var JsonRPC    = RpcBuilder.packers.JsonRPC;
+var JsonRPC = RpcBuilder.packers.JsonRPC;
 
 var promiseCallback = require('promisecallback');
 
-var createPromise       = require('./createPromise');
-var MediaObjectCreator  = require('./MediaObjectCreator');
-var register            = require('./register');
+var createPromise = require('./createPromise');
+var MediaObjectCreator = require('./MediaObjectCreator');
+var register = require('./register');
 var TransactionsManager = require('./TransactionsManager');
 
 var transactionOperation = TransactionsManager.transactionOperation;
-
 
 // Export KurentoClient
 
 module.exports = KurentoClient;
 KurentoClient.KurentoClient = KurentoClient;
 
-KurentoClient.checkType           = checkType;
-KurentoClient.MediaObjectCreator  = MediaObjectCreator;
-KurentoClient.register            = register;
+KurentoClient.checkType = checkType;
+KurentoClient.MediaObjectCreator = MediaObjectCreator;
+KurentoClient.register = register;
 KurentoClient.TransactionsManager = TransactionsManager;
 
-
 var MediaObject = require('kurento-client-core').abstracts.MediaObject;
-
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex#Polyfill
  */
 if (!Array.prototype.findIndex) {
-  Array.prototype.findIndex = function(predicate) {
+  Array.prototype.findIndex = function (predicate) {
     if (this == null) {
       throw new TypeError('Array.prototype.find called on null or undefined');
     }
@@ -15651,38 +15610,33 @@ if (!Array.prototype.findIndex) {
   };
 }
 
-
 /**
  * Serialize objects using their id
  */
-function serializeParams(params)
-{
-  for(var key in params)
-  {
+function serializeParams(params) {
+  for (var key in params) {
     var param = params[key];
-    if(param instanceof MediaObject)
+    if (param instanceof MediaObject)
       params[key] = param.id;
   };
 
   return params;
 };
 
-function serializeOperation(operation, index)
-{
+function serializeOperation(operation, index) {
   var params = operation.params;
 
-  switch(operation.method)
-  {
-    case 'create':
-      params.constructorParams = serializeParams(params.constructorParams);
+  switch (operation.method) {
+  case 'create':
+    params.constructorParams = serializeParams(params.constructorParams);
     break;
 
-    default:
-      var id = params.object && params.object.id;
-      if(id !== undefined)
-        params.object = id;
+  default:
+    var id = params.object && params.object.id;
+    if (id !== undefined)
+      params.object = id;
 
-      params.operationParams = serializeParams(params.operationParams);
+    params.operationParams = serializeParams(params.operationParams);
   };
 
   operation.jsonrpc = "2.0";
@@ -15690,51 +15644,40 @@ function serializeOperation(operation, index)
   operation.id = index;
 };
 
-
-function deferred(mediaObject, params, prevRpc, callback)
-{
+function deferred(mediaObject, params, prevRpc, callback) {
   var promises = [];
 
-  if(mediaObject != undefined)
+  if (mediaObject != undefined)
     promises.push(mediaObject);
 
-  for(var key in params)
-  {
+  for (var key in params) {
     var param = params[key];
-    if(param !== undefined)
+    if (param !== undefined)
       promises.push(param);
   };
 
-  if(prevRpc != undefined)
+  if (prevRpc != undefined)
     promises.push(prevRpc);
 
   return promiseCallback(Promise.all(promises), callback);
 };
 
-function noop(error)
-{
-  if(error) console.trace(error);
+function noop(error) {
+  if (error) console.trace(error);
 };
 
+function id2object(error, result, operation, id, callback) {
+  if (error) return callback(error);
 
-function id2object(error, result, operation, id, callback)
-{
-  if(error) return callback(error);
-
-  if(operation == 'getConnectedSinks'
-  || operation == 'getMediaPipeline'
-  || operation == 'getMediaSinks'
-  || operation == 'getMediaSrcs'
-  || operation == 'getParent')
-  {
+  if (operation == 'getConnectedSinks' || operation == 'getMediaPipeline' ||
+    operation == 'getMediaSinks' || operation == 'getMediaSrcs' || operation ==
+    'getParent') {
     var sessionId = result.sessionId;
 
-    return this.getMediaobjectById(id, function(error, result)
-    {
-      if(error) return callback(error);
+    return this.getMediaobjectById(id, function (error, result) {
+      if (error) return callback(error);
 
-      var result =
-      {
+      var result = {
         sessionId: sessionId,
         value: result
       };
@@ -15746,7 +15689,6 @@ function id2object(error, result, operation, id, callback)
   callback(null, result)
 };
 
-
 /**
  * Creates a connection with the Kurento Media Server
  *
@@ -15754,75 +15696,64 @@ function id2object(error, result, operation, id, callback)
  *
  * @param {external:String} ws_uri - Address of the Kurento Media Server
  */
-function KurentoClient(ws_uri, options, callback)
-{
-  if(!(this instanceof KurentoClient))
+function KurentoClient(ws_uri, options, callback) {
+  if (!(this instanceof KurentoClient))
     return new KurentoClient(ws_uri, options, callback);
 
   var self = this;
 
   EventEmitter.call(this);
 
-
   // Promises to check previous RPC calls
-  var prevRpc        = Promise.resolve(); // request has been send
+  var prevRpc = Promise.resolve(); // request has been send
   var prevRpc_result = Promise.resolve(); // response has been received
 
-
   // Fix optional parameters
-  if(options instanceof Function)
-  {
+  if (options instanceof Function) {
     callback = options;
-    options  = undefined;
+    options = undefined;
   };
 
   options = options || {};
 
   var failAfter = options.failAfter
-  if(failAfter == undefined) failAfter = 5
+  if (failAfter == undefined) failAfter = 5
 
   options.enableTransactions = options.enableTransactions || true
 
-
   var objects = {};
 
-
-  function onNotification(message)
-  {
+  function onNotification(message) {
     var method = message.method;
     var params = message.params.value;
 
     var id = params.object;
 
     var object = objects[id];
-    if(!object)
-      return console.warn("Unknown object id '"+id+"'", message);
+    if (!object)
+      return console.warn("Unknown object id '" + id + "'", message);
 
-    switch(method)
-    {
-      case 'onEvent':
-        object.emit(params.type, params.data);
+    switch (method) {
+    case 'onEvent':
+      object.emit(params.type, params.data);
       break;
 
-//      case 'onError':
-//        object.emit('error', params.error);
-//      break;
+      //      case 'onError':
+      //        object.emit('error', params.error);
+      //      break;
 
-      default:
-        console.warn("Unknown message type '"+method+"'");
+    default:
+      console.warn("Unknown message type '" + method + "'");
     };
   };
-
 
   //
   // JsonRPC
   //
 
-  if(typeof ws_uri == 'string')
-  {
+  if (typeof ws_uri == 'string') {
     var access_token = options.access_token;
-    if(access_token != undefined)
-    {
+    if (access_token != undefined) {
       ws_uri = url.parse(ws_uri, true);
       ws_uri.query.access_token = access_token;
       ws_uri = url.format(ws_uri);
@@ -15831,12 +15762,10 @@ function KurentoClient(ws_uri, options, callback)
     };
   }
 
-  var rpc = new RpcBuilder(JsonRPC, options, function(request)
-  {
-    if(request instanceof RpcBuilder.RpcNotification)
-    {
+  var rpc = new RpcBuilder(JsonRPC, options, function (request) {
+    if (request instanceof RpcBuilder.RpcNotification) {
       // Message is an unexpected request, notify error
-      if(request.duplicated != undefined)
+      if (request.duplicated != undefined)
         return console.warning('Unexpected request:', request);
 
       // Message is a notification, process it
@@ -15847,21 +15776,20 @@ function KurentoClient(ws_uri, options, callback)
     console.error('Invalid request instance', request);
   });
 
-
   // Reconnect websockets
 
   var closed = false;
-  var re = reconnect({failAfter: failAfter}, function(ws_stream)
-  {
-    if(closed)
-      ws_stream.writable = false;
+  var re = reconnect({
+      failAfter: failAfter
+    }, function (ws_stream) {
+      if (closed)
+        ws_stream.writable = false;
 
-    rpc.transport = ws_stream;
-  })
-  .connect(ws_uri);
+      rpc.transport = ws_stream;
+    })
+    .connect(ws_uri);
 
-  this.close = function()
-  {
+  this.close = function () {
     closed = true;
 
     prevRpc_result.then(re.disconnect.bind(re));
@@ -15869,27 +15797,20 @@ function KurentoClient(ws_uri, options, callback)
 
   re.on('fail', this.emit.bind(this, 'disconnect'));
 
-
   // Promise interface ("thenable")
 
-  this.then = function(onFulfilled, onRejected)
-  {
-    return new Promise(function(resolve, reject)
-    {
-      function success()
-      {
+  this.then = function (onFulfilled, onRejected) {
+    return new Promise(function (resolve, reject) {
+      function success() {
         re.removeListener('fail', failure);
 
         var result;
 
-        if(onFulfilled)
-          try
-          {
+        if (onFulfilled)
+          try {
             result = onFulfilled.call(self, self);
-          }
-          catch(exception)
-          {
-            if(!onRejected)
+          } catch (exception) {
+            if (!onRejected)
               console.trace('Uncaugh exception', exception)
 
             return reject(exception);
@@ -15897,103 +15818,91 @@ function KurentoClient(ws_uri, options, callback)
 
         resolve(result);
       };
-      function failure()
-      {
+
+      function failure() {
         re.removeListener('connection', success);
 
         var result = new Error('Connection error');
 
-        if(onRejected)
-          try
-          {
+        if (onRejected)
+          try {
             result = onRejected.call(self, result);
-          }
-          catch(exception)
-          {
+          } catch (exception) {
             return reject(exception);
-          }
-        else
-          console.trace('Uncaugh exception', result)
+          } else
+            console.trace('Uncaugh exception', result)
 
         reject(result);
       };
 
-      if(re.connected)
+      if (re.connected)
         success()
-      else if(!re.reconnect)
+      else if (!re.reconnect)
         failure()
-      else
-      {
+      else {
         re.once('connection', success);
-        re.once('fail',       failure);
+        re.once('fail', failure);
       }
     });
   };
 
   this.catch = this.then.bind(this, null);
 
-  if(callback)
+  if (callback)
     this.then(callback.bind(undefined, null), callback);
 
-
   // Select what transactions mechanism to use
-  var encodeTransaction = options.enableTransactions ? commitTransactional : commitSerial;
-
+  var encodeTransaction = options.enableTransactions ? commitTransactional :
+    commitSerial;
 
   // Transactional API
 
   var transactionsManager = new TransactionsManager(this,
-  function(operations, callback)
-  {
-    var params =
-    {
-      object: self,
-      operations: operations
-    };
+    function (operations, callback) {
+      var params = {
+        object: self,
+        operations: operations
+      };
 
-    encodeTransaction(params, callback)
-  });
+      encodeTransaction(params, callback)
+    });
 
-  this.beginTransaction = transactionsManager.beginTransaction.bind(transactionsManager);
-  this.endTransaction   = transactionsManager.endTransaction.bind(transactionsManager);
-  this.transaction      = transactionsManager.transaction.bind(transactionsManager);
-
+  this.beginTransaction = transactionsManager.beginTransaction.bind(
+    transactionsManager);
+  this.endTransaction = transactionsManager.endTransaction.bind(
+    transactionsManager);
+  this.transaction = transactionsManager.transaction.bind(transactionsManager);
 
   // Encode commands
 
-  function encode(method, params, callback)
-  {
-    self.then(function()
-    {
-      // [ToDo] Use stacktrace of caller, not from response
-      rpc.encode(method, params, function(error, result)
-      {
-        if(error)
-          error = extend(new Error(error.message || error), error);
+  function encode(method, params, callback) {
+    self.then(function () {
+        // [ToDo] Use stacktrace of caller, not from response
+        rpc.encode(method, params, function (error, result) {
+          if (error)
+            error = extend(new Error(error.message || error), error);
 
-        callback(error, result);
-      });
-    },
-    callback)
+          callback(error, result);
+        });
+      },
+      callback)
   }
 
-  function encodeCreate(transaction, params, callback)
-  {
-    if(transaction)
-      return transactionOperation.call(transaction, 'create', params, callback);
+  function encodeCreate(transaction, params, callback) {
+    if (transaction)
+      return transactionOperation.call(transaction, 'create', params,
+        callback);
 
-    if(transactionsManager.length)
-      return transactionOperation.call(transactionsManager, 'create', params, callback);
-
+    if (transactionsManager.length)
+      return transactionOperation.call(transactionsManager, 'create',
+        params, callback);
 
     callback = callback || noop;
 
-    function callback2(error, result)
-    {
+    function callback2(error, result) {
       var mediaObject = params.object;
 
-      if(error)
-      {
+      if (error) {
         mediaObject.emit('_id', error);
         return callback(error);
       }
@@ -16003,9 +15912,8 @@ function KurentoClient(ws_uri, options, callback)
       callback(null, registerObject(mediaObject, id));
     }
 
-    deferred(null, params.constructorParams, null, function(error)
-    {
-      if(error) return callback(error);
+    deferred(null, params.constructorParams, null, function (error) {
+      if (error) return callback(error);
 
       params.constructorParams = serializeParams(params.constructorParams);
 
@@ -16016,70 +15924,64 @@ function KurentoClient(ws_uri, options, callback)
   /**
    * Request a generic functionality to be procesed by the server
    */
-  function encodeRpc(transaction, method, params, callback)
-  {
-    if(transaction)
-      return transactionOperation.call(transaction, method, params, callback);
+  function encodeRpc(transaction, method, params, callback) {
+    if (transaction)
+      return transactionOperation.call(transaction, method, params,
+        callback);
 
-    if(transactionsManager.length)
-      return transactionOperation.call(transactionsManager, method, params, callback);
+    if (transactionsManager.length)
+      return transactionOperation.call(transactionsManager, method, params,
+        callback);
 
-
-    var promise = new Promise(function(resolve, reject)
-    {
-      function callback2(error, result)
-      {
+    var promise = new Promise(function (resolve, reject) {
+      function callback2(error, result) {
         var operation = params.operation;
         var id = result ? result.value : undefined;
 
-        id2object.call(self, error, result, operation, id, function(error, result)
-        {
-          if(error) return reject(error);
+        id2object.call(self, error, result, operation, id, function (
+          error, result) {
+          if (error) return reject(error);
 
           resolve(result);
         });
       };
 
-      prevRpc = deferred(params.object, params.operationParams, prevRpc, function(error)
-      {
-        if(error) return reject(error);
+      prevRpc = deferred(params.object, params.operationParams, prevRpc,
+        function (error) {
+          if (error) return reject(error);
 
-        params.object = params.object.id;
-        params.operationParams = serializeParams(params.operationParams);
+          params.object = params.object.id;
+          params.operationParams = serializeParams(params.operationParams);
 
-        encode(method, params, callback2);
-      })
+          encode(method, params, callback2);
+        })
     });
 
     prevRpc_result = promiseCallback(promise, callback);
   }
 
-
   // Commit mechanisms
 
-  function commitTransactional(params, callback)
-  {
-    if(transactionsManager.length)
-      return transactionOperation.call(transactionsManager, 'transaction', params, callback);
-
+  function commitTransactional(params, callback) {
+    if (transactionsManager.length)
+      return transactionOperation.call(transactionsManager, 'transaction',
+        params, callback);
 
     var operations = params.operations;
 
     var promises = [];
 
-    function checkId(operation, param)
-    {
-      if(param instanceof MediaObject && param.id === undefined)
-      {
-        var index = operations.findIndex(function(element)
-        {
-          return operation != element && element.params.object === param;
+    function checkId(operation, param) {
+      if (param instanceof MediaObject && param.id === undefined) {
+        var index = operations.findIndex(function (element) {
+          return operation != element && element.params.object ===
+            param;
         });
 
         // MediaObject dependency is created in this transaction,
         // set a new reference ID
-        if(index >= 0)
-          return 'newref:'+index;
+        if (index >= 0)
+          return 'newref:' + index;
 
         // MediaObject dependency is created outside this transaction,
         // wait until it's ready
@@ -16090,107 +15992,99 @@ function KurentoClient(ws_uri, options, callback)
     }
 
     // Fix references to uninitialized MediaObjects
-    operations.forEach(function(operation)
-    {
+    operations.forEach(function (operation) {
       var params = operation.params;
 
-      switch(operation.method)
-      {
-        case 'create':
-          var constructorParams = params.constructorParams;
-          for(var key in constructorParams)
-            constructorParams[key] = checkId(operation, constructorParams[key]);
+      switch (operation.method) {
+      case 'create':
+        var constructorParams = params.constructorParams;
+        for (var key in constructorParams)
+          constructorParams[key] = checkId(operation, constructorParams[
+            key]);
         break;
 
-        default:
-          params.object = checkId(operation, params.object);
+      default:
+        params.object = checkId(operation, params.object);
 
-          var operationParams = params.operationParams;
-          for(var key in operationParams)
-            operationParams[key] = checkId(operation, operationParams[key]);
+        var operationParams = params.operationParams;
+        for (var key in operationParams)
+          operationParams[key] = checkId(operation, operationParams[key]);
       };
     });
 
-    function callback2(error, transaction_result)
-    {
-      if(error) return callback(error);
+    function callback2(error, transaction_result) {
+      if (error) return callback(error);
 
-      operations.forEach(function(operation, index)
-      {
+      operations.forEach(function (operation, index) {
         var callback = operation.callback || noop;
 
         var operation_response = transaction_result.value[index];
-        if(operation_response == undefined)
-          return callback(new Error('Command not executed in the server'));
+        if (operation_response == undefined)
+          return callback(new Error(
+            'Command not executed in the server'));
 
-        var error  = operation_response.error;
+        var error = operation_response.error;
         var result = operation_response.result;
 
         var id;
-        if(result) id = result.value;
+        if (result) id = result.value;
 
-        switch(operation.method)
-        {
-          case 'create':
-            var mediaObject = operation.params.object;
+        switch (operation.method) {
+        case 'create':
+          var mediaObject = operation.params.object;
 
-            if(error)
-            {
-              mediaObject.emit('_id', error);
-              return callback(error)
-            }
+          if (error) {
+            mediaObject.emit('_id', error);
+            return callback(error)
+          }
 
-            callback(null, registerObject(mediaObject, id));
+          callback(null, registerObject(mediaObject, id));
           break;
 
-          default:
-            id2object.call(self, error, result, operation, id, callback);
+        default:
+          id2object.call(self, error, result, operation, id, callback);
         }
       })
 
       callback(null, transaction_result);
     };
 
-    Promise.all(promises).then(function()
-    {
-      operations.forEach(serializeOperation)
+    Promise.all(promises).then(function () {
+        operations.forEach(serializeOperation)
 
-      encode('transaction', params, callback2);
-    },
-    callback);
+        encode('transaction', params, callback2);
+      },
+      callback);
   }
 
-  function commitSerial(params, callback)
-  {
-    if(transactionsManager.length)
-      return transactionOperation.call(transactionsManager, 'transaction', params, callback);
+  function commitSerial(params, callback) {
+    if (transactionsManager.length)
+      return transactionOperation.call(transactionsManager, 'transaction',
+        params, callback);
 
     var operations = params.operations;
 
-    async.each(operations, function(operation)
-    {
-      switch(operation.method)
-      {
+    async.each(operations, function (operation) {
+        switch (operation.method) {
         case 'create':
           encodeCreate(undefined, operation.params, operation.callback);
-        break;
+          break;
 
         case 'transaction':
           commitSerial(operation.params.operations, operation.callback);
-        break;
+          break;
 
         default:
-          encodeRpc(undefined, operation.method, operation.params, operation.callback);
-      }
-    },
-    callback)
+          encodeRpc(undefined, operation.method, operation.params,
+            operation.callback);
+        }
+      },
+      callback)
   }
 
-
-  function registerObject(mediaObject, id)
-  {
+  function registerObject(mediaObject, id) {
     var object = objects[id];
-    if(object) return object;
+    if (object) return object;
 
     mediaObject.emit('_id', null, id);
 
@@ -16199,32 +16093,28 @@ function KurentoClient(ws_uri, options, callback)
     /**
      * Request to release the object on the server and remove it from cache
      */
-    mediaObject.once('release', function()
-    {
+    mediaObject.once('release', function () {
       delete objects[id];
     });
 
     return mediaObject;
   }
 
-
   // Creation of objects
 
-  var mediaObjectCreator = new MediaObjectCreator(undefined, encodeCreate, encodeRpc, encodeTransaction);
+  var mediaObjectCreator = new MediaObjectCreator(undefined, encodeCreate,
+    encodeRpc, encodeTransaction);
 
-  function describe(id, callback)
-  {
+  function describe(id, callback) {
     var mediaObject = objects[id];
-    if(mediaObject) return callback(null, mediaObject);
+    if (mediaObject) return callback(null, mediaObject);
 
-    var params =
-    {
+    var params = {
       object: id
     };
 
-    function callback2(error, result)
-    {
-      if(error) return callback(error);
+    function callback2(error, result) {
+      if (error) return callback(error);
 
       var mediaObject = mediaObjectCreator.createInmediate(result);
 
@@ -16234,11 +16124,9 @@ function KurentoClient(ws_uri, options, callback)
     encode('describe', params, callback2);
   };
 
-  this.getMediaobjectById = function(id, callback)
-  {
+  this.getMediaobjectById = function (id, callback) {
     return createPromise(id, describe, callback)
   };
-
 
   /**
    * Create a new instance of a MediaObject
@@ -16259,7 +16147,6 @@ function KurentoClient(ws_uri, options, callback)
 };
 inherits(KurentoClient, EventEmitter);
 
-
 var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
 
 /**
@@ -16272,26 +16159,23 @@ var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
  *
  * @throws {SyntaxError}
  */
-KurentoClient.prototype.connect = function(media, callback)
-{
+KurentoClient.prototype.connect = function (media, callback) {
   // Fix lenght-variable arguments
   media = Array.prototype.slice.call(arguments, 0);
-  callback = (typeof media[media.length - 1] == 'function')
-           ? media.pop() : undefined;
+  callback = (typeof media[media.length - 1] == 'function') ? media.pop() :
+    undefined;
 
   // Check if we have enought media components
-  if(media.length < 2)
+  if (media.length < 2)
     throw new SyntaxError("Need at least two media elements to connect");
 
   // Check MediaElements are of the correct type
   media.forEach(checkMediaElement);
 
   // Generate promise
-  var promise = new Promise(function(resolve, reject)
-  {
-    function callback(error, result)
-    {
-      if(error) return reject(error);
+  var promise = new Promise(function (resolve, reject) {
+    function callback(error, result) {
+      if (error) return reject(error);
 
       resolve(result);
     };
@@ -16299,8 +16183,7 @@ KurentoClient.prototype.connect = function(media, callback)
     // Connect the media elements
     var src = media[0];
 
-    async.each(media.slice(1), function(sink, callback)
-    {
+    async.each(media.slice(1), function (sink, callback) {
       src.connect(sink, callback);
       src = sink;
     }, callback);
@@ -16308,7 +16191,6 @@ KurentoClient.prototype.connect = function(media, callback)
 
   return promiseCallback(promise, callback);
 };
-
 
 // Register Kurento basic elements
 
