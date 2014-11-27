@@ -10511,31 +10511,31 @@ var MediaObject = require('./MediaObject');
 
 /**
  * @classdesc
- *  This is a standalone object that represents the server
+ *  This is a standalone object for managing the MediaServer
  *
  * @abstract
  * @extends module:core/abstracts.MediaObject
  *
- * @constructor module:core/abstracts.Server
+ * @constructor module:core/abstracts.ServerManager
  *
  * @fires {@link module:core#event:ObjectCreated ObjectCreated}
  * @fires {@link module:core#event:ObjectDestroyed ObjectDestroyed}
  */
-function Server(){
-  Server.super_.call(this);
+function ServerManager(){
+  ServerManager.super_.call(this);
 };
-inherits(Server, MediaObject);
+inherits(ServerManager, MediaObject);
 
 /**
  * Server information, version, modules, factories, etc
  *
- * @alias module:core/abstracts.Server#getInfo
+ * @alias module:core/abstracts.ServerManager#getInfo
  *
- * @param {module:core/abstracts.Server~getInfoCallback} [callback]
+ * @param {module:core/abstracts.ServerManager~getInfoCallback} [callback]
  *
  * @return {external:Promise}
  */
-Server.prototype.getInfo = function(callback){
+ServerManager.prototype.getInfo = function(callback){
   var transaction = (arguments[0] instanceof Transaction)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
@@ -10545,7 +10545,7 @@ Server.prototype.getInfo = function(callback){
   return this._invoke(transaction, 'getInfo', callback);
 };
 /**
- * @callback module:core/abstracts.Server~getInfoCallback
+ * @callback module:core/abstracts.ServerManager~getInfoCallback
  * @param {external:Error} error
  * @param {module:core/complexTypes.ServerInfo} result
  */
@@ -10553,13 +10553,13 @@ Server.prototype.getInfo = function(callback){
 /**
  * All the pipelines available in the server
  *
- * @alias module:core/abstracts.Server#getPipelines
+ * @alias module:core/abstracts.ServerManager#getPipelines
  *
- * @param {module:core/abstracts.Server~getPipelinesCallback} [callback]
+ * @param {module:core/abstracts.ServerManager~getPipelinesCallback} [callback]
  *
  * @return {external:Promise}
  */
-Server.prototype.getPipelines = function(callback){
+ServerManager.prototype.getPipelines = function(callback){
   var transaction = (arguments[0] instanceof Transaction)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
@@ -10569,7 +10569,7 @@ Server.prototype.getPipelines = function(callback){
   return this._invoke(transaction, 'getPipelines', callback);
 };
 /**
- * @callback module:core/abstracts.Server~getPipelinesCallback
+ * @callback module:core/abstracts.ServerManager~getPipelinesCallback
  * @param {external:Error} error
  * @param {module:core.MediaPipeline} result
  */
@@ -10577,13 +10577,13 @@ Server.prototype.getPipelines = function(callback){
 /**
  * All active sessions in the server
  *
- * @alias module:core/abstracts.Server#getSessions
+ * @alias module:core/abstracts.ServerManager#getSessions
  *
- * @param {module:core/abstracts.Server~getSessionsCallback} [callback]
+ * @param {module:core/abstracts.ServerManager~getSessionsCallback} [callback]
  *
  * @return {external:Promise}
  */
-Server.prototype.getSessions = function(callback){
+ServerManager.prototype.getSessions = function(callback){
   var transaction = (arguments[0] instanceof Transaction)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
@@ -10593,29 +10593,29 @@ Server.prototype.getSessions = function(callback){
   return this._invoke(transaction, 'getSessions', callback);
 };
 /**
- * @callback module:core/abstracts.Server~getSessionsCallback
+ * @callback module:core/abstracts.ServerManager~getSessionsCallback
  * @param {external:Error} error
  * @param {external:String} result
  */
 
 /**
- * @alias module:core/abstracts.Server.constructorParams
+ * @alias module:core/abstracts.ServerManager.constructorParams
  */
-Server.constructorParams = {};
+ServerManager.constructorParams = {};
 
 /**
- * @alias module:core/abstracts.Server.events
+ * @alias module:core/abstracts.ServerManager.events
  *
  * @extend module:core/abstracts.MediaObject.events
  */
-Server.events = MediaObject.events.concat(['ObjectCreated', 'ObjectDestroyed']);
+ServerManager.events = MediaObject.events.concat(['ObjectCreated', 'ObjectDestroyed']);
 
-module.exports = Server;
+module.exports = ServerManager;
 
-Server.check = function(key, value)
+ServerManager.check = function(key, value)
 {
-  if(!(value instanceof Server))
-    throw ChecktypeError(key, Server, value);
+  if(!(value instanceof ServerManager))
+    throw ChecktypeError(key, ServerManager, value);
 };
 
 },{"./MediaObject":45,"inherits":38,"kurento-client":"kurento-client"}],51:[function(require,module,exports){
@@ -10851,7 +10851,7 @@ var MediaPad = require('./MediaPad');
 var MediaSink = require('./MediaSink');
 var MediaSource = require('./MediaSource');
 var SdpEndpoint = require('./SdpEndpoint');
-var Server = require('./Server');
+var ServerManager = require('./ServerManager');
 var SessionEndpoint = require('./SessionEndpoint');
 var UriEndpoint = require('./UriEndpoint');
 
@@ -10865,11 +10865,11 @@ exports.MediaPad = MediaPad;
 exports.MediaSink = MediaSink;
 exports.MediaSource = MediaSource;
 exports.SdpEndpoint = SdpEndpoint;
-exports.Server = Server;
+exports.ServerManager = ServerManager;
 exports.SessionEndpoint = SessionEndpoint;
 exports.UriEndpoint = UriEndpoint;
 
-},{"./Endpoint":41,"./Filter":42,"./Hub":43,"./MediaElement":44,"./MediaObject":45,"./MediaPad":46,"./MediaSink":47,"./MediaSource":48,"./SdpEndpoint":49,"./Server":50,"./SessionEndpoint":51,"./UriEndpoint":52}],54:[function(require,module,exports){
+},{"./Endpoint":41,"./Filter":42,"./Hub":43,"./MediaElement":44,"./MediaObject":45,"./MediaPad":46,"./MediaSink":47,"./MediaSource":48,"./SdpEndpoint":49,"./ServerManager":50,"./SessionEndpoint":51,"./UriEndpoint":52}],54:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15523,7 +15523,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],109:[function(require,module,exports){
 module.exports=require(96)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
