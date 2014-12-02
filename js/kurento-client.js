@@ -10317,6 +10317,33 @@ function SdpEndpoint(){
 };
 inherits(SdpEndpoint, SessionEndpoint);
 
+/**
+ * Maximum video bandwidth for receiving.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 500
+ *
+ * @alias module:core/abstracts.SdpEndpoint#getMaxVideoRecvBandwidth
+ *
+ * @param {module:core/abstracts.SdpEndpoint~getMaxVideoRecvBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+SdpEndpoint.prototype.getMaxVideoRecvBandwidth = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getMaxVideoRecvBandwidth', callback);
+};
+/**
+ * @callback module:core/abstracts.SdpEndpoint~getMaxVideoRecvBandwidthCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
 
 /**
  * Request a SessionSpec offer.
@@ -15523,7 +15550,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],109:[function(require,module,exports){
 module.exports=require(96)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":96}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
