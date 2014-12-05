@@ -12784,6 +12784,60 @@ function WebRtcEndpoint(){
 inherits(WebRtcEndpoint, SdpEndpoint);
 
 /**
+ * Maximum video bandwidth for sending.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 500
+ *
+ * @alias module:elements.WebRtcEndpoint#getMaxVideoSendBandwidth
+ *
+ * @param {module:elements.WebRtcEndpoint~getMaxVideoSendBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getMaxVideoSendBandwidth', callback);
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getMaxVideoSendBandwidthCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Minimum video bandwidth for sending.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 100
+ *
+ * @alias module:elements.WebRtcEndpoint#getMinVideoSendBandwidth
+ *
+ * @param {module:elements.WebRtcEndpoint~getMinVideoSendBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getMinVideoSendBandwidth', callback);
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getMinVideoSendBandwidthCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
  * @alias module:elements.WebRtcEndpoint.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
