@@ -9592,9 +9592,19 @@ function MediaObject(){
    */
   this.once('_id', function(error, id)
   {
-    if(error) return Object.defineProperty(this, 'id', {value: null});
+    if(error)
+    {
+      this._createError = error;
 
-    Object.defineProperty(this, 'id', {value: id, enumerable: true});
+      return Object.defineProperty(this, 'id', {value: null});
+    }
+
+    Object.defineProperty(this, 'id',
+    {
+      configurable: true,
+      enumerable: true,
+      value: id
+    });
   })
 
   //
@@ -9759,6 +9769,11 @@ MediaObject.prototype.getParent = function(callback){
  */
 
 
+function throwRpcNotReady()
+{
+  throw new Error('RPC result is not ready, use .then() method instead');
+};
+
 /**
  * Send a command to a media object
  *
@@ -9781,33 +9796,62 @@ MediaObject.prototype._invoke = function(transaction, method, params, callback){
     params = undefined;
   };
 
-  var promise = new Promise(function(resolve, reject)
+  var promise;
+  var error = this._createError;
+  if(error)
   {
-    // Generate request parameters
-    var params2 =
+    promise = Promise.reject(error)
+
+    Object.defineProperty(promise, 'value', {get: function(){throw error}});
+  }
+  else
+  {
+    promise = new Promise(function(resolve, reject)
     {
-      object: self,
-      operation: method
-    };
+      // Generate request parameters
+      var params2 =
+      {
+        object: self,
+        operation: method
+      };
 
-    if(params)
-      params2.operationParams = params;
+      if(params)
+        params2.operationParams = params;
 
-    function callback(error, result)
+      function callback(error, result)
+      {
+        delete promise.value;
+
+        if(error)
+        {
+          Object.defineProperty(promise, 'value', {get: function(){throw error}});
+
+          return reject(error);
+        }
+
+        var value = result.value;
+        if(value === undefined)
+          value = self
+        else
+          Object.defineProperty(promise, 'value', {value: value});
+
+        resolve(value);
+      }
+
+      // Do request
+      self.emit('_rpc', transaction, 'invoke', params2, callback);
+    });
+
+    Object.defineProperty(promise, 'value',
     {
-      if(error) return reject(error);
+      configurable: true,
+      get: throwRpcNotReady
+    });
+  }
 
-      var value = result.value;
-      if(value === undefined) value = self;
+  promise = promiseCallback(promise, callback);
 
-      resolve(value);
-    }
-
-    // Do request
-    self.emit('_rpc', transaction, 'invoke', params2, callback);
-  });
-
-  return promiseCallback(promise, callback);
+  return promise
 };
 /**
  * @callback core/abstract.MediaObject~invokeCallback
@@ -9832,27 +9876,44 @@ MediaObject.prototype.release = function(callback){
 
   var self = this;
 
-  var promise = new Promise(function(resolve, reject)
-  {
-    var params =
+  var promise;
+  var error = this._createError;
+  if(error)
+    promise = Promise.reject(error)
+  else
+    promise = new Promise(function(resolve, reject)
     {
-      object: self
-    };
+      var params =
+      {
+        object: self
+      };
 
-    function callback(error)
-    {
-      if(error) return reject(error);
+      function callback(error)
+      {
+        if(error) return reject(error);
 
-      self.emit('release');
+        // Object was sucessfully released on the server,
+        // remove it from cache and all its events
+        self.emit('release');
+        Object.keys(self._events).forEach(function(event)
+        {
+          if(event[0] == '_'
+          || event == 'newListener'
+          || event == 'removeListener')
+            return;
 
-      // Remove events on the object and remove object from cache
-      self.removeAllListeners();
+          self.removeAllListeners(event);
+        })
 
-      resolve();
-    }
+        // Set id as null since the object don't exists anymore on the server so
+        // subsequent operations fail inmediatly
+        Object.defineProperty(self, 'id', {value: null});
 
-    self.emit('_rpc', transaction, 'release', params, callback);
-  });
+        resolve();
+      }
+
+      self.emit('_rpc', transaction, 'release', params, callback);
+    });
 
   return promiseCallback(promise, callback);
 };
@@ -9890,25 +9951,29 @@ MediaObject.prototype.then = function(onFulfilled, onRejected){
     };
     function failure(error)
     {
-      var result = new Error(error);
-
       if(onRejected)
         try
         {
-          result = onRejected.call(self, result);
+          error = onRejected.call(self, error);
         }
         catch(exception)
         {
           return reject(exception);
         }
       else
-        console.trace('Uncaugh exception', result)
+        console.trace('Uncaugh exception', error)
 
-      reject(result);
+      reject(error);
     };
 
     if(self.id === null)
-      failure()
+    {
+      var error = new Error('MediaObject not found in server');
+          error.code = 40101;
+          error.object = self;
+
+      failure(error)
+    }
     else if(self.id !== undefined)
       success(self)
     else
@@ -9920,6 +9985,11 @@ MediaObject.prototype.then = function(onFulfilled, onRejected){
       })
   })
 }
+
+Object.defineProperty(MediaObject.prototype, 'commited',
+{
+  get: function(){return this.id !== undefined;}
+});
 
 /**
  * @alias module:core/abstracts.MediaObject.constructorParams
@@ -12723,29 +12793,434 @@ exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
 },{"./AlphaBlending":64,"./Composite":65,"./Dispatcher":66,"./DispatcherOneToMany":67,"./HttpGetEndpoint":68,"./HttpPostEndpoint":69,"./Mixer":70,"./PlayerEndpoint":71,"./RecorderEndpoint":72,"./RtpEndpoint":73,"./WebRtcEndpoint":74,"./abstracts":76,"./complexTypes":78}],80:[function(require,module,exports){
-module.exports=require(39)
+arguments[4][39][0].apply(exports,arguments)
 },{"./abstracts/MediaElement":85,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/HubPort.js":39,"inherits":38,"kurento-client":"kurento-client"}],81:[function(require,module,exports){
-module.exports=require(40)
+arguments[4][40][0].apply(exports,arguments)
 },{"./abstracts/MediaObject":86,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/MediaPipeline.js":40,"inherits":38,"kurento-client":"kurento-client"}],82:[function(require,module,exports){
-module.exports=require(41)
+arguments[4][41][0].apply(exports,arguments)
 },{"./MediaElement":85,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Endpoint.js":41,"inherits":38,"kurento-client":"kurento-client"}],83:[function(require,module,exports){
-module.exports=require(42)
+arguments[4][42][0].apply(exports,arguments)
 },{"./MediaElement":85,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Filter.js":42,"inherits":38,"kurento-client":"kurento-client"}],84:[function(require,module,exports){
-module.exports=require(43)
+arguments[4][43][0].apply(exports,arguments)
 },{"../HubPort":80,"./MediaObject":86,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Hub.js":43,"inherits":38,"kurento-client":"kurento-client"}],85:[function(require,module,exports){
-module.exports=require(44)
+arguments[4][44][0].apply(exports,arguments)
 },{"./MediaObject":86,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/MediaElement.js":44,"inherits":38,"kurento-client":"kurento-client"}],86:[function(require,module,exports){
-module.exports=require(45)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/MediaObject.js":45,"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":144}],87:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var ChecktypeError = kurentoClient.checkType.ChecktypeError;
+
+var Transaction = kurentoClient.TransactionsManager.Transaction;
+
+var Promise = require('es6-promise').Promise;
+
+var promiseCallback = require('promisecallback');
+
+var EventEmitter = require('events').EventEmitter;
+
+/**
+ * @classdesc
+ *  Base for all objects that can be created in the media server.
+ *
+ * @abstract
+ * @extends external:EventEmitter
+ *
+ * @constructor module:core/abstracts.MediaObject
+ *
+ * @fires {@link module:core#event:Error Error}
+ */
+function MediaObject(){
+  MediaObject.super_.call(this);
+
+
+  //
+  // Define object properties
+  //
+
+  /**
+   * Unique identifier of this object
+   *
+   * @public
+   * @readonly
+   * @member {external:Number} id
+   */
+  this.once('_id', function(error, id)
+  {
+    if(error) return Object.defineProperty(this, 'id', {value: null});
+
+    Object.defineProperty(this, 'id', {value: id, enumerable: true});
+  })
+
+  //
+  // Subscribe and unsubscribe events on the server when adding and removing
+  // event listeners on this MediaObject
+  //
+
+  var subscriptions = {};
+
+  this.on('removeListener', function(event, listener)
+  {
+    // Blacklisted events
+    if(event[0] == '_'
+    || event == 'release'
+    || event == 'newListener')
+      return;
+
+    var count = EventEmitter.listenerCount(this, event);
+    if(count) return;
+
+    var token = subscriptions[event];
+
+    var params =
+    {
+      object: this,
+      subscription: token
+    };
+
+    this.emit('_rpc', undefined, 'unsubscribe', params, function(error)
+    {
+      if(error) return this.emit('error', error);
+
+      delete subscriptions[event];
+    });
+  });
+
+  this.on('newListener', function(event, listener)
+  {
+    // Blacklisted events
+    if(event[0] == '_'
+    || event == 'release')
+      return;
+
+    var constructor = this.constructor;
+
+    if(constructor.events.indexOf(event) < 0)
+      throw new SyntaxError(constructor.name+" doesn't accept events of type '"+event+"'")
+
+    var count = EventEmitter.listenerCount(this, event);
+    if(count) return;
+
+    var params =
+    {
+      object: this,
+      type: event
+    };
+
+    this.emit('_rpc', undefined, 'subscribe', params, function(error, token)
+    {
+      if(error) return this.emit('error', error);
+
+      subscriptions[event] = token;
+    });
+  });
+};
+inherits(MediaObject, EventEmitter);
+
+/**
+ * Childs of current object, all returned objects have parent set to current object
+ *
+ * @alias module:core/abstracts.MediaObject#getChilds
+ *
+ * @param {module:core/abstracts.MediaObject~getChildsCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.getChilds = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getChilds', callback);
+};
+/**
+ * @callback module:core/abstracts.MediaObject~getChildsCallback
+ * @param {external:Error} error
+ * @param {module:core/abstracts.MediaObject} result
+ */
+
+/**
+ * {@link module:core.MediaPipeline MediaPipeline} to which this MediaObject belong, or the pipeline itself if invoked over a {@link module:core.MediaPipeline MediaPipeline}
+ *
+ * @alias module:core/abstracts.MediaObject#getMediaPipeline
+ *
+ * @param {module:core/abstracts.MediaObject~getMediaPipelineCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.getMediaPipeline = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getMediaPipeline', callback);
+};
+/**
+ * @callback module:core/abstracts.MediaObject~getMediaPipelineCallback
+ * @param {external:Error} error
+ * @param {module:core.MediaPipeline} result
+ */
+
+/**
+ * Object name. This is just a comodity to simplify developers life debugging, it is not used internally for indexing nor idenfiying the objects. By default is the object type followed by the object id.
+ *
+ * @alias module:core/abstracts.MediaObject#getName
+ *
+ * @param {module:core/abstracts.MediaObject~getNameCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.getName = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getName', callback);
+};
+/**
+ * @callback module:core/abstracts.MediaObject~getNameCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
+
+/**
+ * parent of this media object. The type of the parent depends on the type of the element. The parent of a :rom:cls:`MediaPad` is its {@link module:core/abstracts.MediaElement MediaElement}; the parent of a {@link module:core/abstracts.Hub Hub} or a {@link module:core/abstracts.MediaElement MediaElement} is its {@link module:core.MediaPipeline MediaPipeline}. A {@link module:core.MediaPipeline MediaPipeline} has no parent, i.e. the property is null
+ *
+ * @alias module:core/abstracts.MediaObject#getParent
+ *
+ * @param {module:core/abstracts.MediaObject~getParentCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.getParent = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getParent', callback);
+};
+/**
+ * @callback module:core/abstracts.MediaObject~getParentCallback
+ * @param {external:Error} error
+ * @param {module:core/abstracts.MediaObject} result
+ */
+
+
+/**
+ * Send a command to a media object
+ *
+ * @param {external:String} method - Command to be executed by the server
+ * @param {module:core/abstract.MediaObject.constructorParams} [params]
+ * @param {module:core/abstract.MediaObject~invokeCallback} callback
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype._invoke = function(transaction, method, params, callback){
+  var self = this;
+
+  // Fix optional parameters
+  if(params instanceof Function)
+  {
+    if(callback)
+      throw new SyntaxError("Nothing can be defined after the callback");
+
+    callback = params;
+    params = undefined;
+  };
+
+  var promise = new Promise(function(resolve, reject)
+  {
+    // Generate request parameters
+    var params2 =
+    {
+      object: self,
+      operation: method
+    };
+
+    if(params)
+      params2.operationParams = params;
+
+    function callback(error, result)
+    {
+      if(error) return reject(error);
+
+      var value = result.value;
+      if(value === undefined) value = self;
+
+      resolve(value);
+    }
+
+    // Do request
+    self.emit('_rpc', transaction, 'invoke', params2, callback);
+  });
+
+  return promiseCallback(promise, callback);
+};
+/**
+ * @callback core/abstract.MediaObject~invokeCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Explicity release a {@link module:core/abstract.MediaObject MediaObject} from memory
+ *
+ * All its descendants will be also released and collected
+ *
+ * @param {module:core/abstract.MediaObject~releaseCallback} callback
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.release = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  var self = this;
+
+  var promise = new Promise(function(resolve, reject)
+  {
+    var params =
+    {
+      object: self
+    };
+
+    function callback(error)
+    {
+      if(error) return reject(error);
+
+      self.emit('release');
+
+      // Remove events on the object and remove object from cache
+      self.removeAllListeners();
+
+      resolve();
+    }
+
+    self.emit('_rpc', transaction, 'release', params, callback);
+  });
+
+  return promiseCallback(promise, callback);
+};
+/**
+ * @callback core/abstract.MediaObject~releaseCallback
+ * @param {external:Error} error
+ */
+
+
+// Promise interface ("thenable")
+
+MediaObject.prototype.then = function(onFulfilled, onRejected){
+  var self = this;
+
+  return new Promise(function(resolve, reject)
+  {
+    function success(id)
+    {
+      var result;
+
+      if(onFulfilled)
+        try
+        {
+          result = onFulfilled.call(self, id);
+        }
+        catch(exception)
+        {
+          if(!onRejected)
+            console.trace('Uncaugh exception', exception)
+
+          return reject(exception);
+        }
+
+      resolve(result);
+    };
+    function failure(error)
+    {
+      var result = new Error(error);
+
+      if(onRejected)
+        try
+        {
+          result = onRejected.call(self, result);
+        }
+        catch(exception)
+        {
+          return reject(exception);
+        }
+      else
+        console.trace('Uncaugh exception', result)
+
+      reject(result);
+    };
+
+    if(self.id === null)
+      failure()
+    else if(self.id !== undefined)
+      success(self)
+    else
+      self.once('_id', function(error, id)
+      {
+        if(error) return failure(error);
+
+        success(self);
+      })
+  })
+}
+
+/**
+ * @alias module:core/abstracts.MediaObject.constructorParams
+ */
+MediaObject.constructorParams = {};
+
+/**
+ * @alias module:core/abstracts.MediaObject.events
+ */
+MediaObject.events = ['Error'];
+
+module.exports = MediaObject;
+
+MediaObject.check = function(key, value)
+{
+  if(!(value instanceof MediaObject))
+    throw ChecktypeError(key, MediaObject, value);
+};
+
+},{"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":144}],87:[function(require,module,exports){
 module.exports=require(46)
 },{"./SessionEndpoint":89,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/SdpEndpoint.js":46,"inherits":38,"kurento-client":"kurento-client"}],88:[function(require,module,exports){
-module.exports=require(47)
+arguments[4][47][0].apply(exports,arguments)
 },{"./MediaObject":86,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/ServerManager.js":47,"inherits":38,"kurento-client":"kurento-client"}],89:[function(require,module,exports){
 module.exports=require(48)
 },{"./Endpoint":82,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/SessionEndpoint.js":48,"inherits":38,"kurento-client":"kurento-client"}],90:[function(require,module,exports){
 module.exports=require(49)
 },{"./Endpoint":82,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/UriEndpoint.js":49,"inherits":38,"kurento-client":"kurento-client"}],91:[function(require,module,exports){
-module.exports=require(50)
+arguments[4][50][0].apply(exports,arguments)
 },{"./Endpoint":82,"./Filter":83,"./Hub":84,"./MediaElement":85,"./MediaObject":86,"./SdpEndpoint":87,"./ServerManager":88,"./SessionEndpoint":89,"./UriEndpoint":90,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/index.js":50}],92:[function(require,module,exports){
 module.exports=require(51)
 },{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/AudioCaps.js":51,"kurento-client":"kurento-client"}],93:[function(require,module,exports){
@@ -12771,7 +13246,7 @@ module.exports=require(61)
 },{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/VideoCodec.js":61,"kurento-client":"kurento-client"}],103:[function(require,module,exports){
 module.exports=require(62)
 },{"./AudioCaps":92,"./AudioCodec":93,"./ElementConnectionData":94,"./FilterType":95,"./Fraction":96,"./MediaType":97,"./ModuleInfo":98,"./ServerInfo":99,"./ServerType":100,"./VideoCaps":101,"./VideoCodec":102,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/index.js":62}],104:[function(require,module,exports){
-module.exports=require(63)
+arguments[4][63][0].apply(exports,arguments)
 },{"./HubPort":80,"./MediaPipeline":81,"./abstracts":91,"./complexTypes":103,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/index.js":63}],105:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
@@ -13224,29 +13699,29 @@ exports.ZBarFilter = ZBarFilter;
 exports.abstracts = require('./abstracts');
 
 },{"./FaceOverlayFilter":105,"./GStreamerFilter":106,"./ZBarFilter":107,"./abstracts":109}],111:[function(require,module,exports){
-module.exports=require(39)
+arguments[4][39][0].apply(exports,arguments)
 },{"./abstracts/MediaElement":116,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/HubPort.js":39,"inherits":38,"kurento-client":"kurento-client"}],112:[function(require,module,exports){
-module.exports=require(40)
+arguments[4][40][0].apply(exports,arguments)
 },{"./abstracts/MediaObject":117,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/MediaPipeline.js":40,"inherits":38,"kurento-client":"kurento-client"}],113:[function(require,module,exports){
-module.exports=require(41)
+arguments[4][41][0].apply(exports,arguments)
 },{"./MediaElement":116,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Endpoint.js":41,"inherits":38,"kurento-client":"kurento-client"}],114:[function(require,module,exports){
-module.exports=require(42)
+arguments[4][42][0].apply(exports,arguments)
 },{"./MediaElement":116,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Filter.js":42,"inherits":38,"kurento-client":"kurento-client"}],115:[function(require,module,exports){
-module.exports=require(43)
+arguments[4][43][0].apply(exports,arguments)
 },{"../HubPort":111,"./MediaObject":117,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Hub.js":43,"inherits":38,"kurento-client":"kurento-client"}],116:[function(require,module,exports){
-module.exports=require(44)
+arguments[4][44][0].apply(exports,arguments)
 },{"./MediaObject":117,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/MediaElement.js":44,"inherits":38,"kurento-client":"kurento-client"}],117:[function(require,module,exports){
-module.exports=require(45)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/MediaObject.js":45,"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":144}],118:[function(require,module,exports){
+module.exports=require(86)
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-elements/node_modules/kurento-client-core/lib/abstracts/MediaObject.js":86,"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":144}],118:[function(require,module,exports){
 module.exports=require(46)
 },{"./SessionEndpoint":120,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/SdpEndpoint.js":46,"inherits":38,"kurento-client":"kurento-client"}],119:[function(require,module,exports){
-module.exports=require(47)
+arguments[4][47][0].apply(exports,arguments)
 },{"./MediaObject":117,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/ServerManager.js":47,"inherits":38,"kurento-client":"kurento-client"}],120:[function(require,module,exports){
 module.exports=require(48)
 },{"./Endpoint":113,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/SessionEndpoint.js":48,"inherits":38,"kurento-client":"kurento-client"}],121:[function(require,module,exports){
 module.exports=require(49)
 },{"./Endpoint":113,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/UriEndpoint.js":49,"inherits":38,"kurento-client":"kurento-client"}],122:[function(require,module,exports){
-module.exports=require(50)
+arguments[4][50][0].apply(exports,arguments)
 },{"./Endpoint":113,"./Filter":114,"./Hub":115,"./MediaElement":116,"./MediaObject":117,"./SdpEndpoint":118,"./ServerManager":119,"./SessionEndpoint":120,"./UriEndpoint":121,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/index.js":50}],123:[function(require,module,exports){
 module.exports=require(51)
 },{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/AudioCaps.js":51,"kurento-client":"kurento-client"}],124:[function(require,module,exports){
@@ -13272,7 +13747,7 @@ module.exports=require(61)
 },{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/VideoCodec.js":61,"kurento-client":"kurento-client"}],134:[function(require,module,exports){
 module.exports=require(62)
 },{"./AudioCaps":123,"./AudioCodec":124,"./ElementConnectionData":125,"./FilterType":126,"./Fraction":127,"./MediaType":128,"./ModuleInfo":129,"./ServerInfo":130,"./ServerType":131,"./VideoCaps":132,"./VideoCodec":133,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/index.js":62}],135:[function(require,module,exports){
-module.exports=require(63)
+arguments[4][63][0].apply(exports,arguments)
 },{"./HubPort":111,"./MediaPipeline":112,"./abstracts":122,"./complexTypes":134,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/index.js":63}],136:[function(require,module,exports){
 function Mapper()
 {
