@@ -285,7 +285,7 @@ module.exports = TransactionsManager;
 TransactionsManager.Transaction = Transaction;
 TransactionsManager.transactionOperation = transactionOperation;
 
-},{"domain":14,"es6-promise":8,"events":15,"inherits":38,"promisecallback":150}],3:[function(require,module,exports){
+},{"domain":14,"es6-promise":8,"events":15,"inherits":38,"promisecallback":144}],3:[function(require,module,exports){
 /**
  * Loader for the kurento-client package on the browser
  */
@@ -334,7 +334,7 @@ function createPromise(data, func, callback) {
 
 module.exports = createPromise;
 
-},{"async":6,"es6-promise":8,"promisecallback":150}],5:[function(require,module,exports){
+},{"async":6,"es6-promise":8,"promisecallback":144}],5:[function(require,module,exports){
 var checkType = require('checktype');
 
 var abstracts = {};
@@ -9030,7 +9030,7 @@ var MediaElement = require('./MediaElement');
 
 /**
  * @classdesc
- *  Base interface for all filters. This is a certain type of {@link module:core/abstracts.MediaElement MediaElement}, that processes media injected through its {@link module:core/abstracts.MediaSink MediaSink}, and delivers the outcome through its {@link module:core/abstracts.MediaSource MediaSource}.
+ *  Base interface for all filters. This is a certain type of {@link module:core/abstracts.MediaElement MediaElement}, that processes media injected through its sinks, and delivers the outcome through its sources.
  *
  * @abstract
  * @extends module:core/abstracts.MediaElement
@@ -9197,7 +9197,7 @@ var MediaObject = require('./MediaObject');
  * @classdesc
  *  Basic building blocks of the media server, that can be interconnected through the API. A {@link module:core/abstracts.MediaElement MediaElement} is a module that encapsulates a specific media capability. They can be connected to create media pipelines where those capabilities are applied, in sequence, to the stream going through the pipeline.
  *  
- *     {@link module:core/abstracts.MediaElement MediaElement} objects are classified by its supported media type (audio, video, etc.) and the flow direction: {@link module:core/abstracts.MediaSource MediaSource} pads are intended for media delivery while {@link module:core/abstracts.MediaSink MediaSinks}  behave as reception points.
+ *     {@link module:core/abstracts.MediaElement MediaElement} objects are classified by its supported media type (audio, video, etc.)
  *
  * @abstract
  * @extends module:core/abstracts.MediaObject
@@ -9211,24 +9211,27 @@ inherits(MediaElement, MediaObject);
 
 
 /**
- * perform {@link module:core/abstracts.MediaElement#connect(sink,mediaType)} if there is exactly one sink for the given type, and their mediaDescriptions are the same
+ * Connects two elements, with the given restrictions, current {@link module:core/abstracts.MediaElement MediaElement} will start emmit media to sink element. Connection could take place in the future, when both media element show capabilities for connecting with the given restrictions
  *
  * @alias module:core/abstracts.MediaElement.connect
  *
  * @param {module:core/abstracts.MediaElement} sink
- *  the target {@link module:core/abstracts.MediaElement MediaElement}  from which {@link module:core/abstracts.MediaSink MediaSink} will be obtained
+ *  the target {@link module:core/abstracts.MediaElement MediaElement} that will receive media
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
  *  the {@link MediaType} of the pads that will be connected
  *
- * @param {external:String} [mediaDescription]
+ * @param {external:String} [sourceMediaDescription]
+ *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *
+ * @param {external:String} [sinkMediaDescription]
  *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
  * @param {module:core/abstracts.MediaElement~connectCallback} [callback]
  *
  * @return {external:Promise}
  */
-MediaElement.prototype.connect = function(sink, mediaType, mediaDescription, callback){
+MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescription, sinkMediaDescription, callback){
   var transaction = (arguments[0] instanceof Transaction)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
@@ -9239,26 +9242,29 @@ MediaElement.prototype.connect = function(sink, mediaType, mediaDescription, cal
 
   switch(arguments.length){
     case 1: mediaType = undefined;
-    case 2: mediaDescription = undefined;
+    case 2: sourceMediaDescription = undefined;
+    case 3: sinkMediaDescription = undefined;
     break;
 
     default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range ['+1+'-'+3+']');
+      var error = new RangeError('Number of params ('+arguments.length+') not in range ['+1+'-'+4+']');
           error.length = arguments.length;
           error.min = 1;
-          error.max = 3;
+          error.max = 4;
 
       throw error;
   }
 
   checkType('MediaElement', 'sink', sink, {required: true});
   checkType('MediaType', 'mediaType', mediaType);
-  checkType('String', 'mediaDescription', mediaDescription);
+  checkType('String', 'sourceMediaDescription', sourceMediaDescription);
+  checkType('String', 'sinkMediaDescription', sinkMediaDescription);
 
   var params = {
     sink: sink,
     mediaType: mediaType,
-    mediaDescription: mediaDescription,
+    sourceMediaDescription: sourceMediaDescription,
+    sinkMediaDescription: sinkMediaDescription,
   };
 
   var promise = this._invoke(transaction, 'connect', params, callback);
@@ -9273,9 +9279,73 @@ MediaElement.prototype.connect = function(sink, mediaType, mediaDescription, cal
  */
 
 /**
- * A list of sinks of the given {@link module:core/complexTypes.MediaType MediaType}. The list will be empty if no sinks are found.
+ * Disconnects two elements, with the given restrictions, current {@link module:core/abstracts.MediaElement MediaElement} stops sending media to sink element. If the previously requested connection didn't took place it is also removed
  *
- * @alias module:core/abstracts.MediaElement.getMediaSinks
+ * @alias module:core/abstracts.MediaElement.disconnect
+ *
+ * @param {module:core/abstracts.MediaElement} sink
+ *  the target {@link module:core/abstracts.MediaElement MediaElement} that will stop receiving media
+ *
+ * @param {module:core/complexTypes.MediaType} [mediaType]
+ *  the {@link MediaType} of the pads that will be connected
+ *
+ * @param {external:String} [sourceMediaDescription]
+ *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *
+ * @param {external:String} [sinkMediaDescription]
+ *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *
+ * @param {module:core/abstracts.MediaElement~disconnectCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescription, sinkMediaDescription, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  callback = arguments[arguments.length-1] instanceof Function
+           ? Array.prototype.pop.call(arguments)
+           : undefined;
+
+  switch(arguments.length){
+    case 1: mediaType = undefined;
+    case 2: sourceMediaDescription = undefined;
+    case 3: sinkMediaDescription = undefined;
+    break;
+
+    default:
+      var error = new RangeError('Number of params ('+arguments.length+') not in range ['+1+'-'+4+']');
+          error.length = arguments.length;
+          error.min = 1;
+          error.max = 4;
+
+      throw error;
+  }
+
+  checkType('MediaElement', 'sink', sink, {required: true});
+  checkType('MediaType', 'mediaType', mediaType);
+  checkType('String', 'sourceMediaDescription', sourceMediaDescription);
+  checkType('String', 'sinkMediaDescription', sinkMediaDescription);
+
+  var params = {
+    sink: sink,
+    mediaType: mediaType,
+    sourceMediaDescription: sourceMediaDescription,
+    sinkMediaDescription: sinkMediaDescription,
+  };
+
+  return this._invoke(transaction, 'disconnect', params, callback);
+};
+/**
+ * @callback module:core/abstracts.MediaElement~disconnectCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Returns a list of the connections information of the elements that ere receiving media from this element.
+ *
+ * @alias module:core/abstracts.MediaElement.getSinkConnections
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
  *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link module:core/abstracts.MediaElement#MediaType.DATA}
@@ -9283,11 +9353,11 @@ MediaElement.prototype.connect = function(sink, mediaType, mediaDescription, cal
  * @param {external:String} [description]
  *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
- * @param {module:core/abstracts.MediaElement~getMediaSinksCallback} [callback]
+ * @param {module:core/abstracts.MediaElement~getSinkConnectionsCallback} [callback]
  *
  * @return {external:Promise}
  */
-MediaElement.prototype.getMediaSinks = function(mediaType, description, callback){
+MediaElement.prototype.getSinkConnections = function(mediaType, description, callback){
   var transaction = (arguments[0] instanceof Transaction)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
@@ -9318,19 +9388,19 @@ MediaElement.prototype.getMediaSinks = function(mediaType, description, callback
     description: description,
   };
 
-  return this._invoke(transaction, 'getMediaSinks', params, callback);
+  return this._invoke(transaction, 'getSinkConnections', params, callback);
 };
 /**
- * @callback module:core/abstracts.MediaElement~getMediaSinksCallback
+ * @callback module:core/abstracts.MediaElement~getSinkConnectionsCallback
  * @param {external:Error} error
- * @param {module:core/abstracts.MediaSink} result
- *  A list of sinks. The list will be empty if no sinks are found.
+ * @param {module:core/complexTypes.ElementConnectionData} result
+ *  A list of the connections information that arereceiving media from this element. The list will be empty if no sinks are found.
  */
 
 /**
- * Get the media sources of the given type and description
+ * Get the connections information of the elements that are sending media to this element {@link module:core/abstracts.MediaElement MediaElement}
  *
- * @alias module:core/abstracts.MediaElement.getMediaSrcs
+ * @alias module:core/abstracts.MediaElement.getSourceConnections
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
  *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link module:core/abstracts.MediaElement#MediaType.DATA}
@@ -9338,11 +9408,11 @@ MediaElement.prototype.getMediaSinks = function(mediaType, description, callback
  * @param {external:String} [description]
  *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
- * @param {module:core/abstracts.MediaElement~getMediaSrcsCallback} [callback]
+ * @param {module:core/abstracts.MediaElement~getSourceConnectionsCallback} [callback]
  *
  * @return {external:Promise}
  */
-MediaElement.prototype.getMediaSrcs = function(mediaType, description, callback){
+MediaElement.prototype.getSourceConnections = function(mediaType, description, callback){
   var transaction = (arguments[0] instanceof Transaction)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
@@ -9373,13 +9443,13 @@ MediaElement.prototype.getMediaSrcs = function(mediaType, description, callback)
     description: description,
   };
 
-  return this._invoke(transaction, 'getMediaSrcs', params, callback);
+  return this._invoke(transaction, 'getSourceConnections', params, callback);
 };
 /**
- * @callback module:core/abstracts.MediaElement~getMediaSrcsCallback
+ * @callback module:core/abstracts.MediaElement~getSourceConnectionsCallback
  * @param {external:Error} error
- * @param {module:core/abstracts.MediaSource} result
- *  A list of sources. The list will be empty if no sources are found.
+ * @param {module:core/complexTypes.ElementConnectionData} result
+ *  A list of the connections information that are sending media to this element. The list will be empty if no sources are found.
  */
 
 /**
@@ -9665,7 +9735,7 @@ MediaObject.prototype.getName = function(callback){
  */
 
 /**
- * parent of this media object. The type of the parent depends on the type of the element. The parent of a {@link module:core/abstracts.MediaPad MediaPad} is its {@link module:core/abstracts.MediaElement MediaElement}; the parent of a {@link module:core/abstracts.Hub Hub} or a {@link module:core/abstracts.MediaElement MediaElement} is its {@link module:core.MediaPipeline MediaPipeline}. A {@link module:core.MediaPipeline MediaPipeline} has no parent, i.e. the property is null
+ * parent of this media object. The type of the parent depends on the type of the element. The parent of a :rom:cls:`MediaPad` is its {@link module:core/abstracts.MediaElement MediaElement}; the parent of a {@link module:core/abstracts.Hub Hub} or a {@link module:core/abstracts.MediaElement MediaElement} is its {@link module:core.MediaPipeline MediaPipeline}. A {@link module:core.MediaPipeline MediaPipeline} has no parent, i.e. the property is null
  *
  * @alias module:core/abstracts.MediaObject#getParent
  *
@@ -9869,413 +9939,7 @@ MediaObject.check = function(key, value)
     throw ChecktypeError(key, MediaObject, value);
 };
 
-},{"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":150}],46:[function(require,module,exports){
-/* Autogenerated with Kurento Idl */
-
-/*
- * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- */
-
-var inherits = require('inherits');
-
-var kurentoClient = require('kurento-client');
-
-var ChecktypeError = kurentoClient.checkType.ChecktypeError;
-
-var MediaObject = require('./MediaObject');
-
-/**
- * @classdesc
- *  A {@link module:core/abstracts.MediaPad MediaPad} is an element´s interface with the outside world. The data streams flow from the {@link module:core/abstracts.MediaSource MediaSource} pad to another element's {@link module:core/abstracts.MediaSink MediaSink} pad.
- *
- * @abstract
- * @extends module:core/abstracts.MediaObject
- *
- * @constructor module:core/abstracts.MediaPad
- */
-function MediaPad(){
-  MediaPad.super_.call(this);
-};
-inherits(MediaPad, MediaObject);
-
-/**
- * The description for this pad.
- *
- * @alias module:core/abstracts.MediaPad#getMediaDescription
- *
- * @param {module:core/abstracts.MediaPad~getMediaDescriptionCallback} [callback]
- *
- * @return {external:Promise}
- */
-MediaPad.prototype.getMediaDescription = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  if(!arguments.length) callback = undefined;
-
-  return this._invoke(transaction, 'getMediaDescription', callback);
-};
-/**
- * @callback module:core/abstracts.MediaPad~getMediaDescriptionCallback
- * @param {external:Error} error
- * @param {external:String} result
- */
-
-/**
- * The {@link module:core/abstracts.MediaElement MediaElement} that encloses this pad
- *
- * @alias module:core/abstracts.MediaPad#getMediaElement
- *
- * @param {module:core/abstracts.MediaPad~getMediaElementCallback} [callback]
- *
- * @return {external:Promise}
- */
-MediaPad.prototype.getMediaElement = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  if(!arguments.length) callback = undefined;
-
-  return this._invoke(transaction, 'getMediaElement', callback);
-};
-/**
- * @callback module:core/abstracts.MediaPad~getMediaElementCallback
- * @param {external:Error} error
- * @param {module:core/abstracts.MediaElement} result
- */
-
-/**
- * Media that this pad accepts. One of {@link module:core/abstracts.MediaPad#MediaType.AUDIO}, {@link module:core/abstracts.MediaPad#MediaType.DATA} or {@link module:core/abstracts.MediaPad#MediaType.VIDEO}
- *
- * @alias module:core/abstracts.MediaPad#getMediaType
- *
- * @param {module:core/abstracts.MediaPad~getMediaTypeCallback} [callback]
- *
- * @return {external:Promise}
- */
-MediaPad.prototype.getMediaType = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  if(!arguments.length) callback = undefined;
-
-  return this._invoke(transaction, 'getMediaType', callback);
-};
-/**
- * @callback module:core/abstracts.MediaPad~getMediaTypeCallback
- * @param {external:Error} error
- * @param {module:core/complexTypes.MediaType} result
- */
-
-/**
- * @alias module:core/abstracts.MediaPad.constructorParams
- */
-MediaPad.constructorParams = {};
-
-/**
- * @alias module:core/abstracts.MediaPad.events
- *
- * @extend module:core/abstracts.MediaObject.events
- */
-MediaPad.events = MediaObject.events;
-
-module.exports = MediaPad;
-
-MediaPad.check = function(key, value)
-{
-  if(!(value instanceof MediaPad))
-    throw ChecktypeError(key, MediaPad, value);
-};
-
-},{"./MediaObject":45,"inherits":38,"kurento-client":"kurento-client"}],47:[function(require,module,exports){
-/* Autogenerated with Kurento Idl */
-
-/*
- * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- */
-
-var inherits = require('inherits');
-
-var kurentoClient = require('kurento-client');
-
-var checkType      = kurentoClient.checkType;
-var ChecktypeError = checkType.ChecktypeError;
-
-var Transaction = kurentoClient.TransactionsManager.Transaction;
-
-var MediaPad = require('./MediaPad');
-
-/**
- * @classdesc
- *  Special type of pad, used by a {@link module:core/abstracts.MediaElement MediaElement} to receive a media stream.
- *
- * @abstract
- * @extends module:core/abstracts.MediaPad
- *
- * @constructor module:core/abstracts.MediaSink
- */
-function MediaSink(){
-  MediaSink.super_.call(this);
-};
-inherits(MediaSink, MediaPad);
-
-
-/**
- * Disconnects the current sink from the referred {@link module:core/abstracts.MediaSource MediaSource}
- *
- * @alias module:core/abstracts.MediaSink.disconnect
- *
- * @param {module:core/abstracts.MediaSource} src
- *  The source to disconnect
- *
- * @param {module:core/abstracts.MediaSink~disconnectCallback} [callback]
- *
- * @return {external:Promise}
- */
-MediaSink.prototype.disconnect = function(src, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  checkType('MediaSource', 'src', src, {required: true});
-
-  var params = {
-    src: src,
-  };
-
-  return this._invoke(transaction, 'disconnect', params, callback);
-};
-/**
- * @callback module:core/abstracts.MediaSink~disconnectCallback
- * @param {external:Error} error
- */
-
-/**
- * Gets the {@link module:core/abstracts.MediaSource MediaSource} that is connected to this sink.
- *
- * @alias module:core/abstracts.MediaSink.getConnectedSrc
- *
- * @param {module:core/abstracts.MediaSink~getConnectedSrcCallback} [callback]
- *
- * @return {external:Promise}
- */
-MediaSink.prototype.getConnectedSrc = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  if(!arguments.length) callback = undefined;
-
-  return this._invoke(transaction, 'getConnectedSrc', callback);
-};
-/**
- * @callback module:core/abstracts.MediaSink~getConnectedSrcCallback
- * @param {external:Error} error
- * @param {module:core/abstracts.MediaSource} result
- *  The source connected to this sink
- */
-
-/**
- * @alias module:core/abstracts.MediaSink.constructorParams
- */
-MediaSink.constructorParams = {};
-
-/**
- * @alias module:core/abstracts.MediaSink.events
- *
- * @extend module:core/abstracts.MediaPad.events
- */
-MediaSink.events = MediaPad.events;
-
-module.exports = MediaSink;
-
-MediaSink.check = function(key, value)
-{
-  if(!(value instanceof MediaSink))
-    throw ChecktypeError(key, MediaSink, value);
-};
-
-},{"./MediaPad":46,"inherits":38,"kurento-client":"kurento-client"}],48:[function(require,module,exports){
-/* Autogenerated with Kurento Idl */
-
-/*
- * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- */
-
-var inherits = require('inherits');
-
-var kurentoClient = require('kurento-client');
-
-var checkType      = kurentoClient.checkType;
-var ChecktypeError = checkType.ChecktypeError;
-
-var Transaction = kurentoClient.TransactionsManager.Transaction;
-
-var MediaPad = require('./MediaPad');
-
-/**
- * @classdesc
- *  Special type of pad, used by a media element to generate a media stream.
- *
- * @abstract
- * @extends module:core/abstracts.MediaPad
- *
- * @constructor module:core/abstracts.MediaSource
- */
-function MediaSource(){
-  MediaSource.super_.call(this);
-};
-inherits(MediaSource, MediaPad);
-
-
-/**
- * Connects the current source with a {@link module:core/abstracts.MediaSink MediaSink}
- *
- * @alias module:core/abstracts.MediaSource.connect
- *
- * @param {module:core/abstracts.MediaSink} sink
- *  The sink to connect this source
- *
- * @param {module:core/abstracts.MediaSource~connectCallback} [callback]
- *
- * @return {external:Promise}
- */
-MediaSource.prototype.connect = function(sink, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  checkType('MediaSink', 'sink', sink, {required: true});
-
-  var params = {
-    sink: sink,
-  };
-
-  var promise = this._invoke(transaction, 'connect', params, callback);
-
-  promise.connect = sink.connect.bind(sink);
-
-  return promise;
-};
-/**
- * @callback module:core/abstracts.MediaSource~connectCallback
- * @param {external:Error} error
- */
-
-/**
- * Gets all the {@link module:core/abstracts.MediaSink MediaSinks} to which this source is connected
- *
- * @alias module:core/abstracts.MediaSource.getConnectedSinks
- *
- * @param {module:core/abstracts.MediaSource~getConnectedSinksCallback} [callback]
- *
- * @return {external:Promise}
- */
-MediaSource.prototype.getConnectedSinks = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  if(!arguments.length) callback = undefined;
-
-  return this._invoke(transaction, 'getConnectedSinks', callback);
-};
-/**
- * @callback module:core/abstracts.MediaSource~getConnectedSinksCallback
- * @param {external:Error} error
- * @param {module:core/abstracts.MediaSink} result
- *  the list of sinks that the source is connected to
- */
-
-
-/**
- * Disconnect this source pad from the specified sink pad
- *
- * @public
- *
- * @param {...module:core/abstract.MediaSink} sink - Sink to be disconnected
- * @param {module:core/abstract.MediaSource~disconnectCallback} callback
- *
- * @return {external:Promise}
- */
-MediaSource.prototype.disconnect = function(sink, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  if(arguments.length === 1) callback = undefined;
-
-  checkType('MediaSink', 'sink', sink, {required: true});
-
-  var params =
-  {
-    src: this
-  };
-
-  return sink._invoke(transaction, 'disconnect', params, callback);
-};
-/**
- * @callback module:core/abstract.MediaSource~disconnectCallback
- * @param {external:Error} error
- */
-
-/**
- * @alias module:core/abstracts.MediaSource.constructorParams
- */
-MediaSource.constructorParams = {};
-
-/**
- * @alias module:core/abstracts.MediaSource.events
- *
- * @extend module:core/abstracts.MediaPad.events
- */
-MediaSource.events = MediaPad.events;
-
-module.exports = MediaSource;
-
-MediaSource.check = function(key, value)
-{
-  if(!(value instanceof MediaSource))
-    throw ChecktypeError(key, MediaSource, value);
-};
-
-},{"./MediaPad":46,"inherits":38,"kurento-client":"kurento-client"}],49:[function(require,module,exports){
+},{"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":144}],46:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10511,7 +10175,7 @@ SdpEndpoint.check = function(key, value)
     throw ChecktypeError(key, SdpEndpoint, value);
 };
 
-},{"./SessionEndpoint":51,"inherits":38,"kurento-client":"kurento-client"}],50:[function(require,module,exports){
+},{"./SessionEndpoint":48,"inherits":38,"kurento-client":"kurento-client"}],47:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10646,7 +10310,7 @@ ServerManager.check = function(key, value)
     throw ChecktypeError(key, ServerManager, value);
 };
 
-},{"./MediaObject":45,"inherits":38,"kurento-client":"kurento-client"}],51:[function(require,module,exports){
+},{"./MediaObject":45,"inherits":38,"kurento-client":"kurento-client"}],48:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10709,7 +10373,7 @@ SessionEndpoint.check = function(key, value)
     throw ChecktypeError(key, SessionEndpoint, value);
 };
 
-},{"./Endpoint":41,"inherits":38,"kurento-client":"kurento-client"}],52:[function(require,module,exports){
+},{"./Endpoint":41,"inherits":38,"kurento-client":"kurento-client"}],49:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10740,7 +10404,7 @@ var Endpoint = require('./Endpoint');
 
 /**
  * @classdesc
- *  Interface for endpoints the require a URI to work. An example of this, would be a :rom:cls:`PlayerEndpoint` whose URI property could be used to locate a file to stream through its {@link module:core/abstracts.MediaSource MediaSource}
+ *  Interface for endpoints the require a URI to work. An example of this, would be a :rom:cls:`PlayerEndpoint` whose URI property could be used to locate a file to stream
  *
  * @abstract
  * @extends module:core/abstracts.Endpoint
@@ -10843,7 +10507,7 @@ UriEndpoint.check = function(key, value)
     throw ChecktypeError(key, UriEndpoint, value);
 };
 
-},{"./Endpoint":41,"inherits":38,"kurento-client":"kurento-client"}],53:[function(require,module,exports){
+},{"./Endpoint":41,"inherits":38,"kurento-client":"kurento-client"}],50:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10875,9 +10539,6 @@ var Filter = require('./Filter');
 var Hub = require('./Hub');
 var MediaElement = require('./MediaElement');
 var MediaObject = require('./MediaObject');
-var MediaPad = require('./MediaPad');
-var MediaSink = require('./MediaSink');
-var MediaSource = require('./MediaSource');
 var SdpEndpoint = require('./SdpEndpoint');
 var ServerManager = require('./ServerManager');
 var SessionEndpoint = require('./SessionEndpoint');
@@ -10889,15 +10550,12 @@ exports.Filter = Filter;
 exports.Hub = Hub;
 exports.MediaElement = MediaElement;
 exports.MediaObject = MediaObject;
-exports.MediaPad = MediaPad;
-exports.MediaSink = MediaSink;
-exports.MediaSource = MediaSource;
 exports.SdpEndpoint = SdpEndpoint;
 exports.ServerManager = ServerManager;
 exports.SessionEndpoint = SessionEndpoint;
 exports.UriEndpoint = UriEndpoint;
 
-},{"./Endpoint":41,"./Filter":42,"./Hub":43,"./MediaElement":44,"./MediaObject":45,"./MediaPad":46,"./MediaSink":47,"./MediaSource":48,"./SdpEndpoint":49,"./ServerManager":50,"./SessionEndpoint":51,"./UriEndpoint":52}],54:[function(require,module,exports){
+},{"./Endpoint":41,"./Filter":42,"./Hub":43,"./MediaElement":44,"./MediaObject":45,"./SdpEndpoint":46,"./ServerManager":47,"./SessionEndpoint":48,"./UriEndpoint":49}],51:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10949,7 +10607,7 @@ function checkAudioCaps(key, value)
 
 module.exports = checkAudioCaps;
 
-},{"kurento-client":"kurento-client"}],55:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],52:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10999,7 +10657,64 @@ function checkAudioCodec(key, value)
 
 module.exports = checkAudioCodec;
 
-},{"kurento-client":"kurento-client"}],56:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],53:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.ElementConnectionData}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.ElementConnectionData} value
+ */
+function checkElementConnectionData(key, value)
+{
+  checkType('MediaElement', key+'.source', value.source, true);
+  checkType('MediaElement', key+'.sink', value.sink, true);
+  checkType('MediaType', key+'.type', value.type, true);
+  checkType('String', key+'.sourceDescription', value.sourceDescription, true);
+  checkType('String', key+'.sinkDescription', value.sinkDescription, true);
+};
+
+
+/**
+ * @typedef core/complexTypes.ElementConnectionData
+ *
+ * @type {Object}
+ * @property {module:core/abstracts.MediaElement} source
+ *  The source element in the connection
+ * @property {module:core/abstracts.MediaElement} sink
+ *  The sink element in the connection
+ * @property {module:core/complexTypes.MediaType} type
+ *  MediaType of the connection
+ * @property {external:String} sourceDescription
+ *  Description of source media. Could be emty.
+ * @property {external:String} sinkDescription
+ *  Description of sink media. Could be emty.
+ */
+
+
+module.exports = checkElementConnectionData;
+
+},{"kurento-client":"kurento-client"}],54:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11050,7 +10765,7 @@ function checkFilterType(key, value)
 
 module.exports = checkFilterType;
 
-},{"kurento-client":"kurento-client"}],57:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],55:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11102,7 +10817,7 @@ function checkFraction(key, value)
 
 module.exports = checkFraction;
 
-},{"kurento-client":"kurento-client"}],58:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],56:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11153,7 +10868,7 @@ function checkMediaType(key, value)
 
 module.exports = checkMediaType;
 
-},{"kurento-client":"kurento-client"}],59:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],57:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11208,7 +10923,7 @@ function checkModuleInfo(key, value)
 
 module.exports = checkModuleInfo;
 
-},{"kurento-client":"kurento-client"}],60:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],58:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11266,7 +10981,7 @@ function checkServerInfo(key, value)
 
 module.exports = checkServerInfo;
 
-},{"kurento-client":"kurento-client"}],61:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],59:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11316,7 +11031,7 @@ function checkServerType(key, value)
 
 module.exports = checkServerType;
 
-},{"kurento-client":"kurento-client"}],62:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],60:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11368,7 +11083,7 @@ function checkVideoCaps(key, value)
 
 module.exports = checkVideoCaps;
 
-},{"kurento-client":"kurento-client"}],63:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],61:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11418,7 +11133,7 @@ function checkVideoCodec(key, value)
 
 module.exports = checkVideoCodec;
 
-},{"kurento-client":"kurento-client"}],64:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],62:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11447,6 +11162,7 @@ module.exports = checkVideoCodec;
 
 var AudioCaps = require('./AudioCaps');
 var AudioCodec = require('./AudioCodec');
+var ElementConnectionData = require('./ElementConnectionData');
 var FilterType = require('./FilterType');
 var Fraction = require('./Fraction');
 var MediaType = require('./MediaType');
@@ -11459,6 +11175,7 @@ var VideoCodec = require('./VideoCodec');
 
 exports.AudioCaps = AudioCaps;
 exports.AudioCodec = AudioCodec;
+exports.ElementConnectionData = ElementConnectionData;
 exports.FilterType = FilterType;
 exports.Fraction = Fraction;
 exports.MediaType = MediaType;
@@ -11468,7 +11185,7 @@ exports.ServerType = ServerType;
 exports.VideoCaps = VideoCaps;
 exports.VideoCodec = VideoCodec;
 
-},{"./AudioCaps":54,"./AudioCodec":55,"./FilterType":56,"./Fraction":57,"./MediaType":58,"./ModuleInfo":59,"./ServerInfo":60,"./ServerType":61,"./VideoCaps":62,"./VideoCodec":63}],65:[function(require,module,exports){
+},{"./AudioCaps":51,"./AudioCodec":52,"./ElementConnectionData":53,"./FilterType":54,"./Fraction":55,"./MediaType":56,"./ModuleInfo":57,"./ServerInfo":58,"./ServerType":59,"./VideoCaps":60,"./VideoCodec":61}],63:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11505,7 +11222,7 @@ exports.MediaPipeline = MediaPipeline;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./HubPort":39,"./MediaPipeline":40,"./abstracts":53,"./complexTypes":64}],66:[function(require,module,exports){
+},{"./HubPort":39,"./MediaPipeline":40,"./abstracts":50,"./complexTypes":62}],64:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11668,7 +11385,7 @@ AlphaBlending.check = function(key, value)
     throw ChecktypeError(key, AlphaBlending, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],67:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],65:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11737,7 +11454,7 @@ Composite.check = function(key, value)
     throw ChecktypeError(key, Composite, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],68:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],66:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11849,7 +11566,7 @@ Dispatcher.check = function(key, value)
     throw ChecktypeError(key, Dispatcher, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],69:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],67:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11975,7 +11692,7 @@ DispatcherOneToMany.check = function(key, value)
     throw ChecktypeError(key, DispatcherOneToMany, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],70:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],68:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12069,7 +11786,7 @@ HttpGetEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpGetEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":77,"inherits":38,"kurento-client":"kurento-client"}],71:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":75,"inherits":38,"kurento-client":"kurento-client"}],69:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12156,7 +11873,7 @@ HttpPostEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpPostEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":77,"inherits":38,"kurento-client":"kurento-client"}],72:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":75,"inherits":38,"kurento-client":"kurento-client"}],70:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12313,7 +12030,7 @@ Mixer.check = function(key, value)
     throw ChecktypeError(key, Mixer, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],73:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],71:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12435,7 +12152,7 @@ PlayerEndpoint.check = function(key, value)
     throw ChecktypeError(key, PlayerEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],74:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],72:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12553,7 +12270,7 @@ RecorderEndpoint.check = function(key, value)
     throw ChecktypeError(key, RecorderEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],75:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],73:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12622,7 +12339,7 @@ RtpEndpoint.check = function(key, value)
     throw ChecktypeError(key, RtpEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],76:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],74:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12745,7 +12462,7 @@ WebRtcEndpoint.check = function(key, value)
     throw ChecktypeError(key, WebRtcEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],77:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],75:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12834,7 +12551,7 @@ HttpEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":108}],78:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":104}],76:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12866,7 +12583,7 @@ var HttpEndpoint = require('./HttpEndpoint');
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":77}],79:[function(require,module,exports){
+},{"./HttpEndpoint":75}],77:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12918,7 +12635,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"kurento-client":"kurento-client"}],80:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],78:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12950,7 +12667,7 @@ var MediaProfileSpecType = require('./MediaProfileSpecType');
 
 exports.MediaProfileSpecType = MediaProfileSpecType;
 
-},{"./MediaProfileSpecType":79}],81:[function(require,module,exports){
+},{"./MediaProfileSpecType":77}],79:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13005,61 +12722,57 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":66,"./Composite":67,"./Dispatcher":68,"./DispatcherOneToMany":69,"./HttpGetEndpoint":70,"./HttpPostEndpoint":71,"./Mixer":72,"./PlayerEndpoint":73,"./RecorderEndpoint":74,"./RtpEndpoint":75,"./WebRtcEndpoint":76,"./abstracts":78,"./complexTypes":80}],82:[function(require,module,exports){
+},{"./AlphaBlending":64,"./Composite":65,"./Dispatcher":66,"./DispatcherOneToMany":67,"./HttpGetEndpoint":68,"./HttpPostEndpoint":69,"./Mixer":70,"./PlayerEndpoint":71,"./RecorderEndpoint":72,"./RtpEndpoint":73,"./WebRtcEndpoint":74,"./abstracts":76,"./complexTypes":78}],80:[function(require,module,exports){
 module.exports=require(39)
-},{"./abstracts/MediaElement":87,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/HubPort.js":39,"inherits":38,"kurento-client":"kurento-client"}],83:[function(require,module,exports){
+},{"./abstracts/MediaElement":85,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/HubPort.js":39,"inherits":38,"kurento-client":"kurento-client"}],81:[function(require,module,exports){
 module.exports=require(40)
-},{"./abstracts/MediaObject":88,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/MediaPipeline.js":40,"inherits":38,"kurento-client":"kurento-client"}],84:[function(require,module,exports){
+},{"./abstracts/MediaObject":86,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/MediaPipeline.js":40,"inherits":38,"kurento-client":"kurento-client"}],82:[function(require,module,exports){
 module.exports=require(41)
-},{"./MediaElement":87,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/Endpoint.js":41,"inherits":38,"kurento-client":"kurento-client"}],85:[function(require,module,exports){
+},{"./MediaElement":85,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Endpoint.js":41,"inherits":38,"kurento-client":"kurento-client"}],83:[function(require,module,exports){
 module.exports=require(42)
-},{"./MediaElement":87,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/Filter.js":42,"inherits":38,"kurento-client":"kurento-client"}],86:[function(require,module,exports){
+},{"./MediaElement":85,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Filter.js":42,"inherits":38,"kurento-client":"kurento-client"}],84:[function(require,module,exports){
 module.exports=require(43)
-},{"../HubPort":82,"./MediaObject":88,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/Hub.js":43,"inherits":38,"kurento-client":"kurento-client"}],87:[function(require,module,exports){
+},{"../HubPort":80,"./MediaObject":86,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Hub.js":43,"inherits":38,"kurento-client":"kurento-client"}],85:[function(require,module,exports){
 module.exports=require(44)
-},{"./MediaObject":88,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaElement.js":44,"inherits":38,"kurento-client":"kurento-client"}],88:[function(require,module,exports){
+},{"./MediaObject":86,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/MediaElement.js":44,"inherits":38,"kurento-client":"kurento-client"}],86:[function(require,module,exports){
 module.exports=require(45)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaObject.js":45,"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":150}],89:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/MediaObject.js":45,"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":144}],87:[function(require,module,exports){
 module.exports=require(46)
-},{"./MediaObject":88,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaPad.js":46,"inherits":38,"kurento-client":"kurento-client"}],90:[function(require,module,exports){
+},{"./SessionEndpoint":89,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/SdpEndpoint.js":46,"inherits":38,"kurento-client":"kurento-client"}],88:[function(require,module,exports){
 module.exports=require(47)
-},{"./MediaPad":89,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaSink.js":47,"inherits":38,"kurento-client":"kurento-client"}],91:[function(require,module,exports){
+},{"./MediaObject":86,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/ServerManager.js":47,"inherits":38,"kurento-client":"kurento-client"}],89:[function(require,module,exports){
 module.exports=require(48)
-},{"./MediaPad":89,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaSource.js":48,"inherits":38,"kurento-client":"kurento-client"}],92:[function(require,module,exports){
+},{"./Endpoint":82,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/SessionEndpoint.js":48,"inherits":38,"kurento-client":"kurento-client"}],90:[function(require,module,exports){
 module.exports=require(49)
-},{"./SessionEndpoint":94,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/SdpEndpoint.js":49,"inherits":38,"kurento-client":"kurento-client"}],93:[function(require,module,exports){
+},{"./Endpoint":82,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/UriEndpoint.js":49,"inherits":38,"kurento-client":"kurento-client"}],91:[function(require,module,exports){
 module.exports=require(50)
-},{"./MediaObject":88,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/ServerManager.js":50,"inherits":38,"kurento-client":"kurento-client"}],94:[function(require,module,exports){
+},{"./Endpoint":82,"./Filter":83,"./Hub":84,"./MediaElement":85,"./MediaObject":86,"./SdpEndpoint":87,"./ServerManager":88,"./SessionEndpoint":89,"./UriEndpoint":90,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/index.js":50}],92:[function(require,module,exports){
 module.exports=require(51)
-},{"./Endpoint":84,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/SessionEndpoint.js":51,"inherits":38,"kurento-client":"kurento-client"}],95:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/AudioCaps.js":51,"kurento-client":"kurento-client"}],93:[function(require,module,exports){
 module.exports=require(52)
-},{"./Endpoint":84,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/UriEndpoint.js":52,"inherits":38,"kurento-client":"kurento-client"}],96:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/AudioCodec.js":52,"kurento-client":"kurento-client"}],94:[function(require,module,exports){
 module.exports=require(53)
-},{"./Endpoint":84,"./Filter":85,"./Hub":86,"./MediaElement":87,"./MediaObject":88,"./MediaPad":89,"./MediaSink":90,"./MediaSource":91,"./SdpEndpoint":92,"./ServerManager":93,"./SessionEndpoint":94,"./UriEndpoint":95,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/index.js":53}],97:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/ElementConnectionData.js":53,"kurento-client":"kurento-client"}],95:[function(require,module,exports){
 module.exports=require(54)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/AudioCaps.js":54,"kurento-client":"kurento-client"}],98:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/FilterType.js":54,"kurento-client":"kurento-client"}],96:[function(require,module,exports){
 module.exports=require(55)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/AudioCodec.js":55,"kurento-client":"kurento-client"}],99:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/Fraction.js":55,"kurento-client":"kurento-client"}],97:[function(require,module,exports){
 module.exports=require(56)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/FilterType.js":56,"kurento-client":"kurento-client"}],100:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/MediaType.js":56,"kurento-client":"kurento-client"}],98:[function(require,module,exports){
 module.exports=require(57)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/Fraction.js":57,"kurento-client":"kurento-client"}],101:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/ModuleInfo.js":57,"kurento-client":"kurento-client"}],99:[function(require,module,exports){
 module.exports=require(58)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/MediaType.js":58,"kurento-client":"kurento-client"}],102:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/ServerInfo.js":58,"kurento-client":"kurento-client"}],100:[function(require,module,exports){
 module.exports=require(59)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/ModuleInfo.js":59,"kurento-client":"kurento-client"}],103:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/ServerType.js":59,"kurento-client":"kurento-client"}],101:[function(require,module,exports){
 module.exports=require(60)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/ServerInfo.js":60,"kurento-client":"kurento-client"}],104:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/VideoCaps.js":60,"kurento-client":"kurento-client"}],102:[function(require,module,exports){
 module.exports=require(61)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/ServerType.js":61,"kurento-client":"kurento-client"}],105:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/VideoCodec.js":61,"kurento-client":"kurento-client"}],103:[function(require,module,exports){
 module.exports=require(62)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/VideoCaps.js":62,"kurento-client":"kurento-client"}],106:[function(require,module,exports){
+},{"./AudioCaps":92,"./AudioCodec":93,"./ElementConnectionData":94,"./FilterType":95,"./Fraction":96,"./MediaType":97,"./ModuleInfo":98,"./ServerInfo":99,"./ServerType":100,"./VideoCaps":101,"./VideoCodec":102,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/index.js":62}],104:[function(require,module,exports){
 module.exports=require(63)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/VideoCodec.js":63,"kurento-client":"kurento-client"}],107:[function(require,module,exports){
-module.exports=require(64)
-},{"./AudioCaps":97,"./AudioCodec":98,"./FilterType":99,"./Fraction":100,"./MediaType":101,"./ModuleInfo":102,"./ServerInfo":103,"./ServerType":104,"./VideoCaps":105,"./VideoCodec":106,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/index.js":64}],108:[function(require,module,exports){
-module.exports=require(65)
-},{"./HubPort":82,"./MediaPipeline":83,"./abstracts":96,"./complexTypes":107,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/index.js":65}],109:[function(require,module,exports){
+},{"./HubPort":80,"./MediaPipeline":81,"./abstracts":91,"./complexTypes":103,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/index.js":63}],105:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13225,7 +12938,7 @@ FaceOverlayFilter.check = function(key, value)
     throw ChecktypeError(key, FaceOverlayFilter, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":141}],110:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":135}],106:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13309,7 +13022,7 @@ GStreamerFilter.check = function(key, value)
     throw ChecktypeError(key, GStreamerFilter, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":141}],111:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":135}],107:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13380,7 +13093,7 @@ ZBarFilter.check = function(key, value)
     throw ChecktypeError(key, ZBarFilter, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":141}],112:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":135}],108:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13440,7 +13153,7 @@ OpenCVFilter.check = function(key, value)
     throw ChecktypeError(key, OpenCVFilter, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":141}],113:[function(require,module,exports){
+},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":135}],109:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13472,7 +13185,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":112}],114:[function(require,module,exports){
+},{"./OpenCVFilter":108}],110:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13510,61 +13223,57 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":109,"./GStreamerFilter":110,"./ZBarFilter":111,"./abstracts":113}],115:[function(require,module,exports){
+},{"./FaceOverlayFilter":105,"./GStreamerFilter":106,"./ZBarFilter":107,"./abstracts":109}],111:[function(require,module,exports){
 module.exports=require(39)
-},{"./abstracts/MediaElement":120,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/HubPort.js":39,"inherits":38,"kurento-client":"kurento-client"}],116:[function(require,module,exports){
+},{"./abstracts/MediaElement":116,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/HubPort.js":39,"inherits":38,"kurento-client":"kurento-client"}],112:[function(require,module,exports){
 module.exports=require(40)
-},{"./abstracts/MediaObject":121,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/MediaPipeline.js":40,"inherits":38,"kurento-client":"kurento-client"}],117:[function(require,module,exports){
+},{"./abstracts/MediaObject":117,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/MediaPipeline.js":40,"inherits":38,"kurento-client":"kurento-client"}],113:[function(require,module,exports){
 module.exports=require(41)
-},{"./MediaElement":120,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/Endpoint.js":41,"inherits":38,"kurento-client":"kurento-client"}],118:[function(require,module,exports){
+},{"./MediaElement":116,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Endpoint.js":41,"inherits":38,"kurento-client":"kurento-client"}],114:[function(require,module,exports){
 module.exports=require(42)
-},{"./MediaElement":120,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/Filter.js":42,"inherits":38,"kurento-client":"kurento-client"}],119:[function(require,module,exports){
+},{"./MediaElement":116,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Filter.js":42,"inherits":38,"kurento-client":"kurento-client"}],115:[function(require,module,exports){
 module.exports=require(43)
-},{"../HubPort":115,"./MediaObject":121,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/Hub.js":43,"inherits":38,"kurento-client":"kurento-client"}],120:[function(require,module,exports){
+},{"../HubPort":111,"./MediaObject":117,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/Hub.js":43,"inherits":38,"kurento-client":"kurento-client"}],116:[function(require,module,exports){
 module.exports=require(44)
-},{"./MediaObject":121,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaElement.js":44,"inherits":38,"kurento-client":"kurento-client"}],121:[function(require,module,exports){
+},{"./MediaObject":117,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/MediaElement.js":44,"inherits":38,"kurento-client":"kurento-client"}],117:[function(require,module,exports){
 module.exports=require(45)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaObject.js":45,"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":150}],122:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/MediaObject.js":45,"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":144}],118:[function(require,module,exports){
 module.exports=require(46)
-},{"./MediaObject":121,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaPad.js":46,"inherits":38,"kurento-client":"kurento-client"}],123:[function(require,module,exports){
+},{"./SessionEndpoint":120,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/SdpEndpoint.js":46,"inherits":38,"kurento-client":"kurento-client"}],119:[function(require,module,exports){
 module.exports=require(47)
-},{"./MediaPad":122,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaSink.js":47,"inherits":38,"kurento-client":"kurento-client"}],124:[function(require,module,exports){
+},{"./MediaObject":117,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/ServerManager.js":47,"inherits":38,"kurento-client":"kurento-client"}],120:[function(require,module,exports){
 module.exports=require(48)
-},{"./MediaPad":122,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/MediaSource.js":48,"inherits":38,"kurento-client":"kurento-client"}],125:[function(require,module,exports){
+},{"./Endpoint":113,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/SessionEndpoint.js":48,"inherits":38,"kurento-client":"kurento-client"}],121:[function(require,module,exports){
 module.exports=require(49)
-},{"./SessionEndpoint":127,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/SdpEndpoint.js":49,"inherits":38,"kurento-client":"kurento-client"}],126:[function(require,module,exports){
+},{"./Endpoint":113,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/UriEndpoint.js":49,"inherits":38,"kurento-client":"kurento-client"}],122:[function(require,module,exports){
 module.exports=require(50)
-},{"./MediaObject":121,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/ServerManager.js":50,"inherits":38,"kurento-client":"kurento-client"}],127:[function(require,module,exports){
+},{"./Endpoint":113,"./Filter":114,"./Hub":115,"./MediaElement":116,"./MediaObject":117,"./SdpEndpoint":118,"./ServerManager":119,"./SessionEndpoint":120,"./UriEndpoint":121,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/abstracts/index.js":50}],123:[function(require,module,exports){
 module.exports=require(51)
-},{"./Endpoint":117,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/SessionEndpoint.js":51,"inherits":38,"kurento-client":"kurento-client"}],128:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/AudioCaps.js":51,"kurento-client":"kurento-client"}],124:[function(require,module,exports){
 module.exports=require(52)
-},{"./Endpoint":117,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/UriEndpoint.js":52,"inherits":38,"kurento-client":"kurento-client"}],129:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/AudioCodec.js":52,"kurento-client":"kurento-client"}],125:[function(require,module,exports){
 module.exports=require(53)
-},{"./Endpoint":117,"./Filter":118,"./Hub":119,"./MediaElement":120,"./MediaObject":121,"./MediaPad":122,"./MediaSink":123,"./MediaSource":124,"./SdpEndpoint":125,"./ServerManager":126,"./SessionEndpoint":127,"./UriEndpoint":128,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/abstracts/index.js":53}],130:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/ElementConnectionData.js":53,"kurento-client":"kurento-client"}],126:[function(require,module,exports){
 module.exports=require(54)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/AudioCaps.js":54,"kurento-client":"kurento-client"}],131:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/FilterType.js":54,"kurento-client":"kurento-client"}],127:[function(require,module,exports){
 module.exports=require(55)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/AudioCodec.js":55,"kurento-client":"kurento-client"}],132:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/Fraction.js":55,"kurento-client":"kurento-client"}],128:[function(require,module,exports){
 module.exports=require(56)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/FilterType.js":56,"kurento-client":"kurento-client"}],133:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/MediaType.js":56,"kurento-client":"kurento-client"}],129:[function(require,module,exports){
 module.exports=require(57)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/Fraction.js":57,"kurento-client":"kurento-client"}],134:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/ModuleInfo.js":57,"kurento-client":"kurento-client"}],130:[function(require,module,exports){
 module.exports=require(58)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/MediaType.js":58,"kurento-client":"kurento-client"}],135:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/ServerInfo.js":58,"kurento-client":"kurento-client"}],131:[function(require,module,exports){
 module.exports=require(59)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/ModuleInfo.js":59,"kurento-client":"kurento-client"}],136:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/ServerType.js":59,"kurento-client":"kurento-client"}],132:[function(require,module,exports){
 module.exports=require(60)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/ServerInfo.js":60,"kurento-client":"kurento-client"}],137:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/VideoCaps.js":60,"kurento-client":"kurento-client"}],133:[function(require,module,exports){
 module.exports=require(61)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/ServerType.js":61,"kurento-client":"kurento-client"}],138:[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/VideoCodec.js":61,"kurento-client":"kurento-client"}],134:[function(require,module,exports){
 module.exports=require(62)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/VideoCaps.js":62,"kurento-client":"kurento-client"}],139:[function(require,module,exports){
+},{"./AudioCaps":123,"./AudioCodec":124,"./ElementConnectionData":125,"./FilterType":126,"./Fraction":127,"./MediaType":128,"./ModuleInfo":129,"./ServerInfo":130,"./ServerType":131,"./VideoCaps":132,"./VideoCodec":133,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/complexTypes/index.js":62}],135:[function(require,module,exports){
 module.exports=require(63)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/VideoCodec.js":63,"kurento-client":"kurento-client"}],140:[function(require,module,exports){
-module.exports=require(64)
-},{"./AudioCaps":130,"./AudioCodec":131,"./FilterType":132,"./Fraction":133,"./MediaType":134,"./ModuleInfo":135,"./ServerInfo":136,"./ServerType":137,"./VideoCaps":138,"./VideoCodec":139,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/complexTypes/index.js":64}],141:[function(require,module,exports){
-module.exports=require(65)
-},{"./HubPort":115,"./MediaPipeline":116,"./abstracts":129,"./complexTypes":140,"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-client-core/lib/index.js":65}],142:[function(require,module,exports){
+},{"./HubPort":111,"./MediaPipeline":112,"./abstracts":122,"./complexTypes":134,"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-client-core/lib/index.js":63}],136:[function(require,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -13630,7 +13339,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],143:[function(require,module,exports){
+},{}],137:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -13651,7 +13360,7 @@ var JsonRpcClient  = require('./jsonrpcclient');
 
 exports.JsonRpcClient  = JsonRpcClient;
 
-},{"./jsonrpcclient":144}],144:[function(require,module,exports){
+},{"./jsonrpcclient":138}],138:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -13686,7 +13395,7 @@ function JsonRpcClient(wsUrl, onRequest, onerror)
 
 module.exports  = JsonRpcClient;
 
-},{"../..":145,"ws":149}],145:[function(require,module,exports){
+},{"../..":139,"ws":143}],139:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -14442,7 +14151,7 @@ var clients = require('./clients');
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":142,"./clients":143,"./packers":148,"events":15,"inherits":38}],146:[function(require,module,exports){
+},{"./Mapper":136,"./clients":137,"./packers":142,"events":15,"inherits":38}],140:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -14546,7 +14255,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],147:[function(require,module,exports){
+},{}],141:[function(require,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -14561,7 +14270,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],148:[function(require,module,exports){
+},{}],142:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC  = require('./XmlRPC');
 
@@ -14569,7 +14278,7 @@ var XmlRPC  = require('./XmlRPC');
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":146,"./XmlRPC":147}],149:[function(require,module,exports){
+},{"./JsonRPC":140,"./XmlRPC":141}],143:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -14614,7 +14323,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],150:[function(require,module,exports){
+},{}],144:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -14661,7 +14370,7 @@ function promiseCallback(promise, callback)
 
 module.exports = promiseCallback;
 
-},{}],151:[function(require,module,exports){
+},{}],145:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -14680,7 +14389,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":152,"websocket-stream":159}],152:[function(require,module,exports){
+},{"reconnect-core":146,"websocket-stream":153}],146:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -14794,7 +14503,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":153,"events":15}],153:[function(require,module,exports){
+},{"backoff":147,"events":15}],147:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -14845,7 +14554,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":154,"./lib/function_call.js":155,"./lib/strategy/exponential":156,"./lib/strategy/fibonacci":157}],154:[function(require,module,exports){
+},{"./lib/backoff":148,"./lib/function_call.js":149,"./lib/strategy/exponential":150,"./lib/strategy/fibonacci":151}],148:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -14931,7 +14640,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":15,"util":37}],155:[function(require,module,exports){
+},{"events":15,"util":37}],149:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15160,7 +14869,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":154,"./strategy/fibonacci":157,"events":15,"util":37}],156:[function(require,module,exports){
+},{"./backoff":148,"./strategy/fibonacci":151,"events":15,"util":37}],150:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15196,7 +14905,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":158,"util":37}],157:[function(require,module,exports){
+},{"./strategy":152,"util":37}],151:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15233,7 +14942,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":158,"util":37}],158:[function(require,module,exports){
+},{"./strategy":152,"util":37}],152:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15333,7 +15042,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":15,"util":37}],159:[function(require,module,exports){
+},{"events":15,"util":37}],153:[function(require,module,exports){
 (function (process){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -15429,7 +15138,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,require('_process'))
-},{"_process":17,"isbuffer":160,"through":161,"ws":162}],160:[function(require,module,exports){
+},{"_process":17,"isbuffer":154,"through":155,"ws":156}],154:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -15439,7 +15148,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":10}],161:[function(require,module,exports){
+},{"buffer":10}],155:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -15551,9 +15260,9 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":17,"stream":33}],162:[function(require,module,exports){
-module.exports=require(149)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":149}],"kurento-client":[function(require,module,exports){
+},{"_process":17,"stream":33}],156:[function(require,module,exports){
+module.exports=require(143)
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":143}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -16228,4 +15937,4 @@ register(require('kurento-client-core'))
 register(require('kurento-client-elements'))
 register(require('kurento-client-filters'))
 
-},{"./MediaObjectCreator":1,"./TransactionsManager":2,"./createPromise":4,"./register":5,"async":6,"checktype":7,"es6-promise":8,"events":15,"extend":9,"inherits":38,"kurento-client-core":65,"kurento-client-elements":81,"kurento-client-filters":114,"kurento-jsonrpc":145,"promisecallback":150,"reconnect-ws":151,"url":35}]},{},[3]);
+},{"./MediaObjectCreator":1,"./TransactionsManager":2,"./createPromise":4,"./register":5,"async":6,"checktype":7,"es6-promise":8,"events":15,"extend":9,"inherits":38,"kurento-client-core":63,"kurento-client-elements":79,"kurento-client-filters":110,"kurento-jsonrpc":139,"promisecallback":144,"reconnect-ws":145,"url":35}]},{},[3]);
