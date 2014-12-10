@@ -15232,7 +15232,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],106:[function(require,module,exports){
 module.exports=require(93)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":93}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":93}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -15485,80 +15485,94 @@ function KurentoClient(ws_uri, options, callback) {
     console.error('Invalid request instance', request);
   });
 
-  // Reconnect websockets
+  function connect(callback) {
+    //
+    // Reconnect websockets
+    //
 
-  var closed = false;
-  var re = reconnect({
-      failAfter: failAfter
-    }, function (ws_stream) {
-      if (closed)
-        ws_stream.writable = false;
+    var closed = false;
+    var re = reconnect({
+        failAfter: failAfter
+      }, function (ws_stream) {
+        if (closed)
+          ws_stream.writable = false;
 
-      rpc.transport = ws_stream;
-    })
-    .connect(ws_uri);
+        rpc.transport = ws_stream;
+      })
+      .connect(ws_uri);
 
-  this.close = function () {
-    closed = true;
-
-    prevRpc_result.then(re.disconnect.bind(re));
-  };
-
-  re.on('fail', this.emit.bind(this, 'disconnect'));
-
-  // Promise interface ("thenable")
-
-  this.then = function (onFulfilled, onRejected) {
-    return new Promise(function (resolve, reject) {
-      function success() {
-        re.removeListener('fail', failure);
-
-        var result;
-
-        if (onFulfilled)
-          try {
-            result = onFulfilled.call(self, self);
-          } catch (exception) {
-            if (!onRejected)
-              console.trace('Uncaugh exception', exception)
-
-            return reject(exception);
-          }
-
-        resolve(result);
-      };
-
-      function failure() {
-        re.removeListener('connection', success);
-
-        var result = new Error('Connection error');
-
-        if (onRejected)
-          try {
-            result = onRejected.call(self, result);
-          } catch (exception) {
-            return reject(exception);
-          } else
-            console.trace('Uncaugh exception', result)
-
-        reject(result);
-      };
-
-      if (re.connected)
-        success()
-      else if (!re.reconnect)
-        failure()
-      else {
-        re.once('connection', success);
-        re.once('fail', failure);
+    Object.defineProperty(this, '_re', {
+      configurable: true,
+      get: function () {
+        return re
       }
-    });
+    })
+
+    this.close = function () {
+      closed = true;
+
+      prevRpc_result.then(re.disconnect.bind(re));
+    };
+
+    re.on('fail', this.emit.bind(this, 'disconnect'));
+
+    //
+    // Promise interface ("thenable")
+    //
+
+    this.then = function (onFulfilled, onRejected) {
+      return new Promise(function (resolve, reject) {
+        function success() {
+          re.removeListener('fail', failure);
+
+          var result;
+
+          if (onFulfilled)
+            try {
+              result = onFulfilled.call(self, self);
+            } catch (exception) {
+              if (!onRejected)
+                console.trace('Uncaugh exception', exception)
+
+              return reject(exception);
+            }
+
+          resolve(result);
+        };
+
+        function failure() {
+          re.removeListener('connection', success);
+
+          var result = new Error('Connection error');
+
+          if (onRejected)
+            try {
+              result = onRejected.call(self, result);
+            } catch (exception) {
+              return reject(exception);
+            } else
+              console.trace('Uncaugh exception', result)
+
+          reject(result);
+        };
+
+        if (re.connected)
+          success()
+        else if (!re.reconnect)
+          failure()
+        else {
+          re.once('connection', success);
+          re.once('fail', failure);
+        }
+      });
+    };
+
+    this.catch = this.then.bind(this, null);
+
+    if (callback)
+      this.then(callback.bind(undefined, null), callback);
   };
-
-  this.catch = this.then.bind(this, null);
-
-  if (callback)
-    this.then(callback.bind(undefined, null), callback);
+  connect.call(self, callback);
 
   // Select what transactions mechanism to use
   var encodeTransaction = options.enableTransactions ? commitTransactional :
@@ -15594,7 +15608,13 @@ function KurentoClient(ws_uri, options, callback) {
           callback(error, result);
         });
       },
-      callback)
+      function () {
+        connect.call(self, function (error) {
+          if (error) return callback(error);
+
+          encode(method, params, callback);
+        });
+      })
   }
 
   function encodeCreate(transaction, params, callback) {
