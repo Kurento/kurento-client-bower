@@ -15232,7 +15232,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],106:[function(require,module,exports){
 module.exports=require(93)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project@3/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":93}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project@5/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":93}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -15859,9 +15859,23 @@ function KurentoClient(ws_uri, options, callback) {
     encode('describe', params, callback2);
   };
 
+  /**
+   * Get a MediaObject from its ID
+   *
+   * @param {(external:String|external:string[])} id - ID of the MediaElement
+   * @callback {getMediaobjectByIdCallback} callback
+   *
+   * @return {external:Promise}
+   */
   this.getMediaobjectById = function (id, callback) {
     return createPromise(id, describe, callback)
   };
+  /**
+   * @callback KurentoClientApi~getMediaobjectByIdCallback
+   * @param {external:Error} error
+   * @param {(module:core/abstract~MediaElement|module:core/abstract~MediaElement[])} result
+   *  The requested MediaElement
+   */
 
   /**
    * Create a new instance of a MediaObject
@@ -15870,7 +15884,7 @@ function KurentoClient(ws_uri, options, callback) {
    * @param {external:string[]} [params]
    * @callback {createMediaPipelineCallback} callback
    *
-   * @return {module:KurentoClientApi~MediaPipeline} The pipeline itself
+   * @return {module:KurentoClientApi~KurentoClient} The Kurento client itself
    */
   this.create = mediaObjectCreator.create.bind(mediaObjectCreator);
   /**
@@ -15887,10 +15901,10 @@ var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
 /**
  * Connect the source of a media to the sink of the next one
  *
- * @param {...MediaObject} media - A media to be connected
- * @callback {connectCallback} [callback]
+ * @param {...module:core/abstract~MediaObject} media - A media to be connected
+ * @callback {module:KurentoClientApi~connectCallback} [callback]
  *
- * @return {Promise}
+ * @return {external:Promise}
  *
  * @throws {SyntaxError}
  */
@@ -15926,6 +15940,27 @@ KurentoClient.prototype.connect = function (media, callback) {
 
   return promiseCallback(promise, callback);
 };
+/**
+ * @callback KurentoClientApi~connectCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Get a reference to the current Kurento Media Server we are connected
+ *
+ * @callback {module:KurentoClientApi~getServerManagerCallback} callback
+ *
+ * @return {external:Promise}
+ */
+KurentoClient.prototype.getServerManager = function (callback) {
+  return this.getMediaobjectById('manager_ServerManager', callback)
+};
+/**
+ * @callback KurentoClientApi~getServerManagerCallback
+ * @param {external:Error} error
+ * @param {module:core/abstract~ServerManager} server
+ *  Info of the MediaServer instance
+ */
 
 // Register Kurento basic elements
 
