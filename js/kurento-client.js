@@ -15232,7 +15232,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],106:[function(require,module,exports){
 module.exports=require(93)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":93}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project@3/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":93}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -15378,9 +15378,15 @@ function noop(error) {
 function id2object(error, result, operation, id, callback) {
   if (error) return callback(error);
 
-  if (operation == 'getConnectedSinks' || operation == 'getMediaPipeline' ||
-    operation == 'getMediaSinks' || operation == 'getMediaSrcs' || operation ==
-    'getParent') {
+  var operations = [
+    'getConnectedSinks',
+    'getMediaPipeline',
+    'getMediaSinks',
+    'getMediaSrcs',
+    'getParent'
+  ]
+
+  if (operations.indexOf(operation) != -1) {
     var sessionId = result.sessionId;
 
     return this.getMediaobjectById(id, function (error, result) {
