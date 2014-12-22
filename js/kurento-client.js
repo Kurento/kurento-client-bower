@@ -12549,7 +12549,7 @@ var kurentoClient = require('kurento-client');
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
-var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
+var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
 
 /**
  * Builder for the {@link module:elements.WebRtcEndpoint WebRtcEndpoint}
@@ -12557,68 +12557,14 @@ var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
  * @classdesc
  *  WebRtcEndpoint interface. This type of <code>Endpoint</code> offers media streaming using WebRTC.
  *
- * @extends module:corecore/abstracts.SdpEndpoint
+ * @extends module:corecore/abstracts.BaseRtpEndpoint
  *
  * @constructor module:elements.WebRtcEndpoint
  */
 function WebRtcEndpoint(){
   WebRtcEndpoint.super_.call(this);
 };
-inherits(WebRtcEndpoint, SdpEndpoint);
-
-/**
- * Maximum video bandwidth for sending.
- *   Unit: kbps(kilobits per second).
- *    0: unlimited.
- *   Default value: 500
- *
- * @alias module:elements.WebRtcEndpoint#getMaxVideoSendBandwidth
- *
- * @param {module:elements.WebRtcEndpoint~getMaxVideoSendBandwidthCallback} [callback]
- *
- * @return {external:Promise}
- */
-WebRtcEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  if(!arguments.length) callback = undefined;
-
-  return this._invoke(transaction, 'getMaxVideoSendBandwidth', callback);
-};
-/**
- * @callback module:elements.WebRtcEndpoint~getMaxVideoSendBandwidthCallback
- * @param {external:Error} error
- * @param {external:Integer} result
- */
-
-/**
- * Minimum video bandwidth for sending.
- *   Unit: kbps(kilobits per second).
- *    0: unlimited.
- *   Default value: 100
- *
- * @alias module:elements.WebRtcEndpoint#getMinVideoSendBandwidth
- *
- * @param {module:elements.WebRtcEndpoint~getMinVideoSendBandwidthCallback} [callback]
- *
- * @return {external:Promise}
- */
-WebRtcEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  if(!arguments.length) callback = undefined;
-
-  return this._invoke(transaction, 'getMinVideoSendBandwidth', callback);
-};
-/**
- * @callback module:elements.WebRtcEndpoint~getMinVideoSendBandwidthCallback
- * @param {external:Error} error
- * @param {external:Integer} result
- */
+inherits(WebRtcEndpoint, BaseRtpEndpoint);
 
 /**
  * @alias module:elements.WebRtcEndpoint.constructorParams
@@ -12636,9 +12582,9 @@ WebRtcEndpoint.constructorParams = {
 /**
  * @alias module:elements.WebRtcEndpoint.events
  *
- * @extend module:corecore/abstracts.SdpEndpoint.events
+ * @extend module:corecore/abstracts.BaseRtpEndpoint.events
  */
-WebRtcEndpoint.events = SdpEndpoint.events;
+WebRtcEndpoint.events = BaseRtpEndpoint.events;
 
 module.exports = WebRtcEndpoint;
 
@@ -15348,7 +15294,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],107:[function(require,module,exports){
 module.exports=require(94)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":94}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":94}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
