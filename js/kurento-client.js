@@ -189,11 +189,111 @@ function onerror(error) {
   this._transactionError = error;
 }
 
-function Transaction(manager) {
+function TransactionNotExecutedException(message) {
+  TransactionNotExecutedException.super_.call(this, message);
+};
+inherits(TransactionNotExecutedException, Error);
+
+function TransactionNotCommitedException(message) {
+  TransactionNotCommitedException.super_.call(this, message);
+};
+inherits(TransactionNotCommitedException, TransactionNotExecutedException);
+
+function TransactionRollbackException(message) {
+  TransactionRollbackException.super_.call(this, message);
+};
+inherits(TransactionRollbackException, TransactionNotExecutedException);
+
+function Transaction(commit) {
   Transaction.super_.call(this);
 
-  this.push = manager.push.bind(manager);
-  this.endTransaction = manager.endTransaction.bind(manager);
+  var operations = [];
+
+  Object.defineProperty(this, 'length', {
+    get: function () {
+      return operations.length
+    }
+  });
+
+  this.push = operations.push.bind(operations);
+
+  Object.defineProperty(this, 'commited', {
+    configurable: true,
+    value: false
+  });
+
+  this.commit = function (callback) {
+    if (this.exit) this.exit();
+    this.removeListener('error', onerror);
+
+    var promise;
+
+    if (this._transactionError)
+      promise = Promise.reject(this._transactionError)
+
+    else {
+      operations.forEach(function (operation) {
+        var object = operation.params.object;
+        if (object && object.transactions) {
+          object.transactions.shift();
+
+          if (!object.transactions)
+            delete object.transactions;
+        }
+      });
+
+      var self = this;
+
+      promise = new Promise(function (resolve, reject) {
+        function callback(error, result) {
+          Object.defineProperty(self, 'commited', {
+            value: error == undefined
+          });
+
+          if (error) return reject(error);
+
+          resolve(result)
+        }
+
+        commit(operations, callback);
+      })
+    }
+
+    promise = promiseCallback(promise, callback)
+
+    this.catch = promise.catch.bind(promise);
+    this.then = promise.then.bind(promise);
+
+    delete this.push;
+    delete this.commit;
+    delete this.endTransaction;
+
+    return this;
+  }
+
+  this.rollback = function (callback) {
+    Object.defineProperty(this, 'commited', {
+      value: false
+    });
+
+    var error = new TransactionRollbackException(
+      'Transaction rollback by user');
+
+    // Notify error to all the operations in the transaction
+    operations.forEach(function (operation) {
+      if (operation.method == 'create')
+        operation.params.object.emit('_id', error);
+
+      var callback = operation.callback;
+      if (callback instanceof Function)
+        callback(error);
+    });
+
+    if (callback instanceof Function)
+      callback(error);
+
+    return this;
+  };
 
   // Errors during transaction execution go to the callback,
   // user will register 'error' event for async errors later
@@ -209,66 +309,31 @@ function TransactionsManager(host, commit) {
     get: function () {
       return transactions.length
     }
-  })
+  });
 
   this.beginTransaction = function () {
-    var d = new Transaction(this);
-
-    transactions.unshift({
-      d: d,
-      ops: []
-    });
-
-    return d;
+    var transaction = new Transaction(commit);
+    //    transactions.unshift(transaction);
+    return transaction;
   };
 
   this.endTransaction = function (callback) {
-    var transaction = transactions.shift();
-
-    var d = transaction.d;
-
-    if (d.exit) d.exit();
-    d.removeListener('error', onerror);
-
-    var promise;
-
-    if (d._transactionError)
-      promise = Promise.reject(d._transactionError)
-
-    else {
-      var operations = transaction.ops;
-
-      promise = new Promise(function (resolve, reject) {
-        function callback(error, result) {
-          if (error) return reject(error);
-
-          resolve(result)
-        }
-
-        commit(operations, callback);
-      })
-    }
-
-    promise = promiseCallback(promise, callback)
-
-    d.catch = promise.catch.bind(promise);
-    d.then = promise.then.bind(promise);
-
-    delete d.push;
-    delete d.endTransaction;
-
-    return d;
+    //    return transactions.shift().commit(callback);
   };
 
   this.transaction = function (func, callback) {
-    var d = this.beginTransaction();
-    d.run(func.bind(host));
-    return this.endTransaction(callback);
+    var transaction = this.beginTransaction();
+    transactions.unshift(transaction);
+
+    transaction.run(func.bind(host));
+
+    return transactions.shift().commit(callback);
+    //    return this.endTransaction(callback)
   };
 
   this.push = function (data) {
-    transactions[0].ops.push(data);
-  };
+    transactions[0].push(data);
+  }
 };
 
 function transactionOperation(method, params, callback) {
@@ -278,12 +343,28 @@ function transactionOperation(method, params, callback) {
     callback: callback
   }
 
+  var object = params.object;
+  if (object)
+    if (object.transactions)
+      object.transactions.unshift(this)
+    else
+      Object.defineProperty(object, 'transactions', {
+        configurable: true,
+        value: [this]
+      });
+
   this.push(operation);
 };
 
 module.exports = TransactionsManager;
+
 TransactionsManager.Transaction = Transaction;
 TransactionsManager.transactionOperation = transactionOperation;
+TransactionsManager.TransactionNotExecutedException =
+  TransactionNotExecutedException;
+TransactionsManager.TransactionNotCommitedException =
+  TransactionNotCommitedException;
+TransactionsManager.TransactionRollbackException = TransactionRollbackException;
 
 },{"domain":14,"es6-promise":8,"events":15,"inherits":38,"promisecallback":95}],3:[function(require,module,exports){
 /**
@@ -15294,7 +15375,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],107:[function(require,module,exports){
 module.exports=require(94)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":94}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project@2/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":94}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -15341,6 +15422,7 @@ var MediaObjectCreator = require('./MediaObjectCreator');
 var register = require('./register');
 var TransactionsManager = require('./TransactionsManager');
 
+var TransactionNotCommitedException = TransactionsManager.TransactionNotCommitedException;
 var transactionOperation = TransactionsManager.transactionOperation;
 
 // Export KurentoClient
@@ -15387,8 +15469,11 @@ if (!Array.prototype.findIndex) {
 function serializeParams(params) {
   for (var key in params) {
     var param = params[key];
-    if (param instanceof MediaObject)
-      params[key] = param.id;
+    if (param instanceof MediaObject) {
+      var id = param.id;
+
+      if (id !== undefined) params[key] = id;
+    }
   };
 
   return params;
@@ -15403,10 +15488,7 @@ function serializeOperation(operation, index) {
     break;
 
   default:
-    var id = params.object && params.object.id;
-    if (id !== undefined)
-      params.object = id;
-
+    params = serializeParams(params);
     params.operationParams = serializeParams(params.operationParams);
   };
 
@@ -15726,6 +15808,27 @@ function KurentoClient(ws_uri, options, callback) {
       return transactionOperation.call(transaction, method, params,
         callback);
 
+    var object = params.object;
+    if (object && object.transactions && object.transactions.length) {
+      var error = new TransactionNotCommitedException();
+      error.method = method;
+      error.params = params;
+
+      return setTimeout(callback, 0, error)
+    };
+
+    for (var key in params.operationParams) {
+      var object = params.operationParams[key];
+
+      if (object && object.transactions && object.transactions.length) {
+        var error = new TransactionNotCommitedException();
+        error.method = method;
+        error.params = params;
+
+        return setTimeout(callback, 0, error)
+      };
+    }
+
     if (transactionsManager.length)
       return transactionOperation.call(transactionsManager, method, params,
         callback);
@@ -15747,7 +15850,7 @@ function KurentoClient(ws_uri, options, callback) {
         function (error) {
           if (error) return reject(error);
 
-          params.object = params.object.id;
+          params = serializeParams(params);
           params.operationParams = serializeParams(params.operationParams);
 
           encode(method, params, callback2);
@@ -15755,6 +15858,8 @@ function KurentoClient(ws_uri, options, callback) {
     });
 
     prevRpc_result = promiseCallback(promise, callback);
+
+    if (method == 'release') prevRpc = prevRpc_result;
   }
 
   // Commit mechanisms
@@ -15765,6 +15870,27 @@ function KurentoClient(ws_uri, options, callback) {
         params, callback);
 
     var operations = params.operations;
+
+    for (var i = 0, operation; operation = operations[i]; i++) {
+      var object = operation.params.object;
+      if (object instanceof MediaObject && object.id === null) {
+        var error = new Error('MediaObject not found in server');
+        error.code = 40101;
+        error.object = object;
+
+        // Notify error to all the operations in the transaction
+        operations.forEach(function (operation) {
+          if (operation.method == 'create')
+            operation.params.object.emit('_id', error);
+
+          var callback = operation.callback;
+          if (callback instanceof Function)
+            callback(error);
+        });
+
+        return callback(error);
+      }
+    }
 
     var promises = [];
 
@@ -15888,7 +16014,7 @@ function KurentoClient(ws_uri, options, callback) {
     objects[id] = mediaObject;
 
     /**
-     * Request to release the object on the server and remove it from cache
+     * Remove the object from cache
      */
     mediaObject.once('release', function () {
       delete objects[id];
