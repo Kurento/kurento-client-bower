@@ -12828,8 +12828,8 @@ function checkMediaProfileSpecType(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
-  if(!value.match('WEBM|MP4'))
-    throw SyntaxError(key+' param is not one of [WEBM|MP4] ('+value+')');
+  if(!value.match('WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY'))
+    throw SyntaxError(key+' param is not one of [WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY] ('+value+')');
 };
 
 
@@ -12842,7 +12842,7 @@ function checkMediaProfileSpecType(key, value)
  *
  * @typedef elements/complexTypes.MediaProfileSpecType
  *
- * @type {(WEBM|MP4)}
+ * @type {(WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY)}
  */
 
 
