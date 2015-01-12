@@ -15375,7 +15375,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],107:[function(require,module,exports){
 module.exports=require(94)
-},{"/var/lib/jenkins/workspace/kurento-js-merge-project@4/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":94}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":94}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
