@@ -15375,7 +15375,7 @@ function through (write, end, opts) {
 }).call(this,require('_process'))
 },{"_process":17,"stream":33}],107:[function(require,module,exports){
 module.exports=require(94)
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":94}],"kurento-client":[function(require,module,exports){
+},{"/var/lib/jenkins/workspace/kurento-js-merge-project@4/node_modules/kurento-jsonrpc/node_modules/ws/lib/browser.js":94}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -15436,6 +15436,8 @@ KurentoClient.register = register;
 KurentoClient.TransactionsManager = TransactionsManager;
 
 var MediaObject = require('kurento-client-core').abstracts.MediaObject;
+
+const BASE_TIMEOUT = 20000;
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex#Polyfill
@@ -15554,6 +15556,21 @@ function id2object(error, result, operation, id, callback) {
  * @class
  *
  * @param {external:String} ws_uri - Address of the Kurento Media Server
+ * @param {Object} [options]
+ *   @property failAfter - Don't try to reconnect after several tries
+ *     @default 5
+ *   @property enableTransactions - Enable transactions functionality
+ *     @default true
+ *   @property access_token - Set access token for the WebSocket connection
+ *   @property max_retries - Number of tries to send the requests
+ *     @default 0
+ *   @property request_timeout - Timeout between requests retries
+ *     @default 20000
+ *   @property response_timeout - Timeout while a response is being stored
+ *     @default 20000
+ *   @property duplicates_timeout - Timeout to ignore duplicated responses
+ *     @default 20000
+ * @param {KurentoClientApi~constructorCallback} [callback]
  */
 function KurentoClient(ws_uri, options, callback) {
   if (!(this instanceof KurentoClient))
@@ -15579,6 +15596,10 @@ function KurentoClient(ws_uri, options, callback) {
   if (failAfter == undefined) failAfter = 5
 
   options.enableTransactions = options.enableTransactions || true
+
+  options.request_timeout = options.request_timeout || BASE_TIMEOUT;
+  options.response_timeout = options.response_timeout || BASE_TIMEOUT;
+  options.duplicates_timeout = options.duplicates_timeout || BASE_TIMEOUT;
 
   var objects = {};
 
@@ -16083,6 +16104,12 @@ function KurentoClient(ws_uri, options, callback) {
    */
 };
 inherits(KurentoClient, EventEmitter);
+/**
+ * @callback KurentoClientApi~constructorCallback
+ * @param {external:Error} error
+ * @param {module:KurentoClientApi~KurentoClient} client
+ *  The created KurentoClient
+ */
 
 var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
 
