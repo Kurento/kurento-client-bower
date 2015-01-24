@@ -13213,7 +13213,7 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  * @classdesc
  *  FaceOverlayFilter interface. This type of {@link module:core/abstracts.Filter Filter} detects faces in a video feed. The face is then overlaid with an image.
  *
- * @extends module:corecore/abstracts.Filter
+ * @extends module:core/abstracts.Filter
  *
  * @constructor module:filters.FaceOverlayFilter
  */
@@ -13332,7 +13332,7 @@ FaceOverlayFilter.constructorParams = {
 /**
  * @alias module:filters.FaceOverlayFilter.events
  *
- * @extend module:corecore/abstracts.Filter.events
+ * @extend module:core/abstracts.Filter.events
  */
 FaceOverlayFilter.events = Filter.events;
 
@@ -13376,7 +13376,7 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  * @classdesc
  *  This is a generic filter interface, that creates GStreamer filters in the media server.
  *
- * @extends module:corecore/abstracts.Filter
+ * @extends module:core/abstracts.Filter
  *
  * @constructor module:filters.GStreamerFilter
  */
@@ -13416,7 +13416,7 @@ GStreamerFilter.constructorParams = {
 /**
  * @alias module:filters.GStreamerFilter.events
  *
- * @extend module:corecore/abstracts.Filter.events
+ * @extend module:core/abstracts.Filter.events
  */
 GStreamerFilter.events = Filter.events;
 
@@ -13460,7 +13460,7 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  * @classdesc
  *  This filter detects <a href="http://www.kurento.org/docs/current/glossary.html#term-qr">QR</a> codes in a video feed. When a code is found, the filter raises a :rom:evnt:`CodeFound` event.
  *
- * @extends module:corecore/abstracts.Filter
+ * @extends module:core/abstracts.Filter
  *
  * @constructor module:filters.ZBarFilter
  *
@@ -13487,7 +13487,7 @@ ZBarFilter.constructorParams = {
 /**
  * @alias module:filters.ZBarFilter.events
  *
- * @extend module:corecore/abstracts.Filter.events
+ * @extend module:core/abstracts.Filter.events
  */
 ZBarFilter.events = Filter.events.concat(['CodeFound']);
 
@@ -13530,7 +13530,7 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  *  Generic OpenCV Filter
  *
  * @abstract
- * @extends module:corecore/abstracts.Filter
+ * @extends module:core/abstracts.Filter
  *
  * @constructor module:filters/abstracts.OpenCVFilter
  */
@@ -13547,7 +13547,7 @@ OpenCVFilter.constructorParams = {};
 /**
  * @alias module:filters/abstracts.OpenCVFilter.events
  *
- * @extend module:corecore/abstracts.Filter.events
+ * @extend module:core/abstracts.Filter.events
  */
 OpenCVFilter.events = Filter.events;
 
