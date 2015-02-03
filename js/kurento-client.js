@@ -9134,7 +9134,7 @@ HubPort.constructorParams = {
 /**
  * @alias module:core.HubPort.events
  *
- * @extend module:core/abstracts.MediaElement.events
+ * @extends module:core/abstracts.MediaElement.events
  */
 HubPort.events = MediaElement.events;
 
@@ -9275,7 +9275,7 @@ MediaPipeline.constructorParams = {};
 /**
  * @alias module:core.MediaPipeline.events
  *
- * @extend module:core/abstracts.MediaObject.events
+ * @extends module:core/abstracts.MediaObject.events
  */
 MediaPipeline.events = MediaObject.events;
 
@@ -9391,7 +9391,7 @@ BaseRtpEndpoint.constructorParams = {};
 /**
  * @alias module:core/abstracts.BaseRtpEndpoint.events
  *
- * @extend module:core/abstracts.SdpEndpoint.events
+ * @extends module:core/abstracts.SdpEndpoint.events
  */
 BaseRtpEndpoint.events = SdpEndpoint.events;
 
@@ -9456,7 +9456,7 @@ Endpoint.constructorParams = {};
 /**
  * @alias module:core/abstracts.Endpoint.events
  *
- * @extend module:core/abstracts.MediaElement.events
+ * @extends module:core/abstracts.MediaElement.events
  */
 Endpoint.events = MediaElement.events;
 
@@ -9516,7 +9516,7 @@ Filter.constructorParams = {};
 /**
  * @alias module:core/abstracts.Filter.events
  *
- * @extend module:core/abstracts.MediaElement.events
+ * @extends module:core/abstracts.MediaElement.events
  */
 Filter.events = MediaElement.events;
 
@@ -9618,7 +9618,7 @@ Hub.constructorParams = {};
 /**
  * @alias module:core/abstracts.Hub.events
  *
- * @extend module:core/abstracts.MediaObject.events
+ * @extends module:core/abstracts.MediaObject.events
  */
 Hub.events = MediaObject.events;
 
@@ -9986,7 +9986,7 @@ MediaElement.constructorParams = {};
 /**
  * @alias module:core/abstracts.MediaElement.events
  *
- * @extend module:core/abstracts.MediaObject.events
+ * @extends module:core/abstracts.MediaObject.events
  */
 MediaElement.events = MediaObject.events;
 
@@ -10699,7 +10699,7 @@ SdpEndpoint.constructorParams = {};
 /**
  * @alias module:core/abstracts.SdpEndpoint.events
  *
- * @extend module:core/abstracts.SessionEndpoint.events
+ * @extends module:core/abstracts.SessionEndpoint.events
  */
 SdpEndpoint.events = SessionEndpoint.events;
 
@@ -10836,7 +10836,7 @@ ServerManager.constructorParams = {};
 /**
  * @alias module:core/abstracts.ServerManager.events
  *
- * @extend module:core/abstracts.MediaObject.events
+ * @extends module:core/abstracts.MediaObject.events
  */
 ServerManager.events = MediaObject.events.concat(['ObjectCreated', 'ObjectDestroyed']);
 
@@ -10899,7 +10899,7 @@ SessionEndpoint.constructorParams = {};
 /**
  * @alias module:core/abstracts.SessionEndpoint.events
  *
- * @extend module:core/abstracts.Endpoint.events
+ * @extends module:core/abstracts.Endpoint.events
  */
 SessionEndpoint.events = Endpoint.events.concat(['MediaSessionStarted', 'MediaSessionTerminated']);
 
@@ -11033,7 +11033,7 @@ UriEndpoint.constructorParams = {};
 /**
  * @alias module:core/abstracts.UriEndpoint.events
  *
- * @extend module:core/abstracts.Endpoint.events
+ * @extends module:core/abstracts.Endpoint.events
  */
 UriEndpoint.events = Endpoint.events;
 
@@ -11797,7 +11797,7 @@ var Hub = require('kurento-client-core').abstracts.Hub;
  * @classdesc
  *  A {@link module:core/abstracts.Hub Hub} that mixes the {@link module:elements.AlphaBlending#MediaType.AUDIO} stream of its connected sources and constructs one output with {@link module:elements.AlphaBlending#MediaType.VIDEO} streams of its connected sources into its sink
  *
- * @extends module:corecore/abstracts.Hub
+ * @extends module:core/abstracts.Hub
  *
  * @constructor module:elements.AlphaBlending
  */
@@ -11913,7 +11913,7 @@ AlphaBlending.constructorParams = {
 /**
  * @alias module:elements.AlphaBlending.events
  *
- * @extend module:corecore/abstracts.Hub.events
+ * @extends module:core/abstracts.Hub.events
  */
 AlphaBlending.events = Hub.events;
 
@@ -11957,7 +11957,7 @@ var Hub = require('kurento-client-core').abstracts.Hub;
  * @classdesc
  *  A {@link module:core/abstracts.Hub Hub} that mixes the {@link module:elements.Composite#MediaType.AUDIO} stream of its connected sources and constructs a grid with the {@link module:elements.Composite#MediaType.VIDEO} streams of its connected sources into its sink
  *
- * @extends module:corecore/abstracts.Hub
+ * @extends module:core/abstracts.Hub
  *
  * @constructor module:elements.Composite
  */
@@ -11982,7 +11982,7 @@ Composite.constructorParams = {
 /**
  * @alias module:elements.Composite.events
  *
- * @extend module:corecore/abstracts.Hub.events
+ * @extends module:core/abstracts.Hub.events
  */
 Composite.events = Hub.events;
 
@@ -12029,7 +12029,7 @@ var Hub = require('kurento-client-core').abstracts.Hub;
  * @classdesc
  *  A {@link module:core/abstracts.Hub Hub} that allows routing between arbitrary port pairs
  *
- * @extends module:corecore/abstracts.Hub
+ * @extends module:core/abstracts.Hub
  *
  * @constructor module:elements.Dispatcher
  */
@@ -12094,7 +12094,7 @@ Dispatcher.constructorParams = {
 /**
  * @alias module:elements.Dispatcher.events
  *
- * @extend module:corecore/abstracts.Hub.events
+ * @extends module:core/abstracts.Hub.events
  */
 Dispatcher.events = Hub.events;
 
@@ -12141,7 +12141,7 @@ var Hub = require('kurento-client-core').abstracts.Hub;
  * @classdesc
  *  A {@link module:core/abstracts.Hub Hub} that sends a given source to all the connected sinks
  *
- * @extends module:corecore/abstracts.Hub
+ * @extends module:core/abstracts.Hub
  *
  * @constructor module:elements.DispatcherOneToMany
  */
@@ -12220,7 +12220,7 @@ DispatcherOneToMany.constructorParams = {
 /**
  * @alias module:elements.DispatcherOneToMany.events
  *
- * @extend module:corecore/abstracts.Hub.events
+ * @extends module:core/abstracts.Hub.events
  */
 DispatcherOneToMany.events = Hub.events;
 
@@ -12314,7 +12314,7 @@ HttpGetEndpoint.constructorParams = {
 /**
  * @alias module:elements.HttpGetEndpoint.events
  *
- * @extend module:elements/abstracts.HttpEndpoint.events
+ * @extends module:elements/abstracts.HttpEndpoint.events
  */
 HttpGetEndpoint.events = HttpEndpoint.events;
 
@@ -12401,7 +12401,7 @@ HttpPostEndpoint.constructorParams = {
 /**
  * @alias module:elements.HttpPostEndpoint.events
  *
- * @extend module:elements/abstracts.HttpEndpoint.events
+ * @extends module:elements/abstracts.HttpEndpoint.events
  */
 HttpPostEndpoint.events = HttpEndpoint.events.concat(['EndOfStream']);
 
@@ -12448,7 +12448,7 @@ var Hub = require('kurento-client-core').abstracts.Hub;
  * @classdesc
  *  A {@link module:core/abstracts.Hub Hub} that allows routing of video between arbitrary port pairs and mixing of audio among several ports
  *
- * @extends module:corecore/abstracts.Hub
+ * @extends module:core/abstracts.Hub
  *
  * @constructor module:elements.Mixer
  */
@@ -12558,7 +12558,7 @@ Mixer.constructorParams = {
 /**
  * @alias module:elements.Mixer.events
  *
- * @extend module:corecore/abstracts.Hub.events
+ * @extends module:core/abstracts.Hub.events
  */
 Mixer.events = Hub.events;
 
@@ -12608,7 +12608,7 @@ var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
  *  them into <a href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a>. It
  *  contains one :rom:cls:`MediaSource` for each media type detected.
  *
- * @extends module:corecore/abstracts.UriEndpoint
+ * @extends module:core/abstracts.UriEndpoint
  *
  * @constructor module:elements.PlayerEndpoint
  *
@@ -12680,7 +12680,7 @@ PlayerEndpoint.constructorParams = {
 /**
  * @alias module:elements.PlayerEndpoint.events
  *
- * @extend module:corecore/abstracts.UriEndpoint.events
+ * @extends module:core/abstracts.UriEndpoint.events
  */
 PlayerEndpoint.events = UriEndpoint.events.concat(['EndOfStream']);
 
@@ -12727,7 +12727,7 @@ var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
  * @classdesc
  *  Provides function to store contents in reliable mode (doesn't discard data). It contains :rom:cls:`MediaSink` pads for audio and video.
  *
- * @extends module:corecore/abstracts.UriEndpoint
+ * @extends module:core/abstracts.UriEndpoint
  *
  * @constructor module:elements.RecorderEndpoint
  */
@@ -12798,7 +12798,7 @@ RecorderEndpoint.constructorParams = {
 /**
  * @alias module:elements.RecorderEndpoint.events
  *
- * @extend module:corecore/abstracts.UriEndpoint.events
+ * @extends module:core/abstracts.UriEndpoint.events
  */
 RecorderEndpoint.events = UriEndpoint.events;
 
@@ -12842,7 +12842,7 @@ var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
  * @classdesc
  *  Endpoint that provides bidirectional content delivery capabilities with remote networked peers through RTP protocol. An {@link module:elements.RtpEndpoint RtpEndpoint} contains paired sink and source :rom:cls:`MediaPad` for audio and video.
  *
- * @extends module:corecore/abstracts.SdpEndpoint
+ * @extends module:core/abstracts.SdpEndpoint
  *
  * @constructor module:elements.RtpEndpoint
  */
@@ -12867,7 +12867,7 @@ RtpEndpoint.constructorParams = {
 /**
  * @alias module:elements.RtpEndpoint.events
  *
- * @extend module:corecore/abstracts.SdpEndpoint.events
+ * @extends module:core/abstracts.SdpEndpoint.events
  */
 RtpEndpoint.events = SdpEndpoint.events;
 
@@ -12911,7 +12911,7 @@ var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
  * @classdesc
  *  WebRtcEndpoint interface. This type of <code>Endpoint</code> offers media streaming using WebRTC.
  *
- * @extends module:corecore/abstracts.BaseRtpEndpoint
+ * @extends module:core/abstracts.BaseRtpEndpoint
  *
  * @constructor module:elements.WebRtcEndpoint
  */
@@ -12936,7 +12936,7 @@ WebRtcEndpoint.constructorParams = {
 /**
  * @alias module:elements.WebRtcEndpoint.events
  *
- * @extend module:corecore/abstracts.BaseRtpEndpoint.events
+ * @extends module:core/abstracts.BaseRtpEndpoint.events
  */
 WebRtcEndpoint.events = BaseRtpEndpoint.events;
 
@@ -12982,7 +12982,7 @@ var SessionEndpoint = require('kurento-client-core').abstracts.SessionEndpoint;
  *  Endpoint that enables Kurento to work as an HTTP server, allowing peer HTTP clients to access media.
  *
  * @abstract
- * @extends module:corecore/abstracts.SessionEndpoint
+ * @extends module:core/abstracts.SessionEndpoint
  *
  * @constructor module:elements/abstracts.HttpEndpoint
  */
@@ -13025,7 +13025,7 @@ HttpEndpoint.constructorParams = {};
 /**
  * @alias module:elements/abstracts.HttpEndpoint.events
  *
- * @extend module:corecore/abstracts.SessionEndpoint.events
+ * @extends module:core/abstracts.SessionEndpoint.events
  */
 HttpEndpoint.events = SessionEndpoint.events;
 
@@ -13243,7 +13243,7 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  * @classdesc
  *  FaceOverlayFilter interface. This type of {@link module:core/abstracts.Filter Filter} detects faces in a video feed. The face is then overlaid with an image.
  *
- * @extends module:corecore/abstracts.Filter
+ * @extends module:core/abstracts.Filter
  *
  * @constructor module:filters.FaceOverlayFilter
  */
@@ -13362,7 +13362,7 @@ FaceOverlayFilter.constructorParams = {
 /**
  * @alias module:filters.FaceOverlayFilter.events
  *
- * @extend module:corecore/abstracts.Filter.events
+ * @extends module:core/abstracts.Filter.events
  */
 FaceOverlayFilter.events = Filter.events;
 
@@ -13406,7 +13406,7 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  * @classdesc
  *  This is a generic filter interface, that creates GStreamer filters in the media server.
  *
- * @extends module:corecore/abstracts.Filter
+ * @extends module:core/abstracts.Filter
  *
  * @constructor module:filters.GStreamerFilter
  */
@@ -13446,7 +13446,7 @@ GStreamerFilter.constructorParams = {
 /**
  * @alias module:filters.GStreamerFilter.events
  *
- * @extend module:corecore/abstracts.Filter.events
+ * @extends module:core/abstracts.Filter.events
  */
 GStreamerFilter.events = Filter.events;
 
@@ -13490,7 +13490,7 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  * @classdesc
  *  This filter detects <a href="http://www.kurento.org/docs/current/glossary.html#term-qr">QR</a> codes in a video feed. When a code is found, the filter raises a :rom:evnt:`CodeFound` event.
  *
- * @extends module:corecore/abstracts.Filter
+ * @extends module:core/abstracts.Filter
  *
  * @constructor module:filters.ZBarFilter
  *
@@ -13517,7 +13517,7 @@ ZBarFilter.constructorParams = {
 /**
  * @alias module:filters.ZBarFilter.events
  *
- * @extend module:corecore/abstracts.Filter.events
+ * @extends module:core/abstracts.Filter.events
  */
 ZBarFilter.events = Filter.events.concat(['CodeFound']);
 
@@ -13560,7 +13560,7 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  *  Generic OpenCV Filter
  *
  * @abstract
- * @extends module:corecore/abstracts.Filter
+ * @extends module:core/abstracts.Filter
  *
  * @constructor module:filters/abstracts.OpenCVFilter
  */
@@ -13577,7 +13577,7 @@ OpenCVFilter.constructorParams = {};
 /**
  * @alias module:filters/abstracts.OpenCVFilter.events
  *
- * @extend module:corecore/abstracts.Filter.events
+ * @extends module:core/abstracts.Filter.events
  */
 OpenCVFilter.events = Filter.events;
 
