@@ -366,7 +366,7 @@ TransactionsManager.TransactionNotCommitedException =
   TransactionNotCommitedException;
 TransactionsManager.TransactionRollbackException = TransactionRollbackException;
 
-},{"domain":14,"es6-promise":8,"events":15,"inherits":38,"promisecallback":97}],3:[function(require,module,exports){
+},{"domain":15,"es6-promise":8,"events":16,"inherits":39,"promisecallback":98}],3:[function(require,module,exports){
 /**
  * Loader for the kurento-client package on the browser
  */
@@ -415,7 +415,7 @@ function createPromise(data, func, callback) {
 
 module.exports = createPromise;
 
-},{"async":6,"es6-promise":8,"promisecallback":97}],5:[function(require,module,exports){
+},{"async":6,"es6-promise":8,"promisecallback":98}],5:[function(require,module,exports){
 var checkType = require('checktype');
 
 var abstracts = {};
@@ -1619,7 +1619,7 @@ register.classes = classes;
 }());
 
 }).call(this,require('_process'))
-},{"_process":17}],7:[function(require,module,exports){
+},{"_process":18}],7:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -2760,7 +2760,7 @@ checkType.String  = checkString;
     }
 }).call(this);
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":17}],9:[function(require,module,exports){
+},{"_process":18}],9:[function(require,module,exports){
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
 var undefined;
@@ -2844,6 +2844,8 @@ module.exports = function extend() {
 
 
 },{}],10:[function(require,module,exports){
+
+},{}],11:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -4155,7 +4157,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":11,"ieee754":12,"is-array":13}],11:[function(require,module,exports){
+},{"base64-js":12,"ieee754":13,"is-array":14}],12:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -4281,7 +4283,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -4367,7 +4369,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 
 /**
  * isArray
@@ -4402,7 +4404,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 /*global define:false require:false */
 module.exports = (function(){
 	// Import Events
@@ -4470,7 +4472,7 @@ module.exports = (function(){
 	};
 	return domain
 }).call(this)
-},{"events":15}],15:[function(require,module,exports){
+},{"events":16}],16:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4773,12 +4775,12 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -4837,7 +4839,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 (function (global){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
@@ -5348,7 +5350,7 @@ process.umask = function() { return 0; };
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5434,7 +5436,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5521,16 +5523,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":19,"./encode":20}],22:[function(require,module,exports){
+},{"./decode":20,"./encode":21}],23:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":23}],23:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":24}],24:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -5623,7 +5625,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_readable":25,"./_stream_writable":27,"_process":17,"core-util-is":28,"inherits":38}],24:[function(require,module,exports){
+},{"./_stream_readable":26,"./_stream_writable":28,"_process":18,"core-util-is":29,"inherits":39}],25:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5671,7 +5673,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":26,"core-util-is":28,"inherits":38}],25:[function(require,module,exports){
+},{"./_stream_transform":27,"core-util-is":29,"inherits":39}],26:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -5724,15 +5726,29 @@ util.inherits = require('inherits');
 
 var StringDecoder;
 
+
+/*<replacement>*/
+var debug = require('util');
+if (debug && debug.debuglog) {
+  debug = debug.debuglog('stream');
+} else {
+  debug = function () {};
+}
+/*</replacement>*/
+
+
 util.inherits(Readable, Stream);
 
 function ReadableState(options, stream) {
+  var Duplex = require('./_stream_duplex');
+
   options = options || {};
 
   // the point at which it stops calling _read() to fill the buffer
   // Note: 0 is a valid value, means "don't call _read preemptively ever"
   var hwm = options.highWaterMark;
-  this.highWaterMark = (hwm || hwm === 0) ? hwm : 16 * 1024;
+  var defaultHwm = options.objectMode ? 16 : 16 * 1024;
+  this.highWaterMark = (hwm || hwm === 0) ? hwm : defaultHwm;
 
   // cast to ints.
   this.highWaterMark = ~~this.highWaterMark;
@@ -5741,19 +5757,13 @@ function ReadableState(options, stream) {
   this.length = 0;
   this.pipes = null;
   this.pipesCount = 0;
-  this.flowing = false;
+  this.flowing = null;
   this.ended = false;
   this.endEmitted = false;
   this.reading = false;
 
-  // In streams that never have any data, and do push(null) right away,
-  // the consumer can miss the 'end' event if they do some I/O before
-  // consuming the stream.  So, we don't emit('end') until some reading
-  // happens.
-  this.calledRead = false;
-
   // a flag to be able to tell if the onwrite cb is called immediately,
-  // or on a later tick.  We set this to true at first, becuase any
+  // or on a later tick.  We set this to true at first, because any
   // actions that shouldn't happen until "later" should generally also
   // not happen before the first write call.
   this.sync = true;
@@ -5768,6 +5778,9 @@ function ReadableState(options, stream) {
   // object stream flag. Used to make read(n) ignore n and to
   // make all the buffer merging and length checks go away
   this.objectMode = !!options.objectMode;
+
+  if (stream instanceof Duplex)
+    this.objectMode = this.objectMode || !!options.readableObjectMode;
 
   // Crypto is kind of old and crusty.  Historically, its default string
   // encoding is 'binary' so we have to make this configurable.
@@ -5795,6 +5808,8 @@ function ReadableState(options, stream) {
 }
 
 function Readable(options) {
+  var Duplex = require('./_stream_duplex');
+
   if (!(this instanceof Readable))
     return new Readable(options);
 
@@ -5813,7 +5828,7 @@ function Readable(options) {
 Readable.prototype.push = function(chunk, encoding) {
   var state = this._readableState;
 
-  if (typeof chunk === 'string' && !state.objectMode) {
+  if (util.isString(chunk) && !state.objectMode) {
     encoding = encoding || state.defaultEncoding;
     if (encoding !== state.encoding) {
       chunk = new Buffer(chunk, encoding);
@@ -5834,7 +5849,7 @@ function readableAddChunk(stream, state, chunk, encoding, addToFront) {
   var er = chunkInvalid(state, chunk);
   if (er) {
     stream.emit('error', er);
-  } else if (chunk === null || chunk === undefined) {
+  } else if (util.isNullOrUndefined(chunk)) {
     state.reading = false;
     if (!state.ended)
       onEofChunk(stream, state);
@@ -5849,17 +5864,24 @@ function readableAddChunk(stream, state, chunk, encoding, addToFront) {
       if (state.decoder && !addToFront && !encoding)
         chunk = state.decoder.write(chunk);
 
-      // update the buffer info.
-      state.length += state.objectMode ? 1 : chunk.length;
-      if (addToFront) {
-        state.buffer.unshift(chunk);
-      } else {
+      if (!addToFront)
         state.reading = false;
-        state.buffer.push(chunk);
-      }
 
-      if (state.needReadable)
-        emitReadable(stream);
+      // if we want the data now, just emit it.
+      if (state.flowing && state.length === 0 && !state.sync) {
+        stream.emit('data', chunk);
+        stream.read(0);
+      } else {
+        // update the buffer info.
+        state.length += state.objectMode ? 1 : chunk.length;
+        if (addToFront)
+          state.buffer.unshift(chunk);
+        else
+          state.buffer.push(chunk);
+
+        if (state.needReadable)
+          emitReadable(stream);
+      }
 
       maybeReadMore(stream, state);
     }
@@ -5892,6 +5914,7 @@ Readable.prototype.setEncoding = function(enc) {
     StringDecoder = require('string_decoder/').StringDecoder;
   this._readableState.decoder = new StringDecoder(enc);
   this._readableState.encoding = enc;
+  return this;
 };
 
 // Don't raise the hwm > 128MB
@@ -5915,7 +5938,7 @@ function howMuchToRead(n, state) {
   if (state.objectMode)
     return n === 0 ? 0 : 1;
 
-  if (n === null || isNaN(n)) {
+  if (isNaN(n) || util.isNull(n)) {
     // only flow one buffer at a time
     if (state.flowing && state.buffer.length)
       return state.buffer[0].length;
@@ -5947,12 +5970,11 @@ function howMuchToRead(n, state) {
 
 // you can override either this method, or the async _read(n) below.
 Readable.prototype.read = function(n) {
+  debug('read', n);
   var state = this._readableState;
-  state.calledRead = true;
   var nOrig = n;
-  var ret;
 
-  if (typeof n !== 'number' || n > 0)
+  if (!util.isNumber(n) || n > 0)
     state.emittedReadable = false;
 
   // if we're doing read(0) to trigger a readable event, but we
@@ -5961,7 +5983,11 @@ Readable.prototype.read = function(n) {
   if (n === 0 &&
       state.needReadable &&
       (state.length >= state.highWaterMark || state.ended)) {
-    emitReadable(this);
+    debug('read: emitReadable', state.length, state.ended);
+    if (state.length === 0 && state.ended)
+      endReadable(this);
+    else
+      emitReadable(this);
     return null;
   }
 
@@ -5969,28 +5995,9 @@ Readable.prototype.read = function(n) {
 
   // if we've ended, and we're now clear, then finish it up.
   if (n === 0 && state.ended) {
-    ret = null;
-
-    // In cases where the decoder did not receive enough data
-    // to produce a full chunk, then immediately received an
-    // EOF, state.buffer will contain [<Buffer >, <Buffer 00 ...>].
-    // howMuchToRead will see this and coerce the amount to
-    // read to zero (because it's looking at the length of the
-    // first <Buffer > in state.buffer), and we'll end up here.
-    //
-    // This can only happen via state.decoder -- no other venue
-    // exists for pushing a zero-length chunk into state.buffer
-    // and triggering this behavior. In this case, we return our
-    // remaining data and end the stream, if appropriate.
-    if (state.length > 0 && state.decoder) {
-      ret = fromList(n, state);
-      state.length -= ret.length;
-    }
-
     if (state.length === 0)
       endReadable(this);
-
-    return ret;
+    return null;
   }
 
   // All the actual chunk generation logic needs to be
@@ -6017,17 +6024,23 @@ Readable.prototype.read = function(n) {
 
   // if we need a readable event, then we need to do some reading.
   var doRead = state.needReadable;
+  debug('need readable', doRead);
 
   // if we currently have less than the highWaterMark, then also read some
-  if (state.length - n <= state.highWaterMark)
+  if (state.length === 0 || state.length - n < state.highWaterMark) {
     doRead = true;
+    debug('length less than watermark', doRead);
+  }
 
   // however, if we've ended, then there's no point, and if we're already
   // reading, then it's unnecessary.
-  if (state.ended || state.reading)
+  if (state.ended || state.reading) {
     doRead = false;
+    debug('reading or ended', doRead);
+  }
 
   if (doRead) {
+    debug('do read');
     state.reading = true;
     state.sync = true;
     // if the length is currently zero, then we *need* a readable event.
@@ -6038,18 +6051,18 @@ Readable.prototype.read = function(n) {
     state.sync = false;
   }
 
-  // If _read called its callback synchronously, then `reading`
-  // will be false, and we need to re-evaluate how much data we
-  // can return to the user.
+  // If _read pushed data synchronously, then `reading` will be false,
+  // and we need to re-evaluate how much data we can return to the user.
   if (doRead && !state.reading)
     n = howMuchToRead(nOrig, state);
 
+  var ret;
   if (n > 0)
     ret = fromList(n, state);
   else
     ret = null;
 
-  if (ret === null) {
+  if (util.isNull(ret)) {
     state.needReadable = true;
     n = 0;
   }
@@ -6061,21 +6074,21 @@ Readable.prototype.read = function(n) {
   if (state.length === 0 && !state.ended)
     state.needReadable = true;
 
-  // If we happened to read() exactly the remaining amount in the
-  // buffer, and the EOF has been seen at this point, then make sure
-  // that we emit 'end' on the very next tick.
-  if (state.ended && !state.endEmitted && state.length === 0)
+  // If we tried to read() past the EOF, then emit end on the next tick.
+  if (nOrig !== n && state.ended && state.length === 0)
     endReadable(this);
+
+  if (!util.isNull(ret))
+    this.emit('data', ret);
 
   return ret;
 };
 
 function chunkInvalid(state, chunk) {
   var er = null;
-  if (!Buffer.isBuffer(chunk) &&
-      'string' !== typeof chunk &&
-      chunk !== null &&
-      chunk !== undefined &&
+  if (!util.isBuffer(chunk) &&
+      !util.isString(chunk) &&
+      !util.isNullOrUndefined(chunk) &&
       !state.objectMode) {
     er = new TypeError('Invalid non-string/buffer chunk');
   }
@@ -6093,12 +6106,8 @@ function onEofChunk(stream, state) {
   }
   state.ended = true;
 
-  // if we've ended and we have some data left, then emit
-  // 'readable' now to make sure it gets picked up.
-  if (state.length > 0)
-    emitReadable(stream);
-  else
-    endReadable(stream);
+  // emit 'readable' now to make sure it gets picked up.
+  emitReadable(stream);
 }
 
 // Don't emit readable right away in sync mode, because this can trigger
@@ -6107,20 +6116,22 @@ function onEofChunk(stream, state) {
 function emitReadable(stream) {
   var state = stream._readableState;
   state.needReadable = false;
-  if (state.emittedReadable)
-    return;
-
-  state.emittedReadable = true;
-  if (state.sync)
-    process.nextTick(function() {
+  if (!state.emittedReadable) {
+    debug('emitReadable', state.flowing);
+    state.emittedReadable = true;
+    if (state.sync)
+      process.nextTick(function() {
+        emitReadable_(stream);
+      });
+    else
       emitReadable_(stream);
-    });
-  else
-    emitReadable_(stream);
+  }
 }
 
 function emitReadable_(stream) {
+  debug('emit readable');
   stream.emit('readable');
+  flow(stream);
 }
 
 
@@ -6143,6 +6154,7 @@ function maybeReadMore_(stream, state) {
   var len = state.length;
   while (!state.reading && !state.flowing && !state.ended &&
          state.length < state.highWaterMark) {
+    debug('maybeReadMore read 0');
     stream.read(0);
     if (len === state.length)
       // didn't get any data, stop spinning.
@@ -6177,6 +6189,7 @@ Readable.prototype.pipe = function(dest, pipeOpts) {
       break;
   }
   state.pipesCount += 1;
+  debug('pipe count=%d opts=%j', state.pipesCount, pipeOpts);
 
   var doEnd = (!pipeOpts || pipeOpts.end !== false) &&
               dest !== process.stdout &&
@@ -6190,11 +6203,14 @@ Readable.prototype.pipe = function(dest, pipeOpts) {
 
   dest.on('unpipe', onunpipe);
   function onunpipe(readable) {
-    if (readable !== src) return;
-    cleanup();
+    debug('onunpipe');
+    if (readable === src) {
+      cleanup();
+    }
   }
 
   function onend() {
+    debug('onend');
     dest.end();
   }
 
@@ -6206,6 +6222,7 @@ Readable.prototype.pipe = function(dest, pipeOpts) {
   dest.on('drain', ondrain);
 
   function cleanup() {
+    debug('cleanup');
     // cleanup event handlers once the pipe is broken
     dest.removeListener('close', onclose);
     dest.removeListener('finish', onfinish);
@@ -6214,19 +6231,34 @@ Readable.prototype.pipe = function(dest, pipeOpts) {
     dest.removeListener('unpipe', onunpipe);
     src.removeListener('end', onend);
     src.removeListener('end', cleanup);
+    src.removeListener('data', ondata);
 
     // if the reader is waiting for a drain event from this
     // specific writer, then it would cause it to never start
     // flowing again.
     // So, if this is awaiting a drain, then we just call it now.
     // If we don't know, then assume that we are waiting for one.
-    if (!dest._writableState || dest._writableState.needDrain)
+    if (state.awaitDrain &&
+        (!dest._writableState || dest._writableState.needDrain))
       ondrain();
+  }
+
+  src.on('data', ondata);
+  function ondata(chunk) {
+    debug('ondata');
+    var ret = dest.write(chunk);
+    if (false === ret) {
+      debug('false write response, pause',
+            src._readableState.awaitDrain);
+      src._readableState.awaitDrain++;
+      src.pause();
+    }
   }
 
   // if the dest has an error, then stop piping into it.
   // however, don't suppress the throwing behavior for this.
   function onerror(er) {
+    debug('onerror', er);
     unpipe();
     dest.removeListener('error', onerror);
     if (EE.listenerCount(dest, 'error') === 0)
@@ -6250,12 +6282,14 @@ Readable.prototype.pipe = function(dest, pipeOpts) {
   }
   dest.once('close', onclose);
   function onfinish() {
+    debug('onfinish');
     dest.removeListener('close', onclose);
     unpipe();
   }
   dest.once('finish', onfinish);
 
   function unpipe() {
+    debug('unpipe');
     src.unpipe(dest);
   }
 
@@ -6264,16 +6298,8 @@ Readable.prototype.pipe = function(dest, pipeOpts) {
 
   // start the flow if it hasn't been started already.
   if (!state.flowing) {
-    // the handler that waits for readable events after all
-    // the data gets sucked out in flow.
-    // This would be easier to follow with a .once() handler
-    // in flow(), but that is too slow.
-    this.on('readable', pipeOnReadable);
-
-    state.flowing = true;
-    process.nextTick(function() {
-      flow(src);
-    });
+    debug('pipe resume');
+    src.resume();
   }
 
   return dest;
@@ -6281,63 +6307,15 @@ Readable.prototype.pipe = function(dest, pipeOpts) {
 
 function pipeOnDrain(src) {
   return function() {
-    var dest = this;
     var state = src._readableState;
-    state.awaitDrain--;
-    if (state.awaitDrain === 0)
+    debug('pipeOnDrain', state.awaitDrain);
+    if (state.awaitDrain)
+      state.awaitDrain--;
+    if (state.awaitDrain === 0 && EE.listenerCount(src, 'data')) {
+      state.flowing = true;
       flow(src);
-  };
-}
-
-function flow(src) {
-  var state = src._readableState;
-  var chunk;
-  state.awaitDrain = 0;
-
-  function write(dest, i, list) {
-    var written = dest.write(chunk);
-    if (false === written) {
-      state.awaitDrain++;
     }
-  }
-
-  while (state.pipesCount && null !== (chunk = src.read())) {
-
-    if (state.pipesCount === 1)
-      write(state.pipes, 0, null);
-    else
-      forEach(state.pipes, write);
-
-    src.emit('data', chunk);
-
-    // if anyone needs a drain, then we have to wait for that.
-    if (state.awaitDrain > 0)
-      return;
-  }
-
-  // if every destination was unpiped, either before entering this
-  // function, or in the while loop, then stop flowing.
-  //
-  // NB: This is a pretty rare edge case.
-  if (state.pipesCount === 0) {
-    state.flowing = false;
-
-    // if there were data event listeners added, then switch to old mode.
-    if (EE.listenerCount(src, 'data') > 0)
-      emitDataEvents(src);
-    return;
-  }
-
-  // at this point, no one needed a drain, so we just ran out of data
-  // on the next readable event, start it over again.
-  state.ranOut = true;
-}
-
-function pipeOnReadable() {
-  if (this._readableState.ranOut) {
-    this._readableState.ranOut = false;
-    flow(this);
-  }
+  };
 }
 
 
@@ -6360,7 +6338,6 @@ Readable.prototype.unpipe = function(dest) {
     // got a match.
     state.pipes = null;
     state.pipesCount = 0;
-    this.removeListener('readable', pipeOnReadable);
     state.flowing = false;
     if (dest)
       dest.emit('unpipe', this);
@@ -6375,7 +6352,6 @@ Readable.prototype.unpipe = function(dest) {
     var len = state.pipesCount;
     state.pipes = null;
     state.pipesCount = 0;
-    this.removeListener('readable', pipeOnReadable);
     state.flowing = false;
 
     for (var i = 0; i < len; i++)
@@ -6403,8 +6379,11 @@ Readable.prototype.unpipe = function(dest) {
 Readable.prototype.on = function(ev, fn) {
   var res = Stream.prototype.on.call(this, ev, fn);
 
-  if (ev === 'data' && !this._readableState.flowing)
-    emitDataEvents(this);
+  // If listening to data, and it has not explicitly been paused,
+  // then call resume to start the flow of data on the next tick.
+  if (ev === 'data' && false !== this._readableState.flowing) {
+    this.resume();
+  }
 
   if (ev === 'readable' && this.readable) {
     var state = this._readableState;
@@ -6413,7 +6392,11 @@ Readable.prototype.on = function(ev, fn) {
       state.emittedReadable = false;
       state.needReadable = true;
       if (!state.reading) {
-        this.read(0);
+        var self = this;
+        process.nextTick(function() {
+          debug('readable nexttick read 0');
+          self.read(0);
+        });
       } else if (state.length) {
         emitReadable(this, state);
       }
@@ -6427,63 +6410,54 @@ Readable.prototype.addListener = Readable.prototype.on;
 // pause() and resume() are remnants of the legacy readable stream API
 // If the user uses them, then switch into old mode.
 Readable.prototype.resume = function() {
-  emitDataEvents(this);
-  this.read(0);
-  this.emit('resume');
+  var state = this._readableState;
+  if (!state.flowing) {
+    debug('resume');
+    state.flowing = true;
+    if (!state.reading) {
+      debug('resume read 0');
+      this.read(0);
+    }
+    resume(this, state);
+  }
+  return this;
 };
+
+function resume(stream, state) {
+  if (!state.resumeScheduled) {
+    state.resumeScheduled = true;
+    process.nextTick(function() {
+      resume_(stream, state);
+    });
+  }
+}
+
+function resume_(stream, state) {
+  state.resumeScheduled = false;
+  stream.emit('resume');
+  flow(stream);
+  if (state.flowing && !state.reading)
+    stream.read(0);
+}
 
 Readable.prototype.pause = function() {
-  emitDataEvents(this, true);
-  this.emit('pause');
+  debug('call pause flowing=%j', this._readableState.flowing);
+  if (false !== this._readableState.flowing) {
+    debug('pause');
+    this._readableState.flowing = false;
+    this.emit('pause');
+  }
+  return this;
 };
 
-function emitDataEvents(stream, startPaused) {
+function flow(stream) {
   var state = stream._readableState;
-
+  debug('flow', state.flowing);
   if (state.flowing) {
-    // https://github.com/isaacs/readable-stream/issues/16
-    throw new Error('Cannot switch to old mode now.');
+    do {
+      var chunk = stream.read();
+    } while (null !== chunk && state.flowing);
   }
-
-  var paused = startPaused || false;
-  var readable = false;
-
-  // convert to an old-style stream.
-  stream.readable = true;
-  stream.pipe = Stream.prototype.pipe;
-  stream.on = stream.addListener = Stream.prototype.on;
-
-  stream.on('readable', function() {
-    readable = true;
-
-    var c;
-    while (!paused && (null !== (c = stream.read())))
-      stream.emit('data', c);
-
-    if (c === null) {
-      readable = false;
-      stream._readableState.needReadable = true;
-    }
-  });
-
-  stream.pause = function() {
-    paused = true;
-    this.emit('pause');
-  };
-
-  stream.resume = function() {
-    paused = false;
-    if (readable)
-      process.nextTick(function() {
-        stream.emit('readable');
-      });
-    else
-      this.read(0);
-    this.emit('resume');
-  };
-
-  // now make it start, just in case it hadn't already.
-  stream.emit('readable');
 }
 
 // wrap an old-style stream as the async data source.
@@ -6495,6 +6469,7 @@ Readable.prototype.wrap = function(stream) {
 
   var self = this;
   stream.on('end', function() {
+    debug('wrapped end');
     if (state.decoder && !state.ended) {
       var chunk = state.decoder.end();
       if (chunk && chunk.length)
@@ -6505,14 +6480,10 @@ Readable.prototype.wrap = function(stream) {
   });
 
   stream.on('data', function(chunk) {
+    debug('wrapped data');
     if (state.decoder)
       chunk = state.decoder.write(chunk);
-
-    // don't skip over falsy values in objectMode
-    //if (state.objectMode && util.isNullOrUndefined(chunk))
-    if (state.objectMode && (chunk === null || chunk === undefined))
-      return;
-    else if (!state.objectMode && (!chunk || !chunk.length))
+    if (!chunk || !state.objectMode && !chunk.length)
       return;
 
     var ret = self.push(chunk);
@@ -6525,8 +6496,7 @@ Readable.prototype.wrap = function(stream) {
   // proxy all the other methods.
   // important when wrapping filters and duplexes.
   for (var i in stream) {
-    if (typeof stream[i] === 'function' &&
-        typeof this[i] === 'undefined') {
+    if (util.isFunction(stream[i]) && util.isUndefined(this[i])) {
       this[i] = function(method) { return function() {
         return stream[method].apply(stream, arguments);
       }}(i);
@@ -6542,6 +6512,7 @@ Readable.prototype.wrap = function(stream) {
   // when we try to consume some more bytes, simply unpause the
   // underlying stream.
   self._read = function(n) {
+    debug('wrapped _read', n);
     if (paused) {
       paused = false;
       stream.resume();
@@ -6630,7 +6601,7 @@ function endReadable(stream) {
   if (state.length > 0)
     throw new Error('endReadable called on non-empty stream');
 
-  if (!state.endEmitted && state.calledRead) {
+  if (!state.endEmitted) {
     state.ended = true;
     process.nextTick(function() {
       // Check that we didn't get one last unshift.
@@ -6657,7 +6628,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"_process":17,"buffer":10,"core-util-is":28,"events":15,"inherits":38,"isarray":16,"stream":33,"string_decoder/":34}],26:[function(require,module,exports){
+},{"./_stream_duplex":24,"_process":18,"buffer":11,"core-util-is":29,"events":16,"inherits":39,"isarray":17,"stream":34,"string_decoder/":35,"util":10}],27:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6757,7 +6728,7 @@ function afterTransform(stream, er, data) {
   ts.writechunk = null;
   ts.writecb = null;
 
-  if (data !== null && data !== undefined)
+  if (!util.isNullOrUndefined(data))
     stream.push(data);
 
   if (cb)
@@ -6777,7 +6748,7 @@ function Transform(options) {
 
   Duplex.call(this, options);
 
-  var ts = this._transformState = new TransformState(options, this);
+  this._transformState = new TransformState(options, this);
 
   // when the writable side finishes, then flush out anything remaining.
   var stream = this;
@@ -6790,8 +6761,8 @@ function Transform(options) {
   // sync guard flag.
   this._readableState.sync = false;
 
-  this.once('finish', function() {
-    if ('function' === typeof this._flush)
+  this.once('prefinish', function() {
+    if (util.isFunction(this._flush))
       this._flush(function(er) {
         done(stream, er);
       });
@@ -6839,7 +6810,7 @@ Transform.prototype._write = function(chunk, encoding, cb) {
 Transform.prototype._read = function(n) {
   var ts = this._transformState;
 
-  if (ts.writechunk !== null && ts.writecb && !ts.transforming) {
+  if (!util.isNull(ts.writechunk) && ts.writecb && !ts.transforming) {
     ts.transforming = true;
     this._transform(ts.writechunk, ts.writeencoding, ts.afterTransform);
   } else {
@@ -6857,7 +6828,6 @@ function done(stream, er) {
   // if there's nothing in the write buffer, then that means
   // that nothing more will ever be provided
   var ws = stream._writableState;
-  var rs = stream._readableState;
   var ts = stream._transformState;
 
   if (ws.length)
@@ -6869,7 +6839,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":23,"core-util-is":28,"inherits":38}],27:[function(require,module,exports){
+},{"./_stream_duplex":24,"core-util-is":29,"inherits":39}],28:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6921,17 +6891,23 @@ function WriteReq(chunk, encoding, cb) {
 }
 
 function WritableState(options, stream) {
+  var Duplex = require('./_stream_duplex');
+
   options = options || {};
 
   // the point at which write() starts returning false
   // Note: 0 is a valid value, means that we always return false if
   // the entire buffer is not flushed immediately on write()
   var hwm = options.highWaterMark;
-  this.highWaterMark = (hwm || hwm === 0) ? hwm : 16 * 1024;
+  var defaultHwm = options.objectMode ? 16 : 16 * 1024;
+  this.highWaterMark = (hwm || hwm === 0) ? hwm : defaultHwm;
 
   // object stream flag to indicate whether or not this stream
   // contains buffers or objects.
   this.objectMode = !!options.objectMode;
+
+  if (stream instanceof Duplex)
+    this.objectMode = this.objectMode || !!options.writableObjectMode;
 
   // cast to ints.
   this.highWaterMark = ~~this.highWaterMark;
@@ -6963,8 +6939,11 @@ function WritableState(options, stream) {
   // a flag to see when we're in the middle of a write.
   this.writing = false;
 
+  // when true all writes will be buffered until .uncork() call
+  this.corked = 0;
+
   // a flag to be able to tell if the onwrite cb is called immediately,
-  // or on a later tick.  We set this to true at first, becuase any
+  // or on a later tick.  We set this to true at first, because any
   // actions that shouldn't happen until "later" should generally also
   // not happen before the first write call.
   this.sync = true;
@@ -6986,6 +6965,14 @@ function WritableState(options, stream) {
   this.writelen = 0;
 
   this.buffer = [];
+
+  // number of pending user-supplied write callbacks
+  // this must be 0 before 'finish' can be emitted
+  this.pendingcb = 0;
+
+  // emit prefinish if the only thing we're waiting for is _write cbs
+  // This is relevant for synchronous Transform streams
+  this.prefinished = false;
 
   // True if the error was already emitted and should not be thrown again
   this.errorEmitted = false;
@@ -7029,10 +7016,9 @@ function writeAfterEnd(stream, state, cb) {
 // how many bytes or characters.
 function validChunk(stream, state, chunk, cb) {
   var valid = true;
-  if (!Buffer.isBuffer(chunk) &&
-      'string' !== typeof chunk &&
-      chunk !== null &&
-      chunk !== undefined &&
+  if (!util.isBuffer(chunk) &&
+      !util.isString(chunk) &&
+      !util.isNullOrUndefined(chunk) &&
       !state.objectMode) {
     var er = new TypeError('Invalid non-string/buffer chunk');
     stream.emit('error', er);
@@ -7048,31 +7034,54 @@ Writable.prototype.write = function(chunk, encoding, cb) {
   var state = this._writableState;
   var ret = false;
 
-  if (typeof encoding === 'function') {
+  if (util.isFunction(encoding)) {
     cb = encoding;
     encoding = null;
   }
 
-  if (Buffer.isBuffer(chunk))
+  if (util.isBuffer(chunk))
     encoding = 'buffer';
   else if (!encoding)
     encoding = state.defaultEncoding;
 
-  if (typeof cb !== 'function')
+  if (!util.isFunction(cb))
     cb = function() {};
 
   if (state.ended)
     writeAfterEnd(this, state, cb);
-  else if (validChunk(this, state, chunk, cb))
+  else if (validChunk(this, state, chunk, cb)) {
+    state.pendingcb++;
     ret = writeOrBuffer(this, state, chunk, encoding, cb);
+  }
 
   return ret;
+};
+
+Writable.prototype.cork = function() {
+  var state = this._writableState;
+
+  state.corked++;
+};
+
+Writable.prototype.uncork = function() {
+  var state = this._writableState;
+
+  if (state.corked) {
+    state.corked--;
+
+    if (!state.writing &&
+        !state.corked &&
+        !state.finished &&
+        !state.bufferProcessing &&
+        state.buffer.length)
+      clearBuffer(this, state);
+  }
 };
 
 function decodeChunk(state, chunk, encoding) {
   if (!state.objectMode &&
       state.decodeStrings !== false &&
-      typeof chunk === 'string') {
+      util.isString(chunk)) {
     chunk = new Buffer(chunk, encoding);
   }
   return chunk;
@@ -7083,7 +7092,7 @@ function decodeChunk(state, chunk, encoding) {
 // If we return false, then we need a drain event, so set that flag.
 function writeOrBuffer(stream, state, chunk, encoding, cb) {
   chunk = decodeChunk(state, chunk, encoding);
-  if (Buffer.isBuffer(chunk))
+  if (util.isBuffer(chunk))
     encoding = 'buffer';
   var len = state.objectMode ? 1 : chunk.length;
 
@@ -7094,30 +7103,36 @@ function writeOrBuffer(stream, state, chunk, encoding, cb) {
   if (!ret)
     state.needDrain = true;
 
-  if (state.writing)
+  if (state.writing || state.corked)
     state.buffer.push(new WriteReq(chunk, encoding, cb));
   else
-    doWrite(stream, state, len, chunk, encoding, cb);
+    doWrite(stream, state, false, len, chunk, encoding, cb);
 
   return ret;
 }
 
-function doWrite(stream, state, len, chunk, encoding, cb) {
+function doWrite(stream, state, writev, len, chunk, encoding, cb) {
   state.writelen = len;
   state.writecb = cb;
   state.writing = true;
   state.sync = true;
-  stream._write(chunk, encoding, state.onwrite);
+  if (writev)
+    stream._writev(chunk, state.onwrite);
+  else
+    stream._write(chunk, encoding, state.onwrite);
   state.sync = false;
 }
 
 function onwriteError(stream, state, sync, er, cb) {
   if (sync)
     process.nextTick(function() {
+      state.pendingcb--;
       cb(er);
     });
-  else
+  else {
+    state.pendingcb--;
     cb(er);
+  }
 
   stream._writableState.errorEmitted = true;
   stream.emit('error', er);
@@ -7143,8 +7158,12 @@ function onwrite(stream, er) {
     // Check if we're actually ready to finish, but don't emit yet
     var finished = needFinish(stream, state);
 
-    if (!finished && !state.bufferProcessing && state.buffer.length)
+    if (!finished &&
+        !state.corked &&
+        !state.bufferProcessing &&
+        state.buffer.length) {
       clearBuffer(stream, state);
+    }
 
     if (sync) {
       process.nextTick(function() {
@@ -7159,9 +7178,9 @@ function onwrite(stream, er) {
 function afterWrite(stream, state, finished, cb) {
   if (!finished)
     onwriteDrain(stream, state);
+  state.pendingcb--;
   cb();
-  if (finished)
-    finishMaybe(stream, state);
+  finishMaybe(stream, state);
 }
 
 // Must force callback to be called on nextTick, so that we don't
@@ -7179,50 +7198,81 @@ function onwriteDrain(stream, state) {
 function clearBuffer(stream, state) {
   state.bufferProcessing = true;
 
-  for (var c = 0; c < state.buffer.length; c++) {
-    var entry = state.buffer[c];
-    var chunk = entry.chunk;
-    var encoding = entry.encoding;
-    var cb = entry.callback;
-    var len = state.objectMode ? 1 : chunk.length;
+  if (stream._writev && state.buffer.length > 1) {
+    // Fast case, write everything using _writev()
+    var cbs = [];
+    for (var c = 0; c < state.buffer.length; c++)
+      cbs.push(state.buffer[c].callback);
 
-    doWrite(stream, state, len, chunk, encoding, cb);
+    // count the one we are adding, as well.
+    // TODO(isaacs) clean this up
+    state.pendingcb++;
+    doWrite(stream, state, true, state.length, state.buffer, '', function(err) {
+      for (var i = 0; i < cbs.length; i++) {
+        state.pendingcb--;
+        cbs[i](err);
+      }
+    });
 
-    // if we didn't call the onwrite immediately, then
-    // it means that we need to wait until it does.
-    // also, that means that the chunk and cb are currently
-    // being processed, so move the buffer counter past them.
-    if (state.writing) {
-      c++;
-      break;
+    // Clear buffer
+    state.buffer = [];
+  } else {
+    // Slow case, write chunks one-by-one
+    for (var c = 0; c < state.buffer.length; c++) {
+      var entry = state.buffer[c];
+      var chunk = entry.chunk;
+      var encoding = entry.encoding;
+      var cb = entry.callback;
+      var len = state.objectMode ? 1 : chunk.length;
+
+      doWrite(stream, state, false, len, chunk, encoding, cb);
+
+      // if we didn't call the onwrite immediately, then
+      // it means that we need to wait until it does.
+      // also, that means that the chunk and cb are currently
+      // being processed, so move the buffer counter past them.
+      if (state.writing) {
+        c++;
+        break;
+      }
     }
+
+    if (c < state.buffer.length)
+      state.buffer = state.buffer.slice(c);
+    else
+      state.buffer.length = 0;
   }
 
   state.bufferProcessing = false;
-  if (c < state.buffer.length)
-    state.buffer = state.buffer.slice(c);
-  else
-    state.buffer.length = 0;
 }
 
 Writable.prototype._write = function(chunk, encoding, cb) {
   cb(new Error('not implemented'));
+
 };
+
+Writable.prototype._writev = null;
 
 Writable.prototype.end = function(chunk, encoding, cb) {
   var state = this._writableState;
 
-  if (typeof chunk === 'function') {
+  if (util.isFunction(chunk)) {
     cb = chunk;
     chunk = null;
     encoding = null;
-  } else if (typeof encoding === 'function') {
+  } else if (util.isFunction(encoding)) {
     cb = encoding;
     encoding = null;
   }
 
-  if (typeof chunk !== 'undefined' && chunk !== null)
+  if (!util.isNullOrUndefined(chunk))
     this.write(chunk, encoding);
+
+  // .end() fully uncorks
+  if (state.corked) {
+    state.corked = 1;
+    this.uncork();
+  }
 
   // ignore unnecessary end() calls.
   if (!state.ending && !state.finished)
@@ -7237,11 +7287,22 @@ function needFinish(stream, state) {
           !state.writing);
 }
 
+function prefinish(stream, state) {
+  if (!state.prefinished) {
+    state.prefinished = true;
+    stream.emit('prefinish');
+  }
+}
+
 function finishMaybe(stream, state) {
   var need = needFinish(stream, state);
   if (need) {
-    state.finished = true;
-    stream.emit('finish');
+    if (state.pendingcb === 0) {
+      prefinish(stream, state);
+      state.finished = true;
+      stream.emit('finish');
+    } else
+      prefinish(stream, state);
   }
   return need;
 }
@@ -7259,7 +7320,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":23,"_process":17,"buffer":10,"core-util-is":28,"inherits":38,"stream":33}],28:[function(require,module,exports){
+},{"./_stream_duplex":24,"_process":18,"buffer":11,"core-util-is":29,"inherits":39,"stream":34}],29:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7369,26 +7430,25 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":10}],29:[function(require,module,exports){
+},{"buffer":11}],30:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":24}],30:[function(require,module,exports){
-var Stream = require('stream'); // hack to fix a circular dependency issue when used with browserify
+},{"./lib/_stream_passthrough.js":25}],31:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
-exports.Stream = Stream;
+exports.Stream = require('stream');
 exports.Readable = exports;
 exports.Writable = require('./lib/_stream_writable.js');
 exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":23,"./lib/_stream_passthrough.js":24,"./lib/_stream_readable.js":25,"./lib/_stream_transform.js":26,"./lib/_stream_writable.js":27,"stream":33}],31:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":24,"./lib/_stream_passthrough.js":25,"./lib/_stream_readable.js":26,"./lib/_stream_transform.js":27,"./lib/_stream_writable.js":28,"stream":34}],32:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":26}],32:[function(require,module,exports){
+},{"./lib/_stream_transform.js":27}],33:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":27}],33:[function(require,module,exports){
+},{"./lib/_stream_writable.js":28}],34:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7517,7 +7577,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":15,"inherits":38,"readable-stream/duplex.js":22,"readable-stream/passthrough.js":29,"readable-stream/readable.js":30,"readable-stream/transform.js":31,"readable-stream/writable.js":32}],34:[function(require,module,exports){
+},{"events":16,"inherits":39,"readable-stream/duplex.js":23,"readable-stream/passthrough.js":30,"readable-stream/readable.js":31,"readable-stream/transform.js":32,"readable-stream/writable.js":33}],35:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7740,7 +7800,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":10}],35:[function(require,module,exports){
+},{"buffer":11}],36:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8449,14 +8509,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":18,"querystring":21}],36:[function(require,module,exports){
+},{"punycode":19,"querystring":22}],37:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -9046,7 +9106,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":36,"_process":17,"inherits":38}],38:[function(require,module,exports){
+},{"./support/isBuffer":37,"_process":18,"inherits":39}],39:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -9071,7 +9131,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9140,7 +9200,7 @@ HubPort.check = function(key, value)
     throw ChecktypeError(key, HubPort, value);
 };
 
-},{"./abstracts/MediaElement":46,"inherits":38,"kurento-client":"kurento-client"}],40:[function(require,module,exports){
+},{"./abstracts/MediaElement":47,"inherits":39,"kurento-client":"kurento-client"}],41:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9281,7 +9341,7 @@ MediaPipeline.check = function(key, value)
     throw ChecktypeError(key, MediaPipeline, value);
 };
 
-},{"./abstracts/MediaObject":47,"inherits":38,"kurento-client":"kurento-client"}],41:[function(require,module,exports){
+},{"./abstracts/MediaObject":48,"inherits":39,"kurento-client":"kurento-client"}],42:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9350,7 +9410,7 @@ PassThrough.check = function(key, value)
     throw ChecktypeError(key, PassThrough, value);
 };
 
-},{"./abstracts/MediaElement":46,"inherits":38,"kurento-client":"kurento-client"}],42:[function(require,module,exports){
+},{"./abstracts/MediaElement":47,"inherits":39,"kurento-client":"kurento-client"}],43:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9466,7 +9526,7 @@ BaseRtpEndpoint.check = function(key, value)
     throw ChecktypeError(key, BaseRtpEndpoint, value);
 };
 
-},{"./SdpEndpoint":48,"inherits":38,"kurento-client":"kurento-client"}],43:[function(require,module,exports){
+},{"./SdpEndpoint":49,"inherits":39,"kurento-client":"kurento-client"}],44:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9531,7 +9591,7 @@ Endpoint.check = function(key, value)
     throw ChecktypeError(key, Endpoint, value);
 };
 
-},{"./MediaElement":46,"inherits":38,"kurento-client":"kurento-client"}],44:[function(require,module,exports){
+},{"./MediaElement":47,"inherits":39,"kurento-client":"kurento-client"}],45:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9591,7 +9651,7 @@ Filter.check = function(key, value)
     throw ChecktypeError(key, Filter, value);
 };
 
-},{"./MediaElement":46,"inherits":38,"kurento-client":"kurento-client"}],45:[function(require,module,exports){
+},{"./MediaElement":47,"inherits":39,"kurento-client":"kurento-client"}],46:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9693,7 +9753,7 @@ Hub.check = function(key, value)
     throw ChecktypeError(key, Hub, value);
 };
 
-},{"../HubPort":39,"./MediaObject":47,"inherits":38,"kurento-client":"kurento-client"}],46:[function(require,module,exports){
+},{"../HubPort":40,"./MediaObject":48,"inherits":39,"kurento-client":"kurento-client"}],47:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10061,7 +10121,7 @@ MediaElement.check = function(key, value)
     throw ChecktypeError(key, MediaElement, value);
 };
 
-},{"./MediaObject":47,"inherits":38,"kurento-client":"kurento-client"}],47:[function(require,module,exports){
+},{"./MediaObject":48,"inherits":39,"kurento-client":"kurento-client"}],48:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10688,7 +10748,7 @@ MediaObject.check = function(key, value)
     throw ChecktypeError(key, MediaObject, value);
 };
 
-},{"es6-promise":8,"events":15,"inherits":38,"kurento-client":"kurento-client","promisecallback":97}],48:[function(require,module,exports){
+},{"es6-promise":8,"events":16,"inherits":39,"kurento-client":"kurento-client","promisecallback":98}],49:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10924,7 +10984,7 @@ SdpEndpoint.check = function(key, value)
     throw ChecktypeError(key, SdpEndpoint, value);
 };
 
-},{"./SessionEndpoint":50,"inherits":38,"kurento-client":"kurento-client"}],49:[function(require,module,exports){
+},{"./SessionEndpoint":51,"inherits":39,"kurento-client":"kurento-client"}],50:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11085,7 +11145,7 @@ ServerManager.check = function(key, value)
     throw ChecktypeError(key, ServerManager, value);
 };
 
-},{"./MediaObject":47,"inherits":38,"kurento-client":"kurento-client"}],50:[function(require,module,exports){
+},{"./MediaObject":48,"inherits":39,"kurento-client":"kurento-client"}],51:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11148,7 +11208,7 @@ SessionEndpoint.check = function(key, value)
     throw ChecktypeError(key, SessionEndpoint, value);
 };
 
-},{"./Endpoint":43,"inherits":38,"kurento-client":"kurento-client"}],51:[function(require,module,exports){
+},{"./Endpoint":44,"inherits":39,"kurento-client":"kurento-client"}],52:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11282,7 +11342,7 @@ UriEndpoint.check = function(key, value)
     throw ChecktypeError(key, UriEndpoint, value);
 };
 
-},{"./Endpoint":43,"inherits":38,"kurento-client":"kurento-client"}],52:[function(require,module,exports){
+},{"./Endpoint":44,"inherits":39,"kurento-client":"kurento-client"}],53:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11332,7 +11392,7 @@ exports.ServerManager = ServerManager;
 exports.SessionEndpoint = SessionEndpoint;
 exports.UriEndpoint = UriEndpoint;
 
-},{"./BaseRtpEndpoint":42,"./Endpoint":43,"./Filter":44,"./Hub":45,"./MediaElement":46,"./MediaObject":47,"./SdpEndpoint":48,"./ServerManager":49,"./SessionEndpoint":50,"./UriEndpoint":51}],53:[function(require,module,exports){
+},{"./BaseRtpEndpoint":43,"./Endpoint":44,"./Filter":45,"./Hub":46,"./MediaElement":47,"./MediaObject":48,"./SdpEndpoint":49,"./ServerManager":50,"./SessionEndpoint":51,"./UriEndpoint":52}],54:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11384,7 +11444,7 @@ function checkAudioCaps(key, value)
 
 module.exports = checkAudioCaps;
 
-},{"kurento-client":"kurento-client"}],54:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],55:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11434,7 +11494,7 @@ function checkAudioCodec(key, value)
 
 module.exports = checkAudioCodec;
 
-},{"kurento-client":"kurento-client"}],55:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],56:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11491,7 +11551,7 @@ function checkElementConnectionData(key, value)
 
 module.exports = checkElementConnectionData;
 
-},{"kurento-client":"kurento-client"}],56:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],57:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11542,7 +11602,7 @@ function checkFilterType(key, value)
 
 module.exports = checkFilterType;
 
-},{"kurento-client":"kurento-client"}],57:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],58:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11594,7 +11654,7 @@ function checkFraction(key, value)
 
 module.exports = checkFraction;
 
-},{"kurento-client":"kurento-client"}],58:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],59:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11645,7 +11705,7 @@ function checkMediaType(key, value)
 
 module.exports = checkMediaType;
 
-},{"kurento-client":"kurento-client"}],59:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],60:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11700,7 +11760,7 @@ function checkModuleInfo(key, value)
 
 module.exports = checkModuleInfo;
 
-},{"kurento-client":"kurento-client"}],60:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],61:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11758,7 +11818,7 @@ function checkServerInfo(key, value)
 
 module.exports = checkServerInfo;
 
-},{"kurento-client":"kurento-client"}],61:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],62:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11808,7 +11868,7 @@ function checkServerType(key, value)
 
 module.exports = checkServerType;
 
-},{"kurento-client":"kurento-client"}],62:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],63:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11860,7 +11920,7 @@ function checkTag(key, value)
 
 module.exports = checkTag;
 
-},{"kurento-client":"kurento-client"}],63:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],64:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11912,7 +11972,7 @@ function checkVideoCaps(key, value)
 
 module.exports = checkVideoCaps;
 
-},{"kurento-client":"kurento-client"}],64:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],65:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11962,7 +12022,7 @@ function checkVideoCodec(key, value)
 
 module.exports = checkVideoCodec;
 
-},{"kurento-client":"kurento-client"}],65:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],66:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12016,7 +12076,7 @@ exports.Tag = Tag;
 exports.VideoCaps = VideoCaps;
 exports.VideoCodec = VideoCodec;
 
-},{"./AudioCaps":53,"./AudioCodec":54,"./ElementConnectionData":55,"./FilterType":56,"./Fraction":57,"./MediaType":58,"./ModuleInfo":59,"./ServerInfo":60,"./ServerType":61,"./Tag":62,"./VideoCaps":63,"./VideoCodec":64}],66:[function(require,module,exports){
+},{"./AudioCaps":54,"./AudioCodec":55,"./ElementConnectionData":56,"./FilterType":57,"./Fraction":58,"./MediaType":59,"./ModuleInfo":60,"./ServerInfo":61,"./ServerType":62,"./Tag":63,"./VideoCaps":64,"./VideoCodec":65}],67:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12055,7 +12115,7 @@ exports.PassThrough = PassThrough;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./HubPort":39,"./MediaPipeline":40,"./PassThrough":41,"./abstracts":52,"./complexTypes":65}],67:[function(require,module,exports){
+},{"./HubPort":40,"./MediaPipeline":41,"./PassThrough":42,"./abstracts":53,"./complexTypes":66}],68:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12218,7 +12278,7 @@ AlphaBlending.check = function(key, value)
     throw ChecktypeError(key, AlphaBlending, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],68:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],69:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12287,7 +12347,7 @@ Composite.check = function(key, value)
     throw ChecktypeError(key, Composite, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],69:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],70:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12399,7 +12459,7 @@ Dispatcher.check = function(key, value)
     throw ChecktypeError(key, Dispatcher, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],70:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],71:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12525,7 +12585,7 @@ DispatcherOneToMany.check = function(key, value)
     throw ChecktypeError(key, DispatcherOneToMany, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],71:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],72:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12619,7 +12679,7 @@ HttpGetEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpGetEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":78,"inherits":38,"kurento-client":"kurento-client"}],72:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":79,"inherits":39,"kurento-client":"kurento-client"}],73:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12706,7 +12766,7 @@ HttpPostEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpPostEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":78,"inherits":38,"kurento-client":"kurento-client"}],73:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":79,"inherits":39,"kurento-client":"kurento-client"}],74:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12863,7 +12923,7 @@ Mixer.check = function(key, value)
     throw ChecktypeError(key, Mixer, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],74:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],75:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12985,7 +13045,7 @@ PlayerEndpoint.check = function(key, value)
     throw ChecktypeError(key, PlayerEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],75:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],76:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13103,7 +13163,7 @@ RecorderEndpoint.check = function(key, value)
     throw ChecktypeError(key, RecorderEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],76:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],77:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13172,7 +13232,7 @@ RtpEndpoint.check = function(key, value)
     throw ChecktypeError(key, RtpEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],77:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],78:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13241,7 +13301,7 @@ WebRtcEndpoint.check = function(key, value)
     throw ChecktypeError(key, WebRtcEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],78:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],79:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13330,7 +13390,7 @@ HttpEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpEndpoint, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],79:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],80:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13362,7 +13422,7 @@ var HttpEndpoint = require('./HttpEndpoint');
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":78}],80:[function(require,module,exports){
+},{"./HttpEndpoint":79}],81:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13414,7 +13474,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"kurento-client":"kurento-client"}],81:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],82:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13446,7 +13506,7 @@ var MediaProfileSpecType = require('./MediaProfileSpecType');
 
 exports.MediaProfileSpecType = MediaProfileSpecType;
 
-},{"./MediaProfileSpecType":80}],82:[function(require,module,exports){
+},{"./MediaProfileSpecType":81}],83:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13501,7 +13561,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":67,"./Composite":68,"./Dispatcher":69,"./DispatcherOneToMany":70,"./HttpGetEndpoint":71,"./HttpPostEndpoint":72,"./Mixer":73,"./PlayerEndpoint":74,"./RecorderEndpoint":75,"./RtpEndpoint":76,"./WebRtcEndpoint":77,"./abstracts":79,"./complexTypes":81}],83:[function(require,module,exports){
+},{"./AlphaBlending":68,"./Composite":69,"./Dispatcher":70,"./DispatcherOneToMany":71,"./HttpGetEndpoint":72,"./HttpPostEndpoint":73,"./Mixer":74,"./PlayerEndpoint":75,"./RecorderEndpoint":76,"./RtpEndpoint":77,"./WebRtcEndpoint":78,"./abstracts":80,"./complexTypes":82}],84:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13667,7 +13727,7 @@ FaceOverlayFilter.check = function(key, value)
     throw ChecktypeError(key, FaceOverlayFilter, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],84:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],85:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13751,7 +13811,7 @@ GStreamerFilter.check = function(key, value)
     throw ChecktypeError(key, GStreamerFilter, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],85:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],86:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13822,7 +13882,7 @@ ZBarFilter.check = function(key, value)
     throw ChecktypeError(key, ZBarFilter, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],86:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],87:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13882,7 +13942,7 @@ OpenCVFilter.check = function(key, value)
     throw ChecktypeError(key, OpenCVFilter, value);
 };
 
-},{"inherits":38,"kurento-client":"kurento-client","kurento-client-core":66}],87:[function(require,module,exports){
+},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],88:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13914,7 +13974,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":86}],88:[function(require,module,exports){
+},{"./OpenCVFilter":87}],89:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13952,7 +14012,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":83,"./GStreamerFilter":84,"./ZBarFilter":85,"./abstracts":87}],89:[function(require,module,exports){
+},{"./FaceOverlayFilter":84,"./GStreamerFilter":85,"./ZBarFilter":86,"./abstracts":88}],90:[function(require,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -14018,7 +14078,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],90:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -14039,7 +14099,7 @@ var JsonRpcClient  = require('./jsonrpcclient');
 
 exports.JsonRpcClient  = JsonRpcClient;
 
-},{"./jsonrpcclient":91}],91:[function(require,module,exports){
+},{"./jsonrpcclient":92}],92:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -14074,7 +14134,7 @@ function JsonRpcClient(wsUrl, onRequest, onerror)
 
 module.exports  = JsonRpcClient;
 
-},{"../..":92,"ws":96}],92:[function(require,module,exports){
+},{"../..":93,"ws":97}],93:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -14830,7 +14890,7 @@ var clients = require('./clients');
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":89,"./clients":90,"./packers":95,"events":15,"inherits":38}],93:[function(require,module,exports){
+},{"./Mapper":90,"./clients":91,"./packers":96,"events":16,"inherits":39}],94:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -14934,7 +14994,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],94:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -14949,7 +15009,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],95:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC  = require('./XmlRPC');
 
@@ -14957,7 +15017,7 @@ var XmlRPC  = require('./XmlRPC');
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":93,"./XmlRPC":94}],96:[function(require,module,exports){
+},{"./JsonRPC":94,"./XmlRPC":95}],97:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -15002,7 +15062,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],97:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -15049,7 +15109,7 @@ function promiseCallback(promise, callback)
 
 module.exports = promiseCallback;
 
-},{}],98:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -15068,7 +15128,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":99,"websocket-stream":106}],99:[function(require,module,exports){
+},{"reconnect-core":100,"websocket-stream":107}],100:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -15182,7 +15242,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":100,"events":15}],100:[function(require,module,exports){
+},{"backoff":101,"events":16}],101:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15233,7 +15293,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":101,"./lib/function_call.js":102,"./lib/strategy/exponential":103,"./lib/strategy/fibonacci":104}],101:[function(require,module,exports){
+},{"./lib/backoff":102,"./lib/function_call.js":103,"./lib/strategy/exponential":104,"./lib/strategy/fibonacci":105}],102:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15319,7 +15379,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":15,"util":37}],102:[function(require,module,exports){
+},{"events":16,"util":38}],103:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15548,7 +15608,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":101,"./strategy/fibonacci":104,"events":15,"util":37}],103:[function(require,module,exports){
+},{"./backoff":102,"./strategy/fibonacci":105,"events":16,"util":38}],104:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15584,7 +15644,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":105,"util":37}],104:[function(require,module,exports){
+},{"./strategy":106,"util":38}],105:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15621,7 +15681,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":105,"util":37}],105:[function(require,module,exports){
+},{"./strategy":106,"util":38}],106:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15721,7 +15781,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":15,"util":37}],106:[function(require,module,exports){
+},{"events":16,"util":38}],107:[function(require,module,exports){
 (function (process){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -15817,7 +15877,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,require('_process'))
-},{"_process":17,"isbuffer":107,"through":108,"ws":109}],107:[function(require,module,exports){
+},{"_process":18,"isbuffer":108,"through":109,"ws":110}],108:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -15827,7 +15887,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":10}],108:[function(require,module,exports){
+},{"buffer":11}],109:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -15939,9 +15999,9 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":17,"stream":33}],109:[function(require,module,exports){
-arguments[4][96][0].apply(exports,arguments)
-},{"dup":96}],"kurento-client":[function(require,module,exports){
+},{"_process":18,"stream":34}],110:[function(require,module,exports){
+arguments[4][97][0].apply(exports,arguments)
+},{"dup":97}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -16749,4 +16809,4 @@ register(require('kurento-client-core'))
 register(require('kurento-client-elements'))
 register(require('kurento-client-filters'))
 
-},{"./MediaObjectCreator":1,"./TransactionsManager":2,"./createPromise":4,"./register":5,"async":6,"checktype":7,"es6-promise":8,"events":15,"extend":9,"inherits":38,"kurento-client-core":66,"kurento-client-elements":82,"kurento-client-filters":88,"kurento-jsonrpc":92,"promisecallback":97,"reconnect-ws":98,"url":35}]},{},[3]);
+},{"./MediaObjectCreator":1,"./TransactionsManager":2,"./createPromise":4,"./register":5,"async":6,"checktype":7,"es6-promise":8,"events":16,"extend":9,"inherits":39,"kurento-client-core":67,"kurento-client-elements":83,"kurento-client-filters":89,"kurento-jsonrpc":93,"promisecallback":98,"reconnect-ws":99,"url":36}]},{},[3]);
