@@ -372,9 +372,9 @@ TransactionsManager.TransactionRollbackException = TransactionRollbackException;
  */
 
 if (typeof kurentoClient == 'undefined')
-  window.kurentoClient = require('kurento-client');
+  window.kurentoClient = require('.');
 
-},{"kurento-client":"kurento-client"}],4:[function(require,module,exports){
+},{".":"kurento-client"}],4:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
