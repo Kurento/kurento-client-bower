@@ -12820,10 +12820,10 @@ inherits(Mixer, Hub);
  *  The sort of media stream to be connected
  *
  * @param {module:core.HubPort} source
- *  Video source port to be connected
+ *  Source port to be connected
  *
  * @param {module:core.HubPort} sink
- *  Video sink port to be connected
+ *  Sink port to be connected
  *
  * @param {module:elements.Mixer~connectCallback} [callback]
  *
