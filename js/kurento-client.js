@@ -13279,6 +13279,54 @@ function WebRtcEndpoint(){
 };
 inherits(WebRtcEndpoint, BaseRtpEndpoint);
 
+/**
+ * Address of the STUN server (Only IP address are supported)
+ *
+ * @alias module:elements.WebRtcEndpoint#getStunServerAddress
+ *
+ * @param {module:elements.WebRtcEndpoint~getStunServerAddressCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getStunServerAddress = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getStunServerAddress', callback);
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getStunServerAddressCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
+
+/**
+ * Port of the STUN server
+ *
+ * @alias module:elements.WebRtcEndpoint#getStunServerPort
+ *
+ * @param {module:elements.WebRtcEndpoint~getStunServerPortCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getStunServerPort = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getStunServerPort', callback);
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getStunServerPortCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
 
 /**
  * Provide a remote ICE candidate
