@@ -31,7 +31,7 @@ function getConstructor(type) {
   if (result) return result;
 
   console.warn("Unknown type '" + type + "', using MediaObject instead");
-  return MediaObject;
+  return require('kurento-client-core').abstracts.MediaObject;
 };
 
 function createConstructor(item) {
@@ -52,6 +52,10 @@ function createConstructor(item) {
 }
 
 function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction) {
+  if (!(this instanceof MediaObjectCreator))
+    return new MediaObjectCreator(host, encodeCreate, encodeRpc,
+      encodeTransaction)
+
   function createObject(constructor) {
     var mediaObject = new constructor()
 
@@ -149,7 +153,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction) {
 
 module.exports = MediaObjectCreator;
 
-},{"./TransactionsManager":2,"./createPromise":4,"./register":5,"checktype":7}],2:[function(require,module,exports){
+},{"./TransactionsManager":2,"./createPromise":4,"./register":5,"checktype":7,"kurento-client-core":67}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
