@@ -9479,6 +9479,37 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
  */
 
 /**
+ * Maximum video bandwidth for sending.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 500
+ *
+ * @alias module:core/abstracts.BaseRtpEndpoint#setMaxVideoSendBandwidth
+ *
+ * @param {external:Integer} value
+ * @param {module:core/abstracts.BaseRtpEndpoint~setMaxVideoSendBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+BaseRtpEndpoint.prototype.setMaxVideoSendBandwidth = function(maxVideoSendBandwidth, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'maxVideoSendBandwidth', maxVideoSendBandwidth, {required: true});
+
+  var params = {
+    maxVideoSendBandwidth: maxVideoSendBandwidth,
+  };
+
+  return this._invoke(transaction, 'setMaxVideoSendBandwidth', params, callback);
+};
+/**
+ * @callback module:core/abstracts.BaseRtpEndpoint~setMaxVideoSendBandwidthCallback
+ * @param {external:Error} error
+ */
+
+/**
  * Minimum video bandwidth for sending.
  *   Unit: kbps(kilobits per second).
  *    0: unlimited.
@@ -9503,6 +9534,37 @@ BaseRtpEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
  * @callback module:core/abstracts.BaseRtpEndpoint~getMinVideoSendBandwidthCallback
  * @param {external:Error} error
  * @param {external:Integer} result
+ */
+
+/**
+ * Minimum video bandwidth for sending.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 100
+ *
+ * @alias module:core/abstracts.BaseRtpEndpoint#setMinVideoSendBandwidth
+ *
+ * @param {external:Integer} value
+ * @param {module:core/abstracts.BaseRtpEndpoint~setMinVideoSendBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwidth, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'minVideoSendBandwidth', minVideoSendBandwidth, {required: true});
+
+  var params = {
+    minVideoSendBandwidth: minVideoSendBandwidth,
+  };
+
+  return this._invoke(transaction, 'setMinVideoSendBandwidth', params, callback);
+};
+/**
+ * @callback module:core/abstracts.BaseRtpEndpoint~setMinVideoSendBandwidthCallback
+ * @param {external:Error} error
  */
 
 /**
@@ -10334,6 +10396,34 @@ MediaObject.prototype.getName = function(callback){
  */
 
 /**
+ * Object name. This is just a comodity to simplify developers life debugging, it is not used internally for indexing nor idenfiying the objects. By default is the object type followed by the object id.
+ *
+ * @alias module:core/abstracts.MediaObject#setName
+ *
+ * @param {external:String} value
+ * @param {module:core/abstracts.MediaObject~setNameCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.setName = function(name, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('String', 'name', name, {required: true});
+
+  var params = {
+    name: name,
+  };
+
+  return this._invoke(transaction, 'setName', params, callback);
+};
+/**
+ * @callback module:core/abstracts.MediaObject~setNameCallback
+ * @param {external:Error} error
+ */
+
+/**
  * parent of this media object. The type of the parent depends on the type of the element. The parent of a :rom:cls:`MediaPad` is its {@link module:core/abstracts.MediaElement MediaElement}; the parent of a {@link module:core/abstracts.Hub Hub} or a {@link module:core/abstracts.MediaElement MediaElement} is its {@link module:core.MediaPipeline MediaPipeline}. A {@link module:core.MediaPipeline MediaPipeline} has no parent, i.e. the property is null
  *
  * @alias module:core/abstracts.MediaObject#getParent
@@ -10379,6 +10469,34 @@ MediaObject.prototype.getSendTagsInEvents = function(callback){
  * @callback module:core/abstracts.MediaObject~getSendTagsInEventsCallback
  * @param {external:Error} error
  * @param {external:Boolean} result
+ */
+
+/**
+ * This property allows activate/deactivate sending the element tags in all its events.
+ *
+ * @alias module:core/abstracts.MediaObject#setSendTagsInEvents
+ *
+ * @param {external:Boolean} value
+ * @param {module:core/abstracts.MediaObject~setSendTagsInEventsCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('boolean', 'sendTagsInEvents', sendTagsInEvents, {required: true});
+
+  var params = {
+    sendTagsInEvents: sendTagsInEvents,
+  };
+
+  return this._invoke(transaction, 'setSendTagsInEvents', params, callback);
+};
+/**
+ * @callback module:core/abstracts.MediaObject~setSendTagsInEventsCallback
+ * @param {external:Error} error
  */
 
 
@@ -10815,6 +10933,37 @@ SdpEndpoint.prototype.getMaxVideoRecvBandwidth = function(callback){
  * @callback module:core/abstracts.SdpEndpoint~getMaxVideoRecvBandwidthCallback
  * @param {external:Error} error
  * @param {external:Integer} result
+ */
+
+/**
+ * Maximum video bandwidth for receiving.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 500
+ *
+ * @alias module:core/abstracts.SdpEndpoint#setMaxVideoRecvBandwidth
+ *
+ * @param {external:Integer} value
+ * @param {module:core/abstracts.SdpEndpoint~setMaxVideoRecvBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'maxVideoRecvBandwidth', maxVideoRecvBandwidth, {required: true});
+
+  var params = {
+    maxVideoRecvBandwidth: maxVideoRecvBandwidth,
+  };
+
+  return this._invoke(transaction, 'setMaxVideoRecvBandwidth', params, callback);
+};
+/**
+ * @callback module:core/abstracts.SdpEndpoint~setMaxVideoRecvBandwidthCallback
+ * @param {external:Error} error
  */
 
 
@@ -13303,6 +13452,34 @@ WebRtcEndpoint.prototype.getStunServerAddress = function(callback){
  */
 
 /**
+ * Address of the STUN server (Only IP address are supported)
+ *
+ * @alias module:elements.WebRtcEndpoint#setStunServerAddress
+ *
+ * @param {external:String} value
+ * @param {module:elements.WebRtcEndpoint~setStunServerAddressCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.setStunServerAddress = function(stunServerAddress, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('String', 'stunServerAddress', stunServerAddress, {required: true});
+
+  var params = {
+    stunServerAddress: stunServerAddress,
+  };
+
+  return this._invoke(transaction, 'setStunServerAddress', params, callback);
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~setStunServerAddressCallback
+ * @param {external:Error} error
+ */
+
+/**
  * Port of the STUN server
  *
  * @alias module:elements.WebRtcEndpoint#getStunServerPort
@@ -13324,6 +13501,34 @@ WebRtcEndpoint.prototype.getStunServerPort = function(callback){
  * @callback module:elements.WebRtcEndpoint~getStunServerPortCallback
  * @param {external:Error} error
  * @param {external:Integer} result
+ */
+
+/**
+ * Port of the STUN server
+ *
+ * @alias module:elements.WebRtcEndpoint#setStunServerPort
+ *
+ * @param {external:Integer} value
+ * @param {module:elements.WebRtcEndpoint~setStunServerPortCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'stunServerPort', stunServerPort, {required: true});
+
+  var params = {
+    stunServerPort: stunServerPort,
+  };
+
+  return this._invoke(transaction, 'setStunServerPort', params, callback);
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~setStunServerPortCallback
+ * @param {external:Error} error
  */
 
 
