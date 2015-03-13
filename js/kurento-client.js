@@ -1,5 +1,800 @@
 require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /*
+ * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+/**
+ * Media API for the Kurento Web SDK
+ *
+ * @module KurentoClient
+ *
+ * @copyright 2013-2015 Kurento (http://kurento.org/)
+ * @license LGPL
+ */
+
+var EventEmitter = require('events').EventEmitter;
+var url = require('url');
+
+var Promise = require('es6-promise').Promise;
+
+var async = require('async');
+var extend = require('extend');
+var inherits = require('inherits');
+var reconnect = require('reconnect-ws');
+
+var checkType = require('checktype');
+
+var RpcBuilder = require('kurento-jsonrpc');
+var JsonRPC = RpcBuilder.packers.JsonRPC;
+
+var promiseCallback = require('promisecallback');
+
+var createPromise = require('./createPromise');
+var MediaObjectCreator = require('./MediaObjectCreator');
+var TransactionsManager = require('./TransactionsManager');
+
+var TransactionNotCommitedException = TransactionsManager.TransactionNotCommitedException;
+var transactionOperation = TransactionsManager.transactionOperation;
+
+var MediaObject = require('kurento-client-core').abstracts.MediaObject;
+
+const BASE_TIMEOUT = 20000;
+
+/*
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex#Polyfill
+ */
+if (!Array.prototype.findIndex) {
+  Array.prototype.findIndex = function (predicate) {
+    if (this == null) {
+      throw new TypeError('Array.prototype.find called on null or undefined');
+    }
+    if (typeof predicate !== 'function') {
+      throw new TypeError('predicate must be a function');
+    }
+    var list = Object(this);
+    var length = list.length >>> 0;
+    var thisArg = arguments[1];
+    var value;
+
+    for (var i = 0; i < length; i++) {
+      value = list[i];
+      if (predicate.call(thisArg, value, i, list)) {
+        return i;
+      }
+    }
+    return -1;
+  };
+}
+
+/**
+ * Serialize objects using their id
+ */
+function serializeParams(params) {
+  for (var key in params) {
+    var param = params[key];
+    if (param instanceof MediaObject) {
+      var id = param.id;
+
+      if (id !== undefined) params[key] = id;
+    }
+  };
+
+  return params;
+};
+
+function serializeOperation(operation, index) {
+  var params = operation.params;
+
+  switch (operation.method) {
+  case 'create':
+    params.constructorParams = serializeParams(params.constructorParams);
+    break;
+
+  default:
+    params = serializeParams(params);
+    params.operationParams = serializeParams(params.operationParams);
+  };
+
+  operation.jsonrpc = "2.0";
+
+  operation.id = index;
+};
+
+function deferred(mediaObject, params, prevRpc, callback) {
+  var promises = [];
+
+  if (mediaObject != undefined)
+    promises.push(mediaObject);
+
+  for (var key in params) {
+    var param = params[key];
+    if (param !== undefined)
+      promises.push(param);
+  };
+
+  if (prevRpc != undefined)
+    promises.push(prevRpc);
+
+  return promiseCallback(Promise.all(promises), callback);
+};
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+function id2object(error, result, operation, id, callback) {
+  if (error) return callback(error);
+
+  var operations = [
+    'getConnectedSinks',
+    'getMediaPipeline',
+    'getMediaSinks',
+    'getMediaSrcs',
+    'getParent'
+  ]
+
+  if (operations.indexOf(operation) != -1) {
+    var sessionId = result.sessionId;
+
+    return this.getMediaobjectById(id, function (error, result) {
+      if (error) return callback(error);
+
+      var result = {
+        sessionId: sessionId,
+        value: result
+      };
+
+      callback(null, result);
+    });
+  };
+
+  callback(null, result)
+};
+
+/**
+ * Creates a connection with the Kurento Media Server
+ *
+ * @class
+ *
+ * @param {external:String} ws_uri - Address of the Kurento Media Server
+ * @param {Object} [options]
+ *   @property failAfter - Don't try to reconnect after several tries
+ *     @default 5
+ *   @property enableTransactions - Enable transactions functionality
+ *     @default true
+ *   @property access_token - Set access token for the WebSocket connection
+ *   @property max_retries - Number of tries to send the requests
+ *     @default 0
+ *   @property request_timeout - Timeout between requests retries
+ *     @default 20000
+ *   @property response_timeout - Timeout while a response is being stored
+ *     @default 20000
+ *   @property duplicates_timeout - Timeout to ignore duplicated responses
+ *     @default 20000
+ * @param {KurentoClientApi~constructorCallback} [callback]
+ */
+function KurentoClient(ws_uri, options, callback) {
+  if (!(this instanceof KurentoClient))
+    return new KurentoClient(ws_uri, options, callback);
+
+  var self = this;
+
+  EventEmitter.call(this);
+
+  // Promises to check previous RPC calls
+  var prevRpc = Promise.resolve(); // request has been send
+  var prevRpc_result = Promise.resolve(); // response has been received
+
+  // Fix optional parameters
+  if (options instanceof Function) {
+    callback = options;
+    options = undefined;
+  };
+
+  options = options || {};
+
+  var failAfter = options.failAfter
+  if (failAfter == undefined) failAfter = 5
+
+  options.enableTransactions = options.enableTransactions || true
+
+  options.request_timeout = options.request_timeout || BASE_TIMEOUT;
+  options.response_timeout = options.response_timeout || BASE_TIMEOUT;
+  options.duplicates_timeout = options.duplicates_timeout || BASE_TIMEOUT;
+
+  var objects = {};
+
+  function onNotification(message) {
+    var method = message.method;
+    var params = message.params.value;
+
+    var id = params.object;
+
+    var object = objects[id];
+    if (!object)
+      return console.warn("Unknown object id '" + id + "'", message);
+
+    switch (method) {
+    case 'onEvent':
+      object.emit(params.type, params.data);
+      break;
+
+      //      case 'onError':
+      //        object.emit('error', params.error);
+      //      break;
+
+    default:
+      console.warn("Unknown message type '" + method + "'");
+    };
+  };
+
+  //
+  // JsonRPC
+  //
+
+  if (typeof ws_uri == 'string') {
+    var access_token = options.access_token;
+    if (access_token != undefined) {
+      ws_uri = url.parse(ws_uri, true);
+      ws_uri.query.access_token = access_token;
+      ws_uri = url.format(ws_uri);
+
+      delete options.access_token;
+    };
+  }
+
+  var rpc = new RpcBuilder(JsonRPC, options, function (request) {
+    if (request instanceof RpcBuilder.RpcNotification) {
+      // Message is an unexpected request, notify error
+      if (request.duplicated != undefined)
+        return console.warning('Unexpected request:', request);
+
+      // Message is a notification, process it
+      return onNotification(request);
+    };
+
+    // Invalid message, notify error
+    console.error('Invalid request instance', request);
+  });
+
+  function connect(callback) {
+    //
+    // Reconnect websockets
+    //
+
+    var closed = false;
+    var re = reconnect({
+        failAfter: failAfter
+      }, function (ws_stream) {
+        if (closed)
+          ws_stream.writable = false;
+
+        rpc.transport = ws_stream;
+      })
+      .connect(ws_uri);
+
+    Object.defineProperty(this, '_re', {
+      configurable: true,
+      get: function () {
+        return re
+      }
+    })
+
+    this.close = function () {
+      closed = true;
+
+      prevRpc_result.then(re.disconnect.bind(re));
+    };
+
+    re.on('fail', this.emit.bind(this, 'disconnect'));
+
+    //
+    // Promise interface ("thenable")
+    //
+
+    this.then = function (onFulfilled, onRejected) {
+      return new Promise(function (resolve, reject) {
+        function success() {
+          re.removeListener('fail', failure);
+
+          var result;
+
+          if (onFulfilled)
+            try {
+              result = onFulfilled.call(self, self);
+            } catch (exception) {
+              if (!onRejected)
+                console.trace('Uncaugh exception', exception)
+
+              return reject(exception);
+            }
+
+          resolve(result);
+        };
+
+        function failure() {
+          re.removeListener('connection', success);
+
+          var result = new Error('Connection error');
+
+          if (onRejected)
+            try {
+              result = onRejected.call(self, result);
+            } catch (exception) {
+              return reject(exception);
+            } else
+              console.trace('Uncaugh exception', result)
+
+          reject(result);
+        };
+
+        if (re.connected)
+          success()
+        else if (!re.reconnect)
+          failure()
+        else {
+          re.once('connection', success);
+          re.once('fail', failure);
+        }
+      });
+    };
+
+    this.catch = this.then.bind(this, null);
+
+    if (callback)
+      this.then(callback.bind(undefined, null), callback);
+  };
+  connect.call(self, callback);
+
+  // Select what transactions mechanism to use
+  var encodeTransaction = options.enableTransactions ? commitTransactional :
+    commitSerial;
+
+  // Transactional API
+
+  var transactionsManager = new TransactionsManager(this,
+    function (operations, callback) {
+      var params = {
+        object: self,
+        operations: operations
+      };
+
+      encodeTransaction(params, callback)
+    });
+
+  this.beginTransaction = transactionsManager.beginTransaction.bind(
+    transactionsManager);
+  this.endTransaction = transactionsManager.endTransaction.bind(
+    transactionsManager);
+  this.transaction = transactionsManager.transaction.bind(transactionsManager);
+
+  // Encode commands
+
+  function encode(method, params, callback) {
+    self.then(function () {
+        // [ToDo] Use stacktrace of caller, not from response
+        rpc.encode(method, params, function (error, result) {
+          if (error)
+            error = extend(new Error(error.message || error), error);
+
+          callback(error, result);
+        });
+      },
+      function () {
+        connect.call(self, function (error) {
+          if (error) return callback(error);
+
+          encode(method, params, callback);
+        });
+      })
+  }
+
+  function encodeCreate(transaction, params, callback) {
+    if (transaction)
+      return transactionOperation.call(transaction, 'create', params,
+        callback);
+
+    if (transactionsManager.length)
+      return transactionOperation.call(transactionsManager, 'create',
+        params, callback);
+
+    callback = callback || noop;
+
+    function callback2(error, result) {
+      var mediaObject = params.object;
+
+      if (error) {
+        mediaObject.emit('_id', error);
+        return callback(error);
+      }
+
+      var id = result.value;
+
+      callback(null, registerObject(mediaObject, id));
+    }
+
+    deferred(null, params.constructorParams, null, function (error) {
+      if (error) return callback(error);
+
+      params.constructorParams = serializeParams(params.constructorParams);
+
+      encode('create', params, callback2);
+    });
+  };
+
+  /**
+   * Request a generic functionality to be procesed by the server
+   */
+  function encodeRpc(transaction, method, params, callback) {
+    if (transaction)
+      return transactionOperation.call(transaction, method, params,
+        callback);
+
+    var object = params.object;
+    if (object && object.transactions && object.transactions.length) {
+      var error = new TransactionNotCommitedException();
+      error.method = method;
+      error.params = params;
+
+      return setTimeout(callback, 0, error)
+    };
+
+    for (var key in params.operationParams) {
+      var object = params.operationParams[key];
+
+      if (object && object.transactions && object.transactions.length) {
+        var error = new TransactionNotCommitedException();
+        error.method = method;
+        error.params = params;
+
+        return setTimeout(callback, 0, error)
+      };
+    }
+
+    if (transactionsManager.length)
+      return transactionOperation.call(transactionsManager, method, params,
+        callback);
+
+    var promise = new Promise(function (resolve, reject) {
+      function callback2(error, result) {
+        var operation = params.operation;
+        var id = result ? result.value : undefined;
+
+        id2object.call(self, error, result, operation, id, function (
+          error, result) {
+          if (error) return reject(error);
+
+          resolve(result);
+        });
+      };
+
+      prevRpc = deferred(params.object, params.operationParams, prevRpc,
+        function (error) {
+          if (error) return reject(error);
+
+          params = serializeParams(params);
+          params.operationParams = serializeParams(params.operationParams);
+
+          encode(method, params, callback2);
+        })
+    });
+
+    prevRpc_result = promiseCallback(promise, callback);
+
+    if (method == 'release') prevRpc = prevRpc_result;
+  }
+
+  // Commit mechanisms
+
+  function commitTransactional(params, callback) {
+    if (transactionsManager.length)
+      return transactionOperation.call(transactionsManager, 'transaction',
+        params, callback);
+
+    var operations = params.operations;
+
+    for (var i = 0, operation; operation = operations[i]; i++) {
+      var object = operation.params.object;
+      if (object instanceof MediaObject && object.id === null) {
+        var error = new Error('MediaObject not found in server');
+        error.code = 40101;
+        error.object = object;
+
+        // Notify error to all the operations in the transaction
+        operations.forEach(function (operation) {
+          if (operation.method == 'create')
+            operation.params.object.emit('_id', error);
+
+          var callback = operation.callback;
+          if (callback instanceof Function)
+            callback(error);
+        });
+
+        return callback(error);
+      }
+    }
+
+    var promises = [];
+
+    function checkId(operation, param) {
+      if (param instanceof MediaObject && param.id === undefined) {
+        var index = operations.findIndex(function (element) {
+          return operation != element && element.params.object ===
+            param;
+        });
+
+        // MediaObject dependency is created in this transaction,
+        // set a new reference ID
+        if (index >= 0)
+          return 'newref:' + index;
+
+        // MediaObject dependency is created outside this transaction,
+        // wait until it's ready
+        promises.push(param);
+      }
+
+      return param
+    }
+
+    // Fix references to uninitialized MediaObjects
+    operations.forEach(function (operation) {
+      var params = operation.params;
+
+      switch (operation.method) {
+      case 'create':
+        var constructorParams = params.constructorParams;
+        for (var key in constructorParams)
+          constructorParams[key] = checkId(operation, constructorParams[
+            key]);
+        break;
+
+      default:
+        params.object = checkId(operation, params.object);
+
+        var operationParams = params.operationParams;
+        for (var key in operationParams)
+          operationParams[key] = checkId(operation, operationParams[key]);
+      };
+    });
+
+    function callback2(error, transaction_result) {
+      if (error) return callback(error);
+
+      operations.forEach(function (operation, index) {
+        var callback = operation.callback || noop;
+
+        var operation_response = transaction_result.value[index];
+        if (operation_response == undefined)
+          return callback(new Error(
+            'Command not executed in the server'));
+
+        var error = operation_response.error;
+        var result = operation_response.result;
+
+        var id;
+        if (result) id = result.value;
+
+        switch (operation.method) {
+        case 'create':
+          var mediaObject = operation.params.object;
+
+          if (error) {
+            mediaObject.emit('_id', error);
+            return callback(error)
+          }
+
+          callback(null, registerObject(mediaObject, id));
+          break;
+
+        default:
+          id2object.call(self, error, result, operation, id, callback);
+        }
+      })
+
+      callback(null, transaction_result);
+    };
+
+    Promise.all(promises).then(function () {
+        operations.forEach(serializeOperation)
+
+        encode('transaction', params, callback2);
+      },
+      callback);
+  }
+
+  function commitSerial(params, callback) {
+    if (transactionsManager.length)
+      return transactionOperation.call(transactionsManager, 'transaction',
+        params, callback);
+
+    var operations = params.operations;
+
+    async.each(operations, function (operation) {
+        switch (operation.method) {
+        case 'create':
+          encodeCreate(undefined, operation.params, operation.callback);
+          break;
+
+        case 'transaction':
+          commitSerial(operation.params.operations, operation.callback);
+          break;
+
+        default:
+          encodeRpc(undefined, operation.method, operation.params,
+            operation.callback);
+        }
+      },
+      callback)
+  }
+
+  function registerObject(mediaObject, id) {
+    var object = objects[id];
+    if (object) return object;
+
+    mediaObject.emit('_id', null, id);
+
+    objects[id] = mediaObject;
+
+    /**
+     * Remove the object from cache
+     */
+    mediaObject.once('release', function () {
+      delete objects[id];
+    });
+
+    return mediaObject;
+  }
+
+  // Creation of objects
+
+  var mediaObjectCreator = new MediaObjectCreator(undefined, encodeCreate,
+    encodeRpc, encodeTransaction);
+
+  function describe(id, callback) {
+    var mediaObject = objects[id];
+    if (mediaObject) return callback(null, mediaObject);
+
+    var params = {
+      object: id
+    };
+
+    function callback2(error, result) {
+      if (error) return callback(error);
+
+      var mediaObject = mediaObjectCreator.createInmediate(result);
+
+      return callback(null, registerObject(mediaObject, id));
+    }
+
+    encode('describe', params, callback2);
+  };
+
+  /**
+   * Get a MediaObject from its ID
+   *
+   * @param {(external:String|external:string[])} id - ID of the MediaElement
+   * @callback {getMediaobjectByIdCallback} callback
+   *
+   * @return {external:Promise}
+   */
+  this.getMediaobjectById = function (id, callback) {
+    return createPromise(id, describe, callback)
+  };
+  /**
+   * @callback KurentoClientApi~getMediaobjectByIdCallback
+   * @param {external:Error} error
+   * @param {(module:core/abstract~MediaElement|module:core/abstract~MediaElement[])} result
+   *  The requested MediaElement
+   */
+
+  /**
+   * Create a new instance of a MediaObject
+   *
+   * @param {external:String} type - Type of the element
+   * @param {external:string[]} [params]
+   * @callback {createMediaPipelineCallback} callback
+   *
+   * @return {module:KurentoClientApi~KurentoClient} The Kurento client itself
+   */
+  this.create = mediaObjectCreator.create.bind(mediaObjectCreator);
+  /**
+   * @callback KurentoClientApi~createCallback
+   * @param {external:Error} error
+   * @param {module:core/abstract~MediaElement} result
+   *  The created MediaElement
+   */
+};
+inherits(KurentoClient, EventEmitter);
+/**
+ * @callback KurentoClientApi~constructorCallback
+ * @param {external:Error} error
+ * @param {module:KurentoClientApi~KurentoClient} client
+ *  The created KurentoClient
+ */
+
+var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
+
+/**
+ * Connect the source of a media to the sink of the next one
+ *
+ * @param {...module:core/abstract~MediaObject} media - A media to be connected
+ * @callback {module:KurentoClientApi~connectCallback} [callback]
+ *
+ * @return {external:Promise}
+ *
+ * @throws {SyntaxError}
+ */
+KurentoClient.prototype.connect = function (media, callback) {
+  // Fix lenght-variable arguments
+  media = Array.prototype.slice.call(arguments, 0);
+  callback = (typeof media[media.length - 1] == 'function') ? media.pop() :
+    undefined;
+
+  // Check if we have enought media components
+  if (media.length < 2)
+    throw new SyntaxError("Need at least two media elements to connect");
+
+  // Check MediaElements are of the correct type
+  media.forEach(checkMediaElement);
+
+  // Generate promise
+  var promise = new Promise(function (resolve, reject) {
+    function callback(error, result) {
+      if (error) return reject(error);
+
+      resolve(result);
+    };
+
+    // Connect the media elements
+    var src = media[0];
+
+    async.each(media.slice(1), function (sink, callback) {
+      src.connect(sink, callback);
+      src = sink;
+    }, callback);
+  });
+
+  return promiseCallback(promise, callback);
+};
+/**
+ * @callback KurentoClientApi~connectCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Get a reference to the current Kurento Media Server we are connected
+ *
+ * @callback {module:KurentoClientApi~getServerManagerCallback} callback
+ *
+ * @return {external:Promise}
+ */
+KurentoClient.prototype.getServerManager = function (callback) {
+  return this.getMediaobjectById('manager_ServerManager', callback)
+};
+/**
+ * @callback KurentoClientApi~getServerManagerCallback
+ * @param {external:Error} error
+ * @param {module:core/abstract~ServerManager} server
+ *  Info of the MediaServer instance
+ */
+
+// Export KurentoClient
+
+module.exports = KurentoClient;
+
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./createPromise":5,"async":7,"checktype":8,"es6-promise":9,"events":17,"extend":10,"inherits":40,"kurento-client-core":85,"kurento-jsonrpc":112,"promisecallback":117,"reconnect-ws":118,"url":37}],2:[function(require,module,exports){
+/*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
  * All rights reserved. This program and the accompanying materials
@@ -153,7 +948,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction) {
 
 module.exports = MediaObjectCreator;
 
-},{"./TransactionsManager":2,"./createPromise":4,"./register":5,"checktype":7,"kurento-client-core":67}],2:[function(require,module,exports){
+},{"./TransactionsManager":3,"./createPromise":5,"./register":6,"checktype":8,"kurento-client-core":85}],3:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -370,7 +1165,7 @@ TransactionsManager.TransactionNotCommitedException =
   TransactionNotCommitedException;
 TransactionsManager.TransactionRollbackException = TransactionRollbackException;
 
-},{"domain":15,"es6-promise":8,"events":16,"inherits":39,"promisecallback":99}],3:[function(require,module,exports){
+},{"domain":16,"es6-promise":9,"events":17,"inherits":40,"promisecallback":117}],4:[function(require,module,exports){
 /**
  * Loader for the kurento-client package on the browser
  */
@@ -378,7 +1173,7 @@ TransactionsManager.TransactionRollbackException = TransactionRollbackException;
 if (typeof kurentoClient == 'undefined')
   window.kurentoClient = require('.');
 
-},{".":"kurento-client"}],4:[function(require,module,exports){
+},{".":"kurento-client"}],5:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -419,7 +1214,7 @@ function createPromise(data, func, callback) {
 
 module.exports = createPromise;
 
-},{"async":6,"es6-promise":8,"promisecallback":99}],5:[function(require,module,exports){
+},{"async":7,"es6-promise":9,"promisecallback":117}],6:[function(require,module,exports){
 var checkType = require('checktype');
 
 var abstracts = {};
@@ -496,7 +1291,7 @@ module.exports = register;
 register.abstracts = abstracts;
 register.classes = classes;
 
-},{"checktype":7}],6:[function(require,module,exports){
+},{"checktype":8}],7:[function(require,module,exports){
 (function (process){
 /*!
  * async
@@ -1623,7 +2418,7 @@ register.classes = classes;
 }());
 
 }).call(this,require('_process'))
-},{"_process":18}],7:[function(require,module,exports){
+},{"_process":19}],8:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -1795,7 +2590,7 @@ checkType.int     = checkInteger;
 checkType.Object  = checkObject;
 checkType.String  = checkString;
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (process,global){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
@@ -2758,7 +3553,7 @@ checkType.String  = checkString;
     }
 }).call(this);
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":18}],9:[function(require,module,exports){
+},{"_process":19}],10:[function(require,module,exports){
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
 var undefined;
@@ -2841,9 +3636,9 @@ module.exports = function extend() {
 };
 
 
-},{}],10:[function(require,module,exports){
-
 },{}],11:[function(require,module,exports){
+
+},{}],12:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -2910,41 +3705,36 @@ Buffer.TYPED_ARRAY_SUPPORT = (function () {
  * By augmenting the instances, we can avoid modifying the `Uint8Array`
  * prototype.
  */
-function Buffer (subject, encoding, noZero) {
-  if (!(this instanceof Buffer))
-    return new Buffer(subject, encoding, noZero)
+function Buffer (subject, encoding) {
+  var self = this
+  if (!(self instanceof Buffer)) return new Buffer(subject, encoding)
 
   var type = typeof subject
-
-  // Find the length
   var length
+
   if (type === 'number') {
     length = +subject
   } else if (type === 'string') {
     length = Buffer.byteLength(subject, encoding)
-  } else if (type === 'object' && subject !== null) { // assume object is array-like
-    if (subject.type === 'Buffer' && isArray(subject.data))
-      subject = subject.data
+  } else if (type === 'object' && subject !== null) {
+    // assume object is array-like
+    if (subject.type === 'Buffer' && isArray(subject.data)) subject = subject.data
     length = +subject.length
   } else {
     throw new TypeError('must start with number, buffer, array or string')
   }
 
-  if (length > kMaxLength)
-    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
-      'size: 0x' + kMaxLength.toString(16) + ' bytes')
+  if (length > kMaxLength) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum size: 0x' +
+      kMaxLength.toString(16) + ' bytes')
+  }
 
-  if (length < 0)
-    length = 0
-  else
-    length >>>= 0 // Coerce to uint32.
+  if (length < 0) length = 0
+  else length >>>= 0 // coerce to uint32
 
-  var self = this
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     // Preferred: Return an augmented `Uint8Array` instance for best performance
-    /*eslint-disable consistent-this */
-    self = Buffer._augment(new Uint8Array(length))
-    /*eslint-enable consistent-this */
+    self = Buffer._augment(new Uint8Array(length)) // eslint-disable-line consistent-this
   } else {
     // Fallback: Return THIS instance of Buffer (created by `new`)
     self.length = length
@@ -2958,42 +3748,43 @@ function Buffer (subject, encoding, noZero) {
   } else if (isArrayish(subject)) {
     // Treat array-ish objects as a byte array
     if (Buffer.isBuffer(subject)) {
-      for (i = 0; i < length; i++)
+      for (i = 0; i < length; i++) {
         self[i] = subject.readUInt8(i)
+      }
     } else {
-      for (i = 0; i < length; i++)
+      for (i = 0; i < length; i++) {
         self[i] = ((subject[i] % 256) + 256) % 256
+      }
     }
   } else if (type === 'string') {
     self.write(subject, 0, encoding)
-  } else if (type === 'number' && !Buffer.TYPED_ARRAY_SUPPORT && !noZero) {
+  } else if (type === 'number' && !Buffer.TYPED_ARRAY_SUPPORT) {
     for (i = 0; i < length; i++) {
       self[i] = 0
     }
   }
 
-  if (length > 0 && length <= Buffer.poolSize)
-    self.parent = rootParent
+  if (length > 0 && length <= Buffer.poolSize) self.parent = rootParent
 
   return self
 }
 
-function SlowBuffer (subject, encoding, noZero) {
-  if (!(this instanceof SlowBuffer))
-    return new SlowBuffer(subject, encoding, noZero)
+function SlowBuffer (subject, encoding) {
+  if (!(this instanceof SlowBuffer)) return new SlowBuffer(subject, encoding)
 
-  var buf = new Buffer(subject, encoding, noZero)
+  var buf = new Buffer(subject, encoding)
   delete buf.parent
   return buf
 }
 
-Buffer.isBuffer = function (b) {
+Buffer.isBuffer = function isBuffer (b) {
   return !!(b != null && b._isBuffer)
 }
 
-Buffer.compare = function (a, b) {
-  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b))
+Buffer.compare = function compare (a, b) {
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
     throw new TypeError('Arguments must be Buffers')
+  }
 
   if (a === b) return 0
 
@@ -3009,7 +3800,7 @@ Buffer.compare = function (a, b) {
   return 0
 }
 
-Buffer.isEncoding = function (encoding) {
+Buffer.isEncoding = function isEncoding (encoding) {
   switch (String(encoding).toLowerCase()) {
     case 'hex':
     case 'utf8':
@@ -3028,8 +3819,8 @@ Buffer.isEncoding = function (encoding) {
   }
 }
 
-Buffer.concat = function (list, totalLength) {
-  if (!isArray(list)) throw new TypeError('Usage: Buffer.concat(list[, length])')
+Buffer.concat = function concat (list, totalLength) {
+  if (!isArray(list)) throw new TypeError('list argument must be an Array of Buffers.')
 
   if (list.length === 0) {
     return new Buffer(0)
@@ -3055,7 +3846,7 @@ Buffer.concat = function (list, totalLength) {
   return buf
 }
 
-Buffer.byteLength = function (str, encoding) {
+Buffer.byteLength = function byteLength (str, encoding) {
   var ret
   str = str + ''
   switch (encoding || 'utf8') {
@@ -3091,7 +3882,7 @@ Buffer.prototype.length = undefined
 Buffer.prototype.parent = undefined
 
 // toString(encoding, start=0, end=buffer.length)
-Buffer.prototype.toString = function (encoding, start, end) {
+Buffer.prototype.toString = function toString (encoding, start, end) {
   var loweredCase = false
 
   start = start >>> 0
@@ -3127,45 +3918,84 @@ Buffer.prototype.toString = function (encoding, start, end) {
         return utf16leSlice(this, start, end)
 
       default:
-        if (loweredCase)
-          throw new TypeError('Unknown encoding: ' + encoding)
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
         encoding = (encoding + '').toLowerCase()
         loweredCase = true
     }
   }
 }
 
-Buffer.prototype.equals = function (b) {
+Buffer.prototype.equals = function equals (b) {
   if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
   if (this === b) return true
   return Buffer.compare(this, b) === 0
 }
 
-Buffer.prototype.inspect = function () {
+Buffer.prototype.inspect = function inspect () {
   var str = ''
   var max = exports.INSPECT_MAX_BYTES
   if (this.length > 0) {
     str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
-    if (this.length > max)
-      str += ' ... '
+    if (this.length > max) str += ' ... '
   }
   return '<Buffer ' + str + '>'
 }
 
-Buffer.prototype.compare = function (b) {
+Buffer.prototype.compare = function compare (b) {
   if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
   if (this === b) return 0
   return Buffer.compare(this, b)
 }
 
+Buffer.prototype.indexOf = function indexOf (val, byteOffset) {
+  if (byteOffset > 0x7fffffff) byteOffset = 0x7fffffff
+  else if (byteOffset < -0x80000000) byteOffset = -0x80000000
+  byteOffset >>= 0
+
+  if (this.length === 0) return -1
+  if (byteOffset >= this.length) return -1
+
+  // Negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = Math.max(this.length + byteOffset, 0)
+
+  if (typeof val === 'string') {
+    if (val.length === 0) return -1 // special case: looking for empty string always fails
+    return String.prototype.indexOf.call(this, val, byteOffset)
+  }
+  if (Buffer.isBuffer(val)) {
+    return arrayIndexOf(this, val, byteOffset)
+  }
+  if (typeof val === 'number') {
+    if (Buffer.TYPED_ARRAY_SUPPORT && Uint8Array.prototype.indexOf === 'function') {
+      return Uint8Array.prototype.indexOf.call(this, val, byteOffset)
+    }
+    return arrayIndexOf(this, [ val ], byteOffset)
+  }
+
+  function arrayIndexOf (arr, val, byteOffset) {
+    var foundIndex = -1
+    for (var i = 0; byteOffset + i < arr.length; i++) {
+      if (arr[byteOffset + i] === val[foundIndex === -1 ? 0 : i - foundIndex]) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === val.length) return byteOffset + foundIndex
+      } else {
+        foundIndex = -1
+      }
+    }
+    return -1
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
 // `get` will be removed in Node 0.13+
-Buffer.prototype.get = function (offset) {
+Buffer.prototype.get = function get (offset) {
   console.log('.get() is deprecated. Access using array indexes instead.')
   return this.readUInt8(offset)
 }
 
 // `set` will be removed in Node 0.13+
-Buffer.prototype.set = function (v, offset) {
+Buffer.prototype.set = function set (v, offset) {
   console.log('.set() is deprecated. Access using array indexes instead.')
   return this.writeUInt8(v, offset)
 }
@@ -3190,9 +4020,9 @@ function hexWrite (buf, string, offset, length) {
     length = strLen / 2
   }
   for (var i = 0; i < length; i++) {
-    var byte = parseInt(string.substr(i * 2, 2), 16)
-    if (isNaN(byte)) throw new Error('Invalid hex string')
-    buf[offset + i] = byte
+    var parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (isNaN(parsed)) throw new Error('Invalid hex string')
+    buf[offset + i] = parsed
   }
   return i
 }
@@ -3221,7 +4051,7 @@ function utf16leWrite (buf, string, offset, length) {
   return charsWritten
 }
 
-Buffer.prototype.write = function (string, offset, length, encoding) {
+Buffer.prototype.write = function write (string, offset, length, encoding) {
   // Support both (string, offset, length, encoding)
   // and the legacy (string, encoding, offset, length)
   if (isFinite(offset)) {
@@ -3238,8 +4068,9 @@ Buffer.prototype.write = function (string, offset, length, encoding) {
 
   offset = Number(offset) || 0
 
-  if (length < 0 || offset < 0 || offset > this.length)
+  if (length < 0 || offset < 0 || offset > this.length) {
     throw new RangeError('attempt to write outside buffer bounds')
+  }
 
   var remaining = this.length - offset
   if (!length) {
@@ -3282,7 +4113,7 @@ Buffer.prototype.write = function (string, offset, length, encoding) {
   return ret
 }
 
-Buffer.prototype.toJSON = function () {
+Buffer.prototype.toJSON = function toJSON () {
   return {
     type: 'Buffer',
     data: Array.prototype.slice.call(this._arr || this, 0)
@@ -3356,43 +4187,39 @@ function utf16leSlice (buf, start, end) {
   return res
 }
 
-Buffer.prototype.slice = function (start, end) {
+Buffer.prototype.slice = function slice (start, end) {
   var len = this.length
   start = ~~start
   end = end === undefined ? len : ~~end
 
   if (start < 0) {
     start += len
-    if (start < 0)
-      start = 0
+    if (start < 0) start = 0
   } else if (start > len) {
     start = len
   }
 
   if (end < 0) {
     end += len
-    if (end < 0)
-      end = 0
+    if (end < 0) end = 0
   } else if (end > len) {
     end = len
   }
 
-  if (end < start)
-    end = start
+  if (end < start) end = start
 
   var newBuf
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     newBuf = Buffer._augment(this.subarray(start, end))
   } else {
     var sliceLen = end - start
-    newBuf = new Buffer(sliceLen, undefined, true)
+    newBuf = new Buffer(sliceLen, undefined)
     for (var i = 0; i < sliceLen; i++) {
       newBuf[i] = this[i + start]
     }
   }
 
-  if (newBuf.length)
-    newBuf.parent = this.parent || this
+  if (newBuf.length) newBuf.parent = this.parent || this
 
   return newBuf
 }
@@ -3401,62 +4228,58 @@ Buffer.prototype.slice = function (start, end) {
  * Need to make sure that buffer isn't trying to write out of bounds.
  */
 function checkOffset (offset, ext, length) {
-  if ((offset % 1) !== 0 || offset < 0)
-    throw new RangeError('offset is not uint')
-  if (offset + ext > length)
-    throw new RangeError('Trying to access beyond buffer length')
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
 }
 
-Buffer.prototype.readUIntLE = function (offset, byteLength, noAssert) {
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
   offset = offset >>> 0
   byteLength = byteLength >>> 0
-  if (!noAssert)
-    checkOffset(offset, byteLength, this.length)
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
 
   var val = this[offset]
   var mul = 1
   var i = 0
-  while (++i < byteLength && (mul *= 0x100))
+  while (++i < byteLength && (mul *= 0x100)) {
     val += this[offset + i] * mul
+  }
 
   return val
 }
 
-Buffer.prototype.readUIntBE = function (offset, byteLength, noAssert) {
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
   offset = offset >>> 0
   byteLength = byteLength >>> 0
-  if (!noAssert)
+  if (!noAssert) {
     checkOffset(offset, byteLength, this.length)
+  }
 
   var val = this[offset + --byteLength]
   var mul = 1
-  while (byteLength > 0 && (mul *= 0x100))
+  while (byteLength > 0 && (mul *= 0x100)) {
     val += this[offset + --byteLength] * mul
+  }
 
   return val
 }
 
-Buffer.prototype.readUInt8 = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 1, this.length)
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
   return this[offset]
 }
 
-Buffer.prototype.readUInt16LE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 2, this.length)
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
   return this[offset] | (this[offset + 1] << 8)
 }
 
-Buffer.prototype.readUInt16BE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 2, this.length)
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
   return (this[offset] << 8) | this[offset + 1]
 }
 
-Buffer.prototype.readUInt32LE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 4, this.length)
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
 
   return ((this[offset]) |
       (this[offset + 1] << 8) |
@@ -3464,117 +4287,104 @@ Buffer.prototype.readUInt32LE = function (offset, noAssert) {
       (this[offset + 3] * 0x1000000)
 }
 
-Buffer.prototype.readUInt32BE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 4, this.length)
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
 
   return (this[offset] * 0x1000000) +
-      ((this[offset + 1] << 16) |
-      (this[offset + 2] << 8) |
-      this[offset + 3])
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
 }
 
-Buffer.prototype.readIntLE = function (offset, byteLength, noAssert) {
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
   offset = offset >>> 0
   byteLength = byteLength >>> 0
-  if (!noAssert)
-    checkOffset(offset, byteLength, this.length)
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
 
   var val = this[offset]
   var mul = 1
   var i = 0
-  while (++i < byteLength && (mul *= 0x100))
+  while (++i < byteLength && (mul *= 0x100)) {
     val += this[offset + i] * mul
+  }
   mul *= 0x80
 
-  if (val >= mul)
-    val -= Math.pow(2, 8 * byteLength)
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
 
   return val
 }
 
-Buffer.prototype.readIntBE = function (offset, byteLength, noAssert) {
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
   offset = offset >>> 0
   byteLength = byteLength >>> 0
-  if (!noAssert)
-    checkOffset(offset, byteLength, this.length)
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
 
   var i = byteLength
   var mul = 1
   var val = this[offset + --i]
-  while (i > 0 && (mul *= 0x100))
+  while (i > 0 && (mul *= 0x100)) {
     val += this[offset + --i] * mul
+  }
   mul *= 0x80
 
-  if (val >= mul)
-    val -= Math.pow(2, 8 * byteLength)
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
 
   return val
 }
 
-Buffer.prototype.readInt8 = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 1, this.length)
-  if (!(this[offset] & 0x80))
-    return (this[offset])
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
   return ((0xff - this[offset] + 1) * -1)
 }
 
-Buffer.prototype.readInt16LE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 2, this.length)
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
   var val = this[offset] | (this[offset + 1] << 8)
   return (val & 0x8000) ? val | 0xFFFF0000 : val
 }
 
-Buffer.prototype.readInt16BE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 2, this.length)
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
   var val = this[offset + 1] | (this[offset] << 8)
   return (val & 0x8000) ? val | 0xFFFF0000 : val
 }
 
-Buffer.prototype.readInt32LE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 4, this.length)
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
 
   return (this[offset]) |
-      (this[offset + 1] << 8) |
-      (this[offset + 2] << 16) |
-      (this[offset + 3] << 24)
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
 }
 
-Buffer.prototype.readInt32BE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 4, this.length)
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
 
   return (this[offset] << 24) |
-      (this[offset + 1] << 16) |
-      (this[offset + 2] << 8) |
-      (this[offset + 3])
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
 }
 
-Buffer.prototype.readFloatLE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 4, this.length)
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
   return ieee754.read(this, offset, true, 23, 4)
 }
 
-Buffer.prototype.readFloatBE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 4, this.length)
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
   return ieee754.read(this, offset, false, 23, 4)
 }
 
-Buffer.prototype.readDoubleLE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 8, this.length)
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
   return ieee754.read(this, offset, true, 52, 8)
 }
 
-Buffer.prototype.readDoubleBE = function (offset, noAssert) {
-  if (!noAssert)
-    checkOffset(offset, 8, this.length)
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
   return ieee754.read(this, offset, false, 52, 8)
 }
 
@@ -3584,43 +4394,42 @@ function checkInt (buf, value, offset, ext, max, min) {
   if (offset + ext > buf.length) throw new RangeError('index out of range')
 }
 
-Buffer.prototype.writeUIntLE = function (value, offset, byteLength, noAssert) {
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
   value = +value
   offset = offset >>> 0
   byteLength = byteLength >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
+  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
 
   var mul = 1
   var i = 0
   this[offset] = value & 0xFF
-  while (++i < byteLength && (mul *= 0x100))
+  while (++i < byteLength && (mul *= 0x100)) {
     this[offset + i] = (value / mul) >>> 0 & 0xFF
+  }
 
   return offset + byteLength
 }
 
-Buffer.prototype.writeUIntBE = function (value, offset, byteLength, noAssert) {
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
   value = +value
   offset = offset >>> 0
   byteLength = byteLength >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
+  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
 
   var i = byteLength - 1
   var mul = 1
   this[offset + i] = value & 0xFF
-  while (--i >= 0 && (mul *= 0x100))
+  while (--i >= 0 && (mul *= 0x100)) {
     this[offset + i] = (value / mul) >>> 0 & 0xFF
+  }
 
   return offset + byteLength
 }
 
-Buffer.prototype.writeUInt8 = function (value, offset, noAssert) {
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 1, 0xff, 0)
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
   if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
   this[offset] = value
   return offset + 1
@@ -3634,27 +4443,29 @@ function objectWriteUInt16 (buf, value, offset, littleEndian) {
   }
 }
 
-Buffer.prototype.writeUInt16LE = function (value, offset, noAssert) {
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 2, 0xffff, 0)
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     this[offset] = value
     this[offset + 1] = (value >>> 8)
-  } else objectWriteUInt16(this, value, offset, true)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
   return offset + 2
 }
 
-Buffer.prototype.writeUInt16BE = function (value, offset, noAssert) {
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 2, 0xffff, 0)
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     this[offset] = (value >>> 8)
     this[offset + 1] = value
-  } else objectWriteUInt16(this, value, offset, false)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
   return offset + 2
 }
 
@@ -3665,139 +4476,144 @@ function objectWriteUInt32 (buf, value, offset, littleEndian) {
   }
 }
 
-Buffer.prototype.writeUInt32LE = function (value, offset, noAssert) {
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     this[offset + 3] = (value >>> 24)
     this[offset + 2] = (value >>> 16)
     this[offset + 1] = (value >>> 8)
     this[offset] = value
-  } else objectWriteUInt32(this, value, offset, true)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
   return offset + 4
 }
 
-Buffer.prototype.writeUInt32BE = function (value, offset, noAssert) {
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     this[offset] = (value >>> 24)
     this[offset + 1] = (value >>> 16)
     this[offset + 2] = (value >>> 8)
     this[offset + 3] = value
-  } else objectWriteUInt32(this, value, offset, false)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
   return offset + 4
 }
 
-Buffer.prototype.writeIntLE = function (value, offset, byteLength, noAssert) {
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
   value = +value
   offset = offset >>> 0
   if (!noAssert) {
-    checkInt(this,
-             value,
-             offset,
-             byteLength,
-             Math.pow(2, 8 * byteLength - 1) - 1,
-             -Math.pow(2, 8 * byteLength - 1))
+    checkInt(
+      this, value, offset, byteLength,
+      Math.pow(2, 8 * byteLength - 1) - 1,
+      -Math.pow(2, 8 * byteLength - 1)
+    )
   }
 
   var i = 0
   var mul = 1
   var sub = value < 0 ? 1 : 0
   this[offset] = value & 0xFF
-  while (++i < byteLength && (mul *= 0x100))
+  while (++i < byteLength && (mul *= 0x100)) {
     this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
 
   return offset + byteLength
 }
 
-Buffer.prototype.writeIntBE = function (value, offset, byteLength, noAssert) {
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
   value = +value
   offset = offset >>> 0
   if (!noAssert) {
-    checkInt(this,
-             value,
-             offset,
-             byteLength,
-             Math.pow(2, 8 * byteLength - 1) - 1,
-             -Math.pow(2, 8 * byteLength - 1))
+    checkInt(
+      this, value, offset, byteLength,
+      Math.pow(2, 8 * byteLength - 1) - 1,
+      -Math.pow(2, 8 * byteLength - 1)
+    )
   }
 
   var i = byteLength - 1
   var mul = 1
   var sub = value < 0 ? 1 : 0
   this[offset + i] = value & 0xFF
-  while (--i >= 0 && (mul *= 0x100))
+  while (--i >= 0 && (mul *= 0x100)) {
     this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
 
   return offset + byteLength
 }
 
-Buffer.prototype.writeInt8 = function (value, offset, noAssert) {
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
   if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
   if (value < 0) value = 0xff + value + 1
   this[offset] = value
   return offset + 1
 }
 
-Buffer.prototype.writeInt16LE = function (value, offset, noAssert) {
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     this[offset] = value
     this[offset + 1] = (value >>> 8)
-  } else objectWriteUInt16(this, value, offset, true)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
   return offset + 2
 }
 
-Buffer.prototype.writeInt16BE = function (value, offset, noAssert) {
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     this[offset] = (value >>> 8)
     this[offset + 1] = value
-  } else objectWriteUInt16(this, value, offset, false)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
   return offset + 2
 }
 
-Buffer.prototype.writeInt32LE = function (value, offset, noAssert) {
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     this[offset] = value
     this[offset + 1] = (value >>> 8)
     this[offset + 2] = (value >>> 16)
     this[offset + 3] = (value >>> 24)
-  } else objectWriteUInt32(this, value, offset, true)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
   return offset + 4
 }
 
-Buffer.prototype.writeInt32BE = function (value, offset, noAssert) {
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
   value = +value
   offset = offset >>> 0
-  if (!noAssert)
-    checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
   if (value < 0) value = 0xffffffff + value + 1
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     this[offset] = (value >>> 24)
     this[offset + 1] = (value >>> 16)
     this[offset + 2] = (value >>> 8)
     this[offset + 3] = value
-  } else objectWriteUInt32(this, value, offset, false)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
   return offset + 4
 }
 
@@ -3808,37 +4624,39 @@ function checkIEEE754 (buf, value, offset, ext, max, min) {
 }
 
 function writeFloat (buf, value, offset, littleEndian, noAssert) {
-  if (!noAssert)
+  if (!noAssert) {
     checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
   ieee754.write(buf, value, offset, littleEndian, 23, 4)
   return offset + 4
 }
 
-Buffer.prototype.writeFloatLE = function (value, offset, noAssert) {
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
   return writeFloat(this, value, offset, true, noAssert)
 }
 
-Buffer.prototype.writeFloatBE = function (value, offset, noAssert) {
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
   return writeFloat(this, value, offset, false, noAssert)
 }
 
 function writeDouble (buf, value, offset, littleEndian, noAssert) {
-  if (!noAssert)
+  if (!noAssert) {
     checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
   ieee754.write(buf, value, offset, littleEndian, 52, 8)
   return offset + 8
 }
 
-Buffer.prototype.writeDoubleLE = function (value, offset, noAssert) {
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
   return writeDouble(this, value, offset, true, noAssert)
 }
 
-Buffer.prototype.writeDoubleBE = function (value, offset, noAssert) {
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
   return writeDouble(this, value, offset, false, noAssert)
 }
 
 // copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
-Buffer.prototype.copy = function (target, target_start, start, end) {
+Buffer.prototype.copy = function copy (target, target_start, start, end) {
   var self = this // source
 
   if (!start) start = 0
@@ -3852,16 +4670,17 @@ Buffer.prototype.copy = function (target, target_start, start, end) {
   if (target.length === 0 || self.length === 0) return 0
 
   // Fatal error conditions
-  if (target_start < 0)
+  if (target_start < 0) {
     throw new RangeError('targetStart out of bounds')
+  }
   if (start < 0 || start >= self.length) throw new RangeError('sourceStart out of bounds')
   if (end < 0) throw new RangeError('sourceEnd out of bounds')
 
   // Are we oob?
-  if (end > this.length)
-    end = this.length
-  if (target.length - target_start < end - start)
+  if (end > this.length) end = this.length
+  if (target.length - target_start < end - start) {
     end = target.length - target_start + start
+  }
 
   var len = end - start
 
@@ -3877,7 +4696,7 @@ Buffer.prototype.copy = function (target, target_start, start, end) {
 }
 
 // fill(value, start=0, end=buffer.length)
-Buffer.prototype.fill = function (value, start, end) {
+Buffer.prototype.fill = function fill (value, start, end) {
   if (!value) value = 0
   if (!start) start = 0
   if (!end) end = this.length
@@ -3911,7 +4730,7 @@ Buffer.prototype.fill = function (value, start, end) {
  * Creates a new `ArrayBuffer` with the *copied* memory of the buffer instance.
  * Added in Node 0.12. Only available in browsers that support ArrayBuffer.
  */
-Buffer.prototype.toArrayBuffer = function () {
+Buffer.prototype.toArrayBuffer = function toArrayBuffer () {
   if (typeof Uint8Array !== 'undefined') {
     if (Buffer.TYPED_ARRAY_SUPPORT) {
       return (new Buffer(this)).buffer
@@ -3935,7 +4754,7 @@ var BP = Buffer.prototype
 /**
  * Augment a Uint8Array *instance* (not the Uint8Array class!) with Buffer methods
  */
-Buffer._augment = function (arr) {
+Buffer._augment = function _augment (arr) {
   arr.constructor = Buffer
   arr._isBuffer = true
 
@@ -3953,6 +4772,7 @@ Buffer._augment = function (arr) {
   arr.toJSON = BP.toJSON
   arr.equals = BP.equals
   arr.compare = BP.compare
+  arr.indexOf = BP.indexOf
   arr.copy = BP.copy
   arr.slice = BP.slice
   arr.readUIntLE = BP.readUIntLE
@@ -4140,8 +4960,7 @@ function base64ToBytes (str) {
 
 function blitBuffer (src, dst, offset, length) {
   for (var i = 0; i < length; i++) {
-    if ((i + offset >= dst.length) || (i >= src.length))
-      break
+    if ((i + offset >= dst.length) || (i >= src.length)) break
     dst[i + offset] = src[i]
   }
   return i
@@ -4155,7 +4974,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":12,"ieee754":13,"is-array":14}],12:[function(require,module,exports){
+},{"base64-js":13,"ieee754":14,"is-array":15}],13:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -4281,7 +5100,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -4367,7 +5186,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 
 /**
  * isArray
@@ -4402,7 +5221,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /*global define:false require:false */
 module.exports = (function(){
 	// Import Events
@@ -4470,7 +5289,7 @@ module.exports = (function(){
 	};
 	return domain
 }).call(this)
-},{"events":16}],16:[function(require,module,exports){
+},{"events":17}],17:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4773,12 +5592,12 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -4838,7 +5657,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 (function (global){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
@@ -5349,7 +6168,7 @@ process.umask = function() { return 0; };
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5435,7 +6254,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5522,16 +6341,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":20,"./encode":21}],23:[function(require,module,exports){
+},{"./decode":21,"./encode":22}],24:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":24}],24:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":25}],25:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -5624,7 +6443,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_readable":26,"./_stream_writable":28,"_process":18,"core-util-is":29,"inherits":39}],25:[function(require,module,exports){
+},{"./_stream_readable":27,"./_stream_writable":29,"_process":19,"core-util-is":30,"inherits":40}],26:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5672,7 +6491,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":27,"core-util-is":29,"inherits":39}],26:[function(require,module,exports){
+},{"./_stream_transform":28,"core-util-is":30,"inherits":40}],27:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6627,7 +7446,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":24,"_process":18,"buffer":11,"core-util-is":29,"events":16,"inherits":39,"isarray":17,"stream":34,"string_decoder/":35,"util":10}],27:[function(require,module,exports){
+},{"./_stream_duplex":25,"_process":19,"buffer":12,"core-util-is":30,"events":17,"inherits":40,"isarray":18,"stream":35,"string_decoder/":36,"util":11}],28:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6838,7 +7657,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":24,"core-util-is":29,"inherits":39}],28:[function(require,module,exports){
+},{"./_stream_duplex":25,"core-util-is":30,"inherits":40}],29:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7319,7 +8138,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":24,"_process":18,"buffer":11,"core-util-is":29,"inherits":39,"stream":34}],29:[function(require,module,exports){
+},{"./_stream_duplex":25,"_process":19,"buffer":12,"core-util-is":30,"inherits":40,"stream":35}],30:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7429,10 +8248,10 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":11}],30:[function(require,module,exports){
+},{"buffer":12}],31:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":25}],31:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":26}],32:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = require('stream');
 exports.Readable = exports;
@@ -7441,13 +8260,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":24,"./lib/_stream_passthrough.js":25,"./lib/_stream_readable.js":26,"./lib/_stream_transform.js":27,"./lib/_stream_writable.js":28,"stream":34}],32:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":25,"./lib/_stream_passthrough.js":26,"./lib/_stream_readable.js":27,"./lib/_stream_transform.js":28,"./lib/_stream_writable.js":29,"stream":35}],33:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":27}],33:[function(require,module,exports){
+},{"./lib/_stream_transform.js":28}],34:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":28}],34:[function(require,module,exports){
+},{"./lib/_stream_writable.js":29}],35:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7576,7 +8395,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":16,"inherits":39,"readable-stream/duplex.js":23,"readable-stream/passthrough.js":30,"readable-stream/readable.js":31,"readable-stream/transform.js":32,"readable-stream/writable.js":33}],35:[function(require,module,exports){
+},{"events":17,"inherits":40,"readable-stream/duplex.js":24,"readable-stream/passthrough.js":31,"readable-stream/readable.js":32,"readable-stream/transform.js":33,"readable-stream/writable.js":34}],36:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7799,7 +8618,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":11}],36:[function(require,module,exports){
+},{"buffer":12}],37:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8508,14 +9327,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":19,"querystring":22}],37:[function(require,module,exports){
+},{"punycode":20,"querystring":23}],38:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -9105,7 +9924,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":37,"_process":18,"inherits":39}],39:[function(require,module,exports){
+},{"./support/isBuffer":38,"_process":19,"inherits":40}],40:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -9130,7 +9949,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9199,7 +10018,7 @@ HubPort.check = function(key, value)
     throw ChecktypeError(key, HubPort, value);
 };
 
-},{"./abstracts/MediaElement":47,"inherits":39,"kurento-client":"kurento-client"}],41:[function(require,module,exports){
+},{"./abstracts/MediaElement":48,"inherits":40,"kurento-client":"kurento-client"}],42:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9340,7 +10159,7 @@ MediaPipeline.check = function(key, value)
     throw ChecktypeError(key, MediaPipeline, value);
 };
 
-},{"./abstracts/MediaObject":48,"inherits":39,"kurento-client":"kurento-client"}],42:[function(require,module,exports){
+},{"./abstracts/MediaObject":49,"inherits":40,"kurento-client":"kurento-client"}],43:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9409,7 +10228,7 @@ PassThrough.check = function(key, value)
     throw ChecktypeError(key, PassThrough, value);
 };
 
-},{"./abstracts/MediaElement":47,"inherits":39,"kurento-client":"kurento-client"}],43:[function(require,module,exports){
+},{"./abstracts/MediaElement":48,"inherits":40,"kurento-client":"kurento-client"}],44:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9431,7 +10250,8 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
-var ChecktypeError = kurentoClient.checkType.ChecktypeError;
+var checkType      = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -9567,6 +10387,32 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
  * @param {external:Error} error
  */
 
+
+/**
+ * Provides statistics collected for this endpoint
+ *
+ * @alias module:core/abstracts.BaseRtpEndpoint.getStats
+ *
+ * @param {module:core/abstracts.BaseRtpEndpoint~getStatsCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+BaseRtpEndpoint.prototype.getStats = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getStats', callback);
+};
+/**
+ * @callback module:core/abstracts.BaseRtpEndpoint~getStatsCallback
+ * @param {external:Error} error
+ * @param {Object.<string, module:core/complexTypes.RTCStats>} result
+ *  Delivers a successful result in the form of a RTC stats report. A RTC stats report represents a map between strings, identifying the inspected objects (RTCStats.id), and their corresponding RTCStats objects.
+ */
+
 /**
  * @alias module:core/abstracts.BaseRtpEndpoint.constructorParams
  */
@@ -9587,7 +10433,7 @@ BaseRtpEndpoint.check = function(key, value)
     throw ChecktypeError(key, BaseRtpEndpoint, value);
 };
 
-},{"./SdpEndpoint":49,"inherits":39,"kurento-client":"kurento-client"}],44:[function(require,module,exports){
+},{"./SdpEndpoint":50,"inherits":40,"kurento-client":"kurento-client"}],45:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9617,8 +10463,8 @@ var MediaElement = require('./MediaElement');
  * @classdesc
  *  Base interface for all end points. An Endpoint is a {@link module:core/abstracts.MediaElement MediaElement}
  *  that allow <a href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a> to interchange media contents with external systems,
- *  supporting different transport protocols and mechanisms, such as <a href="http://www.kurento.org/docs/current/glossary.html#term-rtp">RTP</a>,
- *  <a href="http://<a href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a>org/docs/current/glossary.html#term-webrtc">WebRTC</a>, :term:`HTTP`, <code>file:/</code> URLs... An <code>Endpoint</code> may
+ *  <a href="http<a href="http://<a href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a>org/docs/current/glossary.html#term-webrtc">WebRTC</a>.org/docs/current/glossary.html#term-rtp">RTP</a>different transport protocols and mechanisms, such as :term:`RTP`,
+ *  :term:`WebRTC`, :term:`HTTP`, <code>file:/</code> URLs... An <code>Endpoint</code> may
  *  contain both sources and sinks for different media types, to provide
  *  bidirectional communication.
  *
@@ -9652,7 +10498,7 @@ Endpoint.check = function(key, value)
     throw ChecktypeError(key, Endpoint, value);
 };
 
-},{"./MediaElement":47,"inherits":39,"kurento-client":"kurento-client"}],45:[function(require,module,exports){
+},{"./MediaElement":48,"inherits":40,"kurento-client":"kurento-client"}],46:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9712,7 +10558,7 @@ Filter.check = function(key, value)
     throw ChecktypeError(key, Filter, value);
 };
 
-},{"./MediaElement":47,"inherits":39,"kurento-client":"kurento-client"}],46:[function(require,module,exports){
+},{"./MediaElement":48,"inherits":40,"kurento-client":"kurento-client"}],47:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9814,7 +10660,7 @@ Hub.check = function(key, value)
     throw ChecktypeError(key, Hub, value);
 };
 
-},{"../HubPort":40,"./MediaObject":48,"inherits":39,"kurento-client":"kurento-client"}],47:[function(require,module,exports){
+},{"../HubPort":41,"./MediaObject":49,"inherits":40,"kurento-client":"kurento-client"}],48:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10182,7 +11028,7 @@ MediaElement.check = function(key, value)
     throw ChecktypeError(key, MediaElement, value);
 };
 
-},{"./MediaObject":48,"inherits":39,"kurento-client":"kurento-client"}],48:[function(require,module,exports){
+},{"./MediaObject":49,"inherits":40,"kurento-client":"kurento-client"}],49:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10865,7 +11711,7 @@ MediaObject.check = function(key, value)
     throw ChecktypeError(key, MediaObject, value);
 };
 
-},{"es6-promise":8,"events":16,"inherits":39,"kurento-client":"kurento-client","promisecallback":99}],49:[function(require,module,exports){
+},{"es6-promise":9,"events":17,"inherits":40,"kurento-client":"kurento-client","promisecallback":117}],50:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11132,7 +11978,7 @@ SdpEndpoint.check = function(key, value)
     throw ChecktypeError(key, SdpEndpoint, value);
 };
 
-},{"./SessionEndpoint":51,"inherits":39,"kurento-client":"kurento-client"}],50:[function(require,module,exports){
+},{"./SessionEndpoint":52,"inherits":40,"kurento-client":"kurento-client"}],51:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11293,7 +12139,7 @@ ServerManager.check = function(key, value)
     throw ChecktypeError(key, ServerManager, value);
 };
 
-},{"./MediaObject":48,"inherits":39,"kurento-client":"kurento-client"}],51:[function(require,module,exports){
+},{"./MediaObject":49,"inherits":40,"kurento-client":"kurento-client"}],52:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11356,7 +12202,7 @@ SessionEndpoint.check = function(key, value)
     throw ChecktypeError(key, SessionEndpoint, value);
 };
 
-},{"./Endpoint":44,"inherits":39,"kurento-client":"kurento-client"}],52:[function(require,module,exports){
+},{"./Endpoint":45,"inherits":40,"kurento-client":"kurento-client"}],53:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11490,7 +12336,7 @@ UriEndpoint.check = function(key, value)
     throw ChecktypeError(key, UriEndpoint, value);
 };
 
-},{"./Endpoint":44,"inherits":39,"kurento-client":"kurento-client"}],53:[function(require,module,exports){
+},{"./Endpoint":45,"inherits":40,"kurento-client":"kurento-client"}],54:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11540,7 +12386,7 @@ exports.ServerManager = ServerManager;
 exports.SessionEndpoint = SessionEndpoint;
 exports.UriEndpoint = UriEndpoint;
 
-},{"./BaseRtpEndpoint":43,"./Endpoint":44,"./Filter":45,"./Hub":46,"./MediaElement":47,"./MediaObject":48,"./SdpEndpoint":49,"./ServerManager":50,"./SessionEndpoint":51,"./UriEndpoint":52}],54:[function(require,module,exports){
+},{"./BaseRtpEndpoint":44,"./Endpoint":45,"./Filter":46,"./Hub":47,"./MediaElement":48,"./MediaObject":49,"./SdpEndpoint":50,"./ServerManager":51,"./SessionEndpoint":52,"./UriEndpoint":53}],55:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11592,7 +12438,7 @@ function checkAudioCaps(key, value)
 
 module.exports = checkAudioCaps;
 
-},{"kurento-client":"kurento-client"}],55:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],56:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11642,7 +12488,7 @@ function checkAudioCodec(key, value)
 
 module.exports = checkAudioCodec;
 
-},{"kurento-client":"kurento-client"}],56:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],57:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11699,7 +12545,7 @@ function checkElementConnectionData(key, value)
 
 module.exports = checkElementConnectionData;
 
-},{"kurento-client":"kurento-client"}],57:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],58:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11750,7 +12596,7 @@ function checkFilterType(key, value)
 
 module.exports = checkFilterType;
 
-},{"kurento-client":"kurento-client"}],58:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],59:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11802,7 +12648,7 @@ function checkFraction(key, value)
 
 module.exports = checkFraction;
 
-},{"kurento-client":"kurento-client"}],59:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],60:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11853,7 +12699,7 @@ function checkMediaType(key, value)
 
 module.exports = checkMediaType;
 
-},{"kurento-client":"kurento-client"}],60:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],61:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11908,7 +12754,1102 @@ function checkModuleInfo(key, value)
 
 module.exports = checkModuleInfo;
 
-},{"kurento-client":"kurento-client"}],61:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],62:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCCertificateStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCCertificateStats} value
+ */
+function checkRTCCertificateStats(key, value)
+{
+  checkType('String', key+'.fingerprint', value.fingerprint, true);
+  checkType('String', key+'.fingerprintAlgorithm', value.fingerprintAlgorithm, true);
+  checkType('String', key+'.base64Certificate', value.base64Certificate, true);
+  checkType('String', key+'.issuerCertificateId', value.issuerCertificateId, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * 
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCCertificateStats
+ *
+ * @type {Object}
+ * @property {external:String} fingerprint
+ *  Only use the fingerprint value as defined in Section 5 of [RFC4572].
+ * @property {external:String} fingerprintAlgorithm
+ *  For instance, 'sha-256'.
+ * @property {external:String} base64Certificate
+ *  For example, DER-encoded, base-64 representation of a certifiate.
+ * @property {external:String} issuerCertificateId
+ *  
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCCertificateStats;
+
+},{"kurento-client":"kurento-client"}],63:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCCodec}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCCodec} value
+ */
+function checkRTCCodec(key, value)
+{
+  checkType('int', key+'.payloadType', value.payloadType, true);
+  checkType('String', key+'.codec', value.codec, true);
+  checkType('int', key+'.clockRate', value.clockRate, true);
+  checkType('int', key+'.channels', value.channels, true);
+  checkType('String', key+'.parameters', value.parameters, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * RTC codec statistics
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCCodec
+ *
+ * @type {Object}
+ * @property {external:Integer} payloadType
+ *  Payload type as used in RTP encoding.
+ * @property {external:String} codec
+ *  e.g., video/vp8 or equivalent.
+ * @property {external:Integer} clockRate
+ *  Represents the media sampling rate.
+ * @property {external:Integer} channels
+ *  Use 2 for stereo, missing for most other cases.
+ * @property {external:String} parameters
+ *  From the SDP description line.
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCCodec;
+
+},{"kurento-client":"kurento-client"}],64:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCDataChannelState}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCDataChannelState} value
+ */
+function checkRTCDataChannelState(key, value)
+{
+  if(typeof value != 'string')
+    throw SyntaxError(key+' param should be a String, not '+typeof value);
+  if(!value.match('connecting|open|closing|closed'))
+    throw SyntaxError(key+' param is not one of [connecting|open|closing|closed] ('+value+')');
+};
+
+
+/**
+ * Represents the state of the RTCDataChannel
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCDataChannelState
+ *
+ * @type {(connecting|open|closing|closed)}
+ */
+
+
+module.exports = checkRTCDataChannelState;
+
+},{"kurento-client":"kurento-client"}],65:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCDataChannelStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCDataChannelStats} value
+ */
+function checkRTCDataChannelStats(key, value)
+{
+  checkType('String', key+'.label', value.label, true);
+  checkType('String', key+'.protocol', value.protocol, true);
+  checkType('int', key+'.datachannelid', value.datachannelid, true);
+  checkType('RTCDataChannelState', key+'.state', value.state, true);
+  checkType('int', key+'.messagesSent', value.messagesSent, true);
+  checkType('int', key+'.bytesSent', value.bytesSent, true);
+  checkType('int', key+'.messagesReceived', value.messagesReceived, true);
+  checkType('int', key+'.bytesReceived', value.bytesReceived, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * Statistics related to RTC data channels.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCDataChannelStats
+ *
+ * @type {Object}
+ * @property {external:String} label
+ *  The RTCDatachannel label.
+ * @property {external:String} protocol
+ *  The protocol used.
+ * @property {external:Integer} datachannelid
+ *  The RTCDatachannel identifier.
+ * @property {module:core/complexTypes.RTCDataChannelState} state
+ *  The state of the RTCDatachannel.
+ * @property {external:Integer} messagesSent
+ *  Represents the total number of API 'message' events sent.
+ * @property {external:Integer} bytesSent
+ *  Represents the total number of payload bytes sent on this RTCDatachannel, i.e., not including headers or padding.
+ * @property {external:Integer} messagesReceived
+ *  Represents the total number of API 'message' events received.
+ * @property {external:Integer} bytesReceived
+ *  Represents the total number of bytes received on this RTCDatachannel, i.e., not including headers or padding.
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCDataChannelStats;
+
+},{"kurento-client":"kurento-client"}],66:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCIceCandidateAttributes}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCIceCandidateAttributes} value
+ */
+function checkRTCIceCandidateAttributes(key, value)
+{
+  checkType('String', key+'.ipAddress', value.ipAddress, true);
+  checkType('int', key+'.portNumber', value.portNumber, true);
+  checkType('String', key+'.transport', value.transport, true);
+  checkType('RTCStatsIceCandidateType', key+'.candidateType', value.candidateType, true);
+  checkType('int', key+'.priority', value.priority, true);
+  checkType('String', key+'.addressSourceUrl', value.addressSourceUrl, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * 
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCIceCandidateAttributes
+ *
+ * @type {Object}
+ * @property {external:String} ipAddress
+ *  It is the IP address of the candidate, allowing for IPv4 addresses, IPv6 addresses, and fully qualified domain names (FQDNs).
+ * @property {external:Integer} portNumber
+ *  It is the port number of the candidate.
+ * @property {external:String} transport
+ *  Valid values for transport is one of udp and tcp. Based on the 'transport' defined in [RFC5245] section 15.1.
+ * @property {module:core/complexTypes.RTCStatsIceCandidateType} candidateType
+ *  The enumeration RTCStatsIceCandidateType is based on the cand-type defined in [RFC5245] section 15.1.
+ * @property {external:Integer} priority
+ *  Represents the priority of the candidate
+ * @property {external:String} addressSourceUrl
+ *  The URL of the TURN or STUN server indicated in the RTCIceServers that translated this IP address.
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCIceCandidateAttributes;
+
+},{"kurento-client":"kurento-client"}],67:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCIceCandidatePairStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCIceCandidatePairStats} value
+ */
+function checkRTCIceCandidatePairStats(key, value)
+{
+  checkType('String', key+'.transportId', value.transportId, true);
+  checkType('String', key+'.localCandidateId', value.localCandidateId, true);
+  checkType('String', key+'.remoteCandidateId', value.remoteCandidateId, true);
+  checkType('RTCStatsIceCandidatePairState', key+'.state', value.state, true);
+  checkType('int', key+'.priority', value.priority, true);
+  checkType('boolean', key+'.nominated', value.nominated, true);
+  checkType('boolean', key+'.writable', value.writable, true);
+  checkType('boolean', key+'.readable', value.readable, true);
+  checkType('int', key+'.bytesSent', value.bytesSent, true);
+  checkType('int', key+'.bytesReceived', value.bytesReceived, true);
+  checkType('float', key+'.roundTripTime', value.roundTripTime, true);
+  checkType('float', key+'.availableOutgoingBitrate', value.availableOutgoingBitrate, true);
+  checkType('float', key+'.availableIncomingBitrate', value.availableIncomingBitrate, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * 
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCIceCandidatePairStats
+ *
+ * @type {Object}
+ * @property {external:String} transportId
+ *  It is a unique identifier that is associated to the object that was inspected to produce the RTCTransportStats associated with this candidate pair.
+ * @property {external:String} localCandidateId
+ *  It is a unique identifier that is associated to the object that was inspected to produce the RTCIceCandidateAttributes for the local candidate associated with this candidate pair.
+ * @property {external:String} remoteCandidateId
+ *  It is a unique identifier that is associated to the object that was inspected to produce the RTCIceCandidateAttributes for the remote candidate associated with this candidate pair.
+ * @property {module:core/complexTypes.RTCStatsIceCandidatePairState} state
+ *  Represents the state of the checklist for the local and remote candidates in a pair.
+ * @property {external:Integer} priority
+ *  Calculated from candidate priorities as defined in [RFC5245] section 5.7.2.
+ * @property {external:Boolean} nominated
+ *  Related to updating the nominated flag described in Section 7.1.3.2.4 of [RFC5245].
+ * @property {external:Boolean} writable
+ *  Has gotten ACK to an ICE request.
+ * @property {external:Boolean} readable
+ *  Has gotten a valid incoming ICE request.
+ * @property {external:Integer} bytesSent
+ *  Represents the total number of payload bytes sent on this candidate pair, i.e., not including headers or padding.
+ * @property {external:Integer} bytesReceived
+ *  Represents the total number of payload bytes received on this candidate pair, i.e., not including headers or padding.
+ * @property {external:Number} roundTripTime
+ *  Represents the RTT computed by the STUN connectivity checks
+ * @property {external:Number} availableOutgoingBitrate
+ *  Measured in Bits per second, and is implementation dependent. It may be calculated by the underlying congestion control.
+ * @property {external:Number} availableIncomingBitrate
+ *  Measured in Bits per second, and is implementation dependent. It may be calculated by the underlying congestion control.
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCIceCandidatePairStats;
+
+},{"kurento-client":"kurento-client"}],68:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCInboundRTPStreamStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCInboundRTPStreamStats} value
+ */
+function checkRTCInboundRTPStreamStats(key, value)
+{
+  checkType('int', key+'.packetsReceived', value.packetsReceived, true);
+  checkType('int', key+'.bytesReceived', value.bytesReceived, true);
+  checkType('int', key+'.packetsLost', value.packetsLost, true);
+  checkType('float', key+'.jitter', value.jitter, true);
+  checkType('float', key+'.fractionLost', value.fractionLost, true);
+
+  checkType('RTCRTPStreamStats', key, value)
+};
+
+
+/**
+ * Statistics that represents the measurement metrics for the incoming media stream.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCInboundRTPStreamStats
+ *
+ * @type {Object}
+ * @property {external:Integer} packetsReceived
+ *  Total number of RTP packets received for this SSRC.
+ * @property {external:Integer} bytesReceived
+ *  Total number of bytes received for this SSRC.
+ * @property {external:Integer} packetsLost
+ *  Total number of RTP packets lost for this SSRC.
+ * @property {external:Number} jitter
+ *  Packet Jitter measured in seconds for this SSRC.
+ * @property {external:Number} fractionLost
+ *  The fraction packet loss reported for this SSRC.
+
+ * @extends module:core.RTCRTPStreamStats
+ */
+
+
+module.exports = checkRTCInboundRTPStreamStats;
+
+},{"kurento-client":"kurento-client"}],69:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCMediaStreamStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCMediaStreamStats} value
+ */
+function checkRTCMediaStreamStats(key, value)
+{
+  checkType('String', key+'.streamIdentifier', value.streamIdentifier, true);
+  checkType('String', key+'.trackIds', value.trackIds, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * Statistics related to the media stream.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCMediaStreamStats
+ *
+ * @type {Object}
+ * @property {external:String} streamIdentifier
+ *  Stream identifier.
+ * @property {external:String} trackIds
+ *  This is the id of the stats object, not the track.id.
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCMediaStreamStats;
+
+},{"kurento-client":"kurento-client"}],70:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCMediaStreamTrackStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCMediaStreamTrackStats} value
+ */
+function checkRTCMediaStreamTrackStats(key, value)
+{
+  checkType('String', key+'.trackIdentifier', value.trackIdentifier, true);
+  checkType('boolean', key+'.remoteSource', value.remoteSource, true);
+  checkType('String', key+'.ssrcIds', value.ssrcIds, true);
+  checkType('int', key+'.frameWidth', value.frameWidth, true);
+  checkType('int', key+'.frameHeight', value.frameHeight, true);
+  checkType('float', key+'.framesPerSecond', value.framesPerSecond, true);
+  checkType('int', key+'.framesSent', value.framesSent, true);
+  checkType('int', key+'.framesReceived', value.framesReceived, true);
+  checkType('int', key+'.framesDecoded', value.framesDecoded, true);
+  checkType('int', key+'.framesDropped', value.framesDropped, true);
+  checkType('int', key+'.framesCorrupted', value.framesCorrupted, true);
+  checkType('float', key+'.audioLevel', value.audioLevel, true);
+  checkType('float', key+'.echoReturnLoss', value.echoReturnLoss, true);
+  checkType('float', key+'.echoReturnLossEnhancement', value.echoReturnLossEnhancement, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * Statistics related to the media stream.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCMediaStreamTrackStats
+ *
+ * @type {Object}
+ * @property {external:String} trackIdentifier
+ *  Represents the track.id property.
+ * @property {external:Boolean} remoteSource
+ *  true indicates that this is a remote source. false in other case.
+ * @property {external:String} ssrcIds
+ *  Synchronized sources.
+ * @property {external:Integer} frameWidth
+ *  Only makes sense for video media streams and represents the width of the video frame for this SSRC.
+ * @property {external:Integer} frameHeight
+ *  Only makes sense for video media streams and represents the height of the video frame for this SSRC.
+ * @property {external:Number} framesPerSecond
+ *  Only valid for video. It represents the nominal FPS value.
+ * @property {external:Integer} framesSent
+ *  Only valid for video. It represents the total number of frames sent for this SSRC.
+ * @property {external:Integer} framesReceived
+ *  Only valid for video and when remoteSource is set to true. It represents the total number of frames received for this SSRC.
+ * @property {external:Integer} framesDecoded
+ *  Only valid for video. It represents the total number of frames correctly decoded for this SSRC. 
+ * @property {external:Integer} framesDropped
+ *  Only valid for video. The total number of frames dropped predecode or dropped because the frame missed its display deadline.
+ * @property {external:Integer} framesCorrupted
+ *  Only valid for video. The total number of corrupted frames that have been detected.
+ * @property {external:Number} audioLevel
+ *  Only valid for audio, and the value is between 0..1 (linear), where 1.0 represents 0 dBov.
+ * @property {external:Number} echoReturnLoss
+ *  Only present on audio tracks sourced from a microphone where echo cancellation is applied. Calculated in decibels.
+ * @property {external:Number} echoReturnLossEnhancement
+ *  Only present on audio tracks sourced from a microphone where echo cancellation is applied.
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCMediaStreamTrackStats;
+
+},{"kurento-client":"kurento-client"}],71:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCOutboundRTPStreamStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCOutboundRTPStreamStats} value
+ */
+function checkRTCOutboundRTPStreamStats(key, value)
+{
+  checkType('int', key+'.packetsSent', value.packetsSent, true);
+  checkType('int', key+'.bytesSent', value.bytesSent, true);
+  checkType('float', key+'.targetBitrate', value.targetBitrate, true);
+  checkType('float', key+'.roundTripTime', value.roundTripTime, true);
+
+  checkType('RTCRTPStreamStats', key, value)
+};
+
+
+/**
+ * Statistics that represents the measurement metrics for the outgoing media stream.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCOutboundRTPStreamStats
+ *
+ * @type {Object}
+ * @property {external:Integer} packetsSent
+ *  Total number of RTP packets sent for this SSRC.
+ * @property {external:Integer} bytesSent
+ *  Total number of bytes sent for this SSRC.
+ * @property {external:Number} targetBitrate
+ *  Presently configured bitrate target of this SSRC, in bits per second.
+ * @property {external:Number} roundTripTime
+ *  Estimated round trip time (seconds) for this SSRC based on the RTCP timestamp.
+
+ * @extends module:core.RTCRTPStreamStats
+ */
+
+
+module.exports = checkRTCOutboundRTPStreamStats;
+
+},{"kurento-client":"kurento-client"}],72:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCPeerConnectionStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCPeerConnectionStats} value
+ */
+function checkRTCPeerConnectionStats(key, value)
+{
+  checkType('int', key+'.dataChannelsOpened', value.dataChannelsOpened, true);
+  checkType('int', key+'.dataChannelsClosed', value.dataChannelsClosed, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * Statistics related to the peer connection.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCPeerConnectionStats
+ *
+ * @type {Object}
+ * @property {external:Integer} dataChannelsOpened
+ *  Represents the number of unique datachannels opened.
+ * @property {external:Integer} dataChannelsClosed
+ *  Represents the number of unique datachannels closed.
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCPeerConnectionStats;
+
+},{"kurento-client":"kurento-client"}],73:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCRTPStreamStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCRTPStreamStats} value
+ */
+function checkRTCRTPStreamStats(key, value)
+{
+  checkType('String', key+'.ssrc', value.ssrc, true);
+  checkType('String', key+'.associateStatsId', value.associateStatsId, true);
+  checkType('boolean', key+'.isRemote', value.isRemote, true);
+  checkType('String', key+'.mediaTrackId', value.mediaTrackId, true);
+  checkType('String', key+'.transportId', value.transportId, true);
+  checkType('String', key+'.codecId', value.codecId, true);
+  checkType('int', key+'.firCount', value.firCount, true);
+  checkType('int', key+'.pliCount', value.pliCount, true);
+  checkType('int', key+'.nackCount', value.nackCount, true);
+  checkType('int', key+'.sliCount', value.sliCount, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * Statistics for the RTP stream
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCRTPStreamStats
+ *
+ * @type {Object}
+ * @property {external:String} ssrc
+ *  The synchronized source SSRC
+ * @property {external:String} associateStatsId
+ *  The associateStatsId is used for looking up the corresponding (local/remote) RTCStats object for a given SSRC.
+ * @property {external:Boolean} isRemote
+ *  false indicates that the statistics are measured locally, while true indicates that the measurements were done at the remote endpoint and reported in an RTCP RR/XR.
+ * @property {external:String} mediaTrackId
+ *  Track identifier.
+ * @property {external:String} transportId
+ *  It is a unique identifier that is associated to the object that was inspected to produce the RTCTransportStats associated with this RTP stream.
+ * @property {external:String} codecId
+ *  The codec identifier
+ * @property {external:Integer} firCount
+ *  Count the total number of Full Intra Request (FIR) packets received by the sender. This metric is only valid for video and is sent by receiver.
+ * @property {external:Integer} pliCount
+ *  Count the total number of Packet Loss Indication (PLI) packets received by the sender and is sent by receiver.
+ * @property {external:Integer} nackCount
+ *  Count the total number of Negative ACKnowledgement (NACK) packets received by the sender and is sent by receiver.
+ * @property {external:Integer} sliCount
+ *  Count the total number of Slice Loss Indication (SLI) packets received by the sender. This metric is only valid for video and is sent by receiver.
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCRTPStreamStats;
+
+},{"kurento-client":"kurento-client"}],74:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCStats} value
+ */
+function checkRTCStats(key, value)
+{
+  checkType('String', key+'.id', value.id, true);
+  checkType('RTCStatsType', key+'.type', value.type, true);
+  checkType('float', key+'.timestamp', value.timestamp, true);
+};
+
+
+/**
+ * An RTCStats dictionary represents the stats gathered.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCStats
+ *
+ * @type {Object}
+ * @property {external:String} id
+ *  A unique id that is associated with the object that was inspected to produce this RTCStats object.
+ * @property {module:core/complexTypes.RTCStatsType} type
+ *  The type of this object.
+ * @property {external:Number} timestamp
+ *  The timestamp associated with this object. The time is relative to the UNIX epoch (Jan 1, 1970, UTC).
+ */
+
+
+module.exports = checkRTCStats;
+
+},{"kurento-client":"kurento-client"}],75:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCStatsIceCandidatePairState}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCStatsIceCandidatePairState} value
+ */
+function checkRTCStatsIceCandidatePairState(key, value)
+{
+  if(typeof value != 'string')
+    throw SyntaxError(key+' param should be a String, not '+typeof value);
+  if(!value.match('frozen|waiting|inprogress|failed|succeeded|cancelled'))
+    throw SyntaxError(key+' param is not one of [frozen|waiting|inprogress|failed|succeeded|cancelled] ('+value+')');
+};
+
+
+/**
+ * Represents the state of the checklist for the local and remote candidates in a pair.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCStatsIceCandidatePairState
+ *
+ * @type {(frozen|waiting|inprogress|failed|succeeded|cancelled)}
+ */
+
+
+module.exports = checkRTCStatsIceCandidatePairState;
+
+},{"kurento-client":"kurento-client"}],76:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCStatsIceCandidateType}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCStatsIceCandidateType} value
+ */
+function checkRTCStatsIceCandidateType(key, value)
+{
+  if(typeof value != 'string')
+    throw SyntaxError(key+' param should be a String, not '+typeof value);
+  if(!value.match('host|serverreflexive|peerreflexive|relayed'))
+    throw SyntaxError(key+' param is not one of [host|serverreflexive|peerreflexive|relayed] ('+value+')');
+};
+
+
+/**
+ * Types of candidates
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCStatsIceCandidateType
+ *
+ * @type {(host|serverreflexive|peerreflexive|relayed)}
+ */
+
+
+module.exports = checkRTCStatsIceCandidateType;
+
+},{"kurento-client":"kurento-client"}],77:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCStatsType}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCStatsType} value
+ */
+function checkRTCStatsType(key, value)
+{
+  if(typeof value != 'string')
+    throw SyntaxError(key+' param should be a String, not '+typeof value);
+  if(!value.match('inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate'))
+    throw SyntaxError(key+' param is not one of [inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate] ('+value+')');
+};
+
+
+/**
+ * The type of the object.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCStatsType
+ *
+ * @type {(inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate)}
+ */
+
+
+module.exports = checkRTCStatsType;
+
+},{"kurento-client":"kurento-client"}],78:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+var checkType = require('kurento-client').checkType;
+
+/**
+ * Checker for {@link core/complexTypes.RTCTransportStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCTransportStats} value
+ */
+function checkRTCTransportStats(key, value)
+{
+  checkType('int', key+'.bytesSent', value.bytesSent, true);
+  checkType('int', key+'.bytesReceived', value.bytesReceived, true);
+  checkType('String', key+'.rtcpTransportStatsId', value.rtcpTransportStatsId, true);
+  checkType('boolean', key+'.activeConnection', value.activeConnection, true);
+  checkType('String', key+'.selectedCandidatePairId', value.selectedCandidatePairId, true);
+  checkType('String', key+'.localCertificateId', value.localCertificateId, true);
+  checkType('String', key+'.remoteCertificateId', value.remoteCertificateId, true);
+
+  checkType('RTCStats', key, value)
+};
+
+
+/**
+ * Statistics related to RTC data channels.
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @typedef core/complexTypes.RTCTransportStats
+ *
+ * @type {Object}
+ * @property {external:Integer} bytesSent
+ *  Represents the total number of payload bytes sent on this PeerConnection, i.e., not including headers or padding.
+ * @property {external:Integer} bytesReceived
+ *  Represents the total number of bytes received on this PeerConnection, i.e., not including headers or padding.
+ * @property {external:String} rtcpTransportStatsId
+ *  If RTP and RTCP are not multiplexed, this is the id of the transport that gives stats for the RTCP component, and this record has only the RTP component stats.
+ * @property {external:Boolean} activeConnection
+ *  Set to true when transport is active.
+ * @property {external:String} selectedCandidatePairId
+ *  It is a unique identifier that is associated to the object that was inspected to produce the RTCIceCandidatePairStats associated with this transport.
+ * @property {external:String} localCertificateId
+ *  For components where DTLS is negotiated, give local certificate.
+ * @property {external:String} remoteCertificateId
+ *  For components where DTLS is negotiated, give remote certificate.
+
+ * @extends module:core.RTCStats
+ */
+
+
+module.exports = checkRTCTransportStats;
+
+},{"kurento-client":"kurento-client"}],79:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11966,7 +13907,7 @@ function checkServerInfo(key, value)
 
 module.exports = checkServerInfo;
 
-},{"kurento-client":"kurento-client"}],62:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],80:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12016,7 +13957,7 @@ function checkServerType(key, value)
 
 module.exports = checkServerType;
 
-},{"kurento-client":"kurento-client"}],63:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],81:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12068,7 +14009,7 @@ function checkTag(key, value)
 
 module.exports = checkTag;
 
-},{"kurento-client":"kurento-client"}],64:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],82:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12120,7 +14061,7 @@ function checkVideoCaps(key, value)
 
 module.exports = checkVideoCaps;
 
-},{"kurento-client":"kurento-client"}],65:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],83:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12170,7 +14111,7 @@ function checkVideoCodec(key, value)
 
 module.exports = checkVideoCodec;
 
-},{"kurento-client":"kurento-client"}],66:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],84:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12204,6 +14145,23 @@ var FilterType = require('./FilterType');
 var Fraction = require('./Fraction');
 var MediaType = require('./MediaType');
 var ModuleInfo = require('./ModuleInfo');
+var RTCCertificateStats = require('./RTCCertificateStats');
+var RTCCodec = require('./RTCCodec');
+var RTCDataChannelState = require('./RTCDataChannelState');
+var RTCDataChannelStats = require('./RTCDataChannelStats');
+var RTCIceCandidateAttributes = require('./RTCIceCandidateAttributes');
+var RTCIceCandidatePairStats = require('./RTCIceCandidatePairStats');
+var RTCInboundRTPStreamStats = require('./RTCInboundRTPStreamStats');
+var RTCMediaStreamStats = require('./RTCMediaStreamStats');
+var RTCMediaStreamTrackStats = require('./RTCMediaStreamTrackStats');
+var RTCOutboundRTPStreamStats = require('./RTCOutboundRTPStreamStats');
+var RTCPeerConnectionStats = require('./RTCPeerConnectionStats');
+var RTCRTPStreamStats = require('./RTCRTPStreamStats');
+var RTCStats = require('./RTCStats');
+var RTCStatsIceCandidatePairState = require('./RTCStatsIceCandidatePairState');
+var RTCStatsIceCandidateType = require('./RTCStatsIceCandidateType');
+var RTCStatsType = require('./RTCStatsType');
+var RTCTransportStats = require('./RTCTransportStats');
 var ServerInfo = require('./ServerInfo');
 var ServerType = require('./ServerType');
 var Tag = require('./Tag');
@@ -12218,13 +14176,30 @@ exports.FilterType = FilterType;
 exports.Fraction = Fraction;
 exports.MediaType = MediaType;
 exports.ModuleInfo = ModuleInfo;
+exports.RTCCertificateStats = RTCCertificateStats;
+exports.RTCCodec = RTCCodec;
+exports.RTCDataChannelState = RTCDataChannelState;
+exports.RTCDataChannelStats = RTCDataChannelStats;
+exports.RTCIceCandidateAttributes = RTCIceCandidateAttributes;
+exports.RTCIceCandidatePairStats = RTCIceCandidatePairStats;
+exports.RTCInboundRTPStreamStats = RTCInboundRTPStreamStats;
+exports.RTCMediaStreamStats = RTCMediaStreamStats;
+exports.RTCMediaStreamTrackStats = RTCMediaStreamTrackStats;
+exports.RTCOutboundRTPStreamStats = RTCOutboundRTPStreamStats;
+exports.RTCPeerConnectionStats = RTCPeerConnectionStats;
+exports.RTCRTPStreamStats = RTCRTPStreamStats;
+exports.RTCStats = RTCStats;
+exports.RTCStatsIceCandidatePairState = RTCStatsIceCandidatePairState;
+exports.RTCStatsIceCandidateType = RTCStatsIceCandidateType;
+exports.RTCStatsType = RTCStatsType;
+exports.RTCTransportStats = RTCTransportStats;
 exports.ServerInfo = ServerInfo;
 exports.ServerType = ServerType;
 exports.Tag = Tag;
 exports.VideoCaps = VideoCaps;
 exports.VideoCodec = VideoCodec;
 
-},{"./AudioCaps":54,"./AudioCodec":55,"./ElementConnectionData":56,"./FilterType":57,"./Fraction":58,"./MediaType":59,"./ModuleInfo":60,"./ServerInfo":61,"./ServerType":62,"./Tag":63,"./VideoCaps":64,"./VideoCodec":65}],67:[function(require,module,exports){
+},{"./AudioCaps":55,"./AudioCodec":56,"./ElementConnectionData":57,"./FilterType":58,"./Fraction":59,"./MediaType":60,"./ModuleInfo":61,"./RTCCertificateStats":62,"./RTCCodec":63,"./RTCDataChannelState":64,"./RTCDataChannelStats":65,"./RTCIceCandidateAttributes":66,"./RTCIceCandidatePairStats":67,"./RTCInboundRTPStreamStats":68,"./RTCMediaStreamStats":69,"./RTCMediaStreamTrackStats":70,"./RTCOutboundRTPStreamStats":71,"./RTCPeerConnectionStats":72,"./RTCRTPStreamStats":73,"./RTCStats":74,"./RTCStatsIceCandidatePairState":75,"./RTCStatsIceCandidateType":76,"./RTCStatsType":77,"./RTCTransportStats":78,"./ServerInfo":79,"./ServerType":80,"./Tag":81,"./VideoCaps":82,"./VideoCodec":83}],85:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12263,7 +14238,7 @@ exports.PassThrough = PassThrough;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./HubPort":40,"./MediaPipeline":41,"./PassThrough":42,"./abstracts":53,"./complexTypes":66}],68:[function(require,module,exports){
+},{"./HubPort":41,"./MediaPipeline":42,"./PassThrough":43,"./abstracts":54,"./complexTypes":84}],86:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12426,7 +14401,7 @@ AlphaBlending.check = function(key, value)
     throw ChecktypeError(key, AlphaBlending, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],69:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],87:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12495,7 +14470,7 @@ Composite.check = function(key, value)
     throw ChecktypeError(key, Composite, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],70:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],88:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12607,7 +14582,7 @@ Dispatcher.check = function(key, value)
     throw ChecktypeError(key, Dispatcher, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],71:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],89:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12733,7 +14708,7 @@ DispatcherOneToMany.check = function(key, value)
     throw ChecktypeError(key, DispatcherOneToMany, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],72:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],90:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12827,7 +14802,7 @@ HttpGetEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpGetEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":79,"inherits":39,"kurento-client":"kurento-client"}],73:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":97,"inherits":40,"kurento-client":"kurento-client"}],91:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12914,7 +14889,7 @@ HttpPostEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpPostEndpoint, value);
 };
 
-},{"./abstracts/HttpEndpoint":79,"inherits":39,"kurento-client":"kurento-client"}],74:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":97,"inherits":40,"kurento-client":"kurento-client"}],92:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13071,7 +15046,7 @@ Mixer.check = function(key, value)
     throw ChecktypeError(key, Mixer, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],75:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],93:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13193,7 +15168,7 @@ PlayerEndpoint.check = function(key, value)
     throw ChecktypeError(key, PlayerEndpoint, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],76:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],94:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13311,7 +15286,7 @@ RecorderEndpoint.check = function(key, value)
     throw ChecktypeError(key, RecorderEndpoint, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],77:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],95:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13380,7 +15355,7 @@ RtpEndpoint.check = function(key, value)
     throw ChecktypeError(key, RtpEndpoint, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],78:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],96:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13614,7 +15589,7 @@ WebRtcEndpoint.check = function(key, value)
     throw ChecktypeError(key, WebRtcEndpoint, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],79:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],97:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13703,7 +15678,7 @@ HttpEndpoint.check = function(key, value)
     throw ChecktypeError(key, HttpEndpoint, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],80:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],98:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13735,7 +15710,7 @@ var HttpEndpoint = require('./HttpEndpoint');
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":79}],81:[function(require,module,exports){
+},{"./HttpEndpoint":97}],99:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13790,7 +15765,7 @@ function checkIceCandidate(key, value)
 
 module.exports = checkIceCandidate;
 
-},{"kurento-client":"kurento-client"}],82:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],100:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13842,7 +15817,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"kurento-client":"kurento-client"}],83:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],101:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13876,7 +15851,7 @@ var MediaProfileSpecType = require('./MediaProfileSpecType');
 exports.IceCandidate = IceCandidate;
 exports.MediaProfileSpecType = MediaProfileSpecType;
 
-},{"./IceCandidate":81,"./MediaProfileSpecType":82}],84:[function(require,module,exports){
+},{"./IceCandidate":99,"./MediaProfileSpecType":100}],102:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13931,7 +15906,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":68,"./Composite":69,"./Dispatcher":70,"./DispatcherOneToMany":71,"./HttpGetEndpoint":72,"./HttpPostEndpoint":73,"./Mixer":74,"./PlayerEndpoint":75,"./RecorderEndpoint":76,"./RtpEndpoint":77,"./WebRtcEndpoint":78,"./abstracts":80,"./complexTypes":83}],85:[function(require,module,exports){
+},{"./AlphaBlending":86,"./Composite":87,"./Dispatcher":88,"./DispatcherOneToMany":89,"./HttpGetEndpoint":90,"./HttpPostEndpoint":91,"./Mixer":92,"./PlayerEndpoint":93,"./RecorderEndpoint":94,"./RtpEndpoint":95,"./WebRtcEndpoint":96,"./abstracts":98,"./complexTypes":101}],103:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14097,7 +16072,7 @@ FaceOverlayFilter.check = function(key, value)
     throw ChecktypeError(key, FaceOverlayFilter, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],86:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],104:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14181,7 +16156,7 @@ GStreamerFilter.check = function(key, value)
     throw ChecktypeError(key, GStreamerFilter, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],87:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],105:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14252,7 +16227,7 @@ ZBarFilter.check = function(key, value)
     throw ChecktypeError(key, ZBarFilter, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],88:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],106:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14312,7 +16287,7 @@ OpenCVFilter.check = function(key, value)
     throw ChecktypeError(key, OpenCVFilter, value);
 };
 
-},{"inherits":39,"kurento-client":"kurento-client","kurento-client-core":67}],89:[function(require,module,exports){
+},{"inherits":40,"kurento-client":"kurento-client","kurento-client-core":85}],107:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14344,7 +16319,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":88}],90:[function(require,module,exports){
+},{"./OpenCVFilter":106}],108:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14382,7 +16357,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":85,"./GStreamerFilter":86,"./ZBarFilter":87,"./abstracts":89}],91:[function(require,module,exports){
+},{"./FaceOverlayFilter":103,"./GStreamerFilter":104,"./ZBarFilter":105,"./abstracts":107}],109:[function(require,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -14448,7 +16423,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],92:[function(require,module,exports){
+},{}],110:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -14469,7 +16444,7 @@ var JsonRpcClient  = require('./jsonrpcclient');
 
 exports.JsonRpcClient  = JsonRpcClient;
 
-},{"./jsonrpcclient":93}],93:[function(require,module,exports){
+},{"./jsonrpcclient":111}],111:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -14504,7 +16479,7 @@ function JsonRpcClient(wsUrl, onRequest, onerror)
 
 module.exports  = JsonRpcClient;
 
-},{"../..":94,"ws":98}],94:[function(require,module,exports){
+},{"../..":112,"ws":116}],112:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -15260,7 +17235,7 @@ var clients = require('./clients');
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":91,"./clients":92,"./packers":97,"events":16,"inherits":39}],95:[function(require,module,exports){
+},{"./Mapper":109,"./clients":110,"./packers":115,"events":17,"inherits":40}],113:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -15364,7 +17339,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],96:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -15379,7 +17354,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],97:[function(require,module,exports){
+},{}],115:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC  = require('./XmlRPC');
 
@@ -15387,7 +17362,7 @@ var XmlRPC  = require('./XmlRPC');
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":95,"./XmlRPC":96}],98:[function(require,module,exports){
+},{"./JsonRPC":113,"./XmlRPC":114}],116:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -15432,7 +17407,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],99:[function(require,module,exports){
+},{}],117:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -15479,7 +17454,7 @@ function promiseCallback(promise, callback)
 
 module.exports = promiseCallback;
 
-},{}],100:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -15498,7 +17473,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":101,"websocket-stream":108}],101:[function(require,module,exports){
+},{"reconnect-core":119,"websocket-stream":126}],119:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -15612,7 +17587,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":102,"events":16}],102:[function(require,module,exports){
+},{"backoff":120,"events":17}],120:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15663,7 +17638,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":103,"./lib/function_call.js":104,"./lib/strategy/exponential":105,"./lib/strategy/fibonacci":106}],103:[function(require,module,exports){
+},{"./lib/backoff":121,"./lib/function_call.js":122,"./lib/strategy/exponential":123,"./lib/strategy/fibonacci":124}],121:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15749,7 +17724,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":16,"util":38}],104:[function(require,module,exports){
+},{"events":17,"util":39}],122:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -15978,7 +17953,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":103,"./strategy/fibonacci":106,"events":16,"util":38}],105:[function(require,module,exports){
+},{"./backoff":121,"./strategy/fibonacci":124,"events":17,"util":39}],123:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -16014,7 +17989,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":107,"util":38}],106:[function(require,module,exports){
+},{"./strategy":125,"util":39}],124:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -16051,7 +18026,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":107,"util":38}],107:[function(require,module,exports){
+},{"./strategy":125,"util":39}],125:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -16151,7 +18126,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":16,"util":38}],108:[function(require,module,exports){
+},{"events":17,"util":39}],126:[function(require,module,exports){
 (function (process){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -16247,7 +18222,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,require('_process'))
-},{"_process":18,"isbuffer":109,"through":110,"ws":111}],109:[function(require,module,exports){
+},{"_process":19,"isbuffer":127,"through":128,"ws":129}],127:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -16257,7 +18232,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":11}],110:[function(require,module,exports){
+},{"buffer":12}],128:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -16369,11 +18344,11 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":18,"stream":34}],111:[function(require,module,exports){
-arguments[4][98][0].apply(exports,arguments)
-},{"dup":98}],"kurento-client":[function(require,module,exports){
+},{"_process":19,"stream":35}],129:[function(require,module,exports){
+arguments[4][116][0].apply(exports,arguments)
+},{"dup":116}],"kurento-client":[function(require,module,exports){
 /*
- * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
+ * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser General Public License
@@ -16387,791 +18362,30 @@ arguments[4][98][0].apply(exports,arguments)
  *
  */
 
-/**
- * Media API for the Kurento Web SDK
- *
- * @module KurentoClient
- *
- * @copyright 2013-2014 Kurento (http://kurento.org/)
- * @license LGPL
- */
-
-var EventEmitter = require('events').EventEmitter;
-var url = require('url');
-
-var Promise = require('es6-promise').Promise;
-
-var async = require('async');
-var extend = require('extend');
-var inherits = require('inherits');
-var reconnect = require('reconnect-ws');
-
 var checkType = require('checktype');
 
-var RpcBuilder = require('kurento-jsonrpc');
-var JsonRPC = RpcBuilder.packers.JsonRPC;
-
-var promiseCallback = require('promisecallback');
-
-var createPromise = require('./createPromise');
 var MediaObjectCreator = require('./MediaObjectCreator');
 var register = require('./register');
 var TransactionsManager = require('./TransactionsManager');
 
-var TransactionNotCommitedException = TransactionsManager.TransactionNotCommitedException;
-var transactionOperation = TransactionsManager.transactionOperation;
+exports.checkType = checkType;
+exports.MediaObjectCreator = MediaObjectCreator;
+exports.register = register;
+exports.TransactionsManager = TransactionsManager;
 
 // Export KurentoClient
 
+var KurentoClient = require('./KurentoClient');
+
 module.exports = KurentoClient;
 KurentoClient.KurentoClient = KurentoClient;
+
+// Ugly hack due to circular references
 
 KurentoClient.checkType = checkType;
 KurentoClient.MediaObjectCreator = MediaObjectCreator;
 KurentoClient.register = register;
 KurentoClient.TransactionsManager = TransactionsManager;
-
-var MediaObject = require('kurento-client-core').abstracts.MediaObject;
-
-const BASE_TIMEOUT = 20000;
-
-/*
- * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex#Polyfill
- */
-if (!Array.prototype.findIndex) {
-  Array.prototype.findIndex = function (predicate) {
-    if (this == null) {
-      throw new TypeError('Array.prototype.find called on null or undefined');
-    }
-    if (typeof predicate !== 'function') {
-      throw new TypeError('predicate must be a function');
-    }
-    var list = Object(this);
-    var length = list.length >>> 0;
-    var thisArg = arguments[1];
-    var value;
-
-    for (var i = 0; i < length; i++) {
-      value = list[i];
-      if (predicate.call(thisArg, value, i, list)) {
-        return i;
-      }
-    }
-    return -1;
-  };
-}
-
-/**
- * Serialize objects using their id
- */
-function serializeParams(params) {
-  for (var key in params) {
-    var param = params[key];
-    if (param instanceof MediaObject) {
-      var id = param.id;
-
-      if (id !== undefined) params[key] = id;
-    }
-  };
-
-  return params;
-};
-
-function serializeOperation(operation, index) {
-  var params = operation.params;
-
-  switch (operation.method) {
-  case 'create':
-    params.constructorParams = serializeParams(params.constructorParams);
-    break;
-
-  default:
-    params = serializeParams(params);
-    params.operationParams = serializeParams(params.operationParams);
-  };
-
-  operation.jsonrpc = "2.0";
-
-  operation.id = index;
-};
-
-function deferred(mediaObject, params, prevRpc, callback) {
-  var promises = [];
-
-  if (mediaObject != undefined)
-    promises.push(mediaObject);
-
-  for (var key in params) {
-    var param = params[key];
-    if (param !== undefined)
-      promises.push(param);
-  };
-
-  if (prevRpc != undefined)
-    promises.push(prevRpc);
-
-  return promiseCallback(Promise.all(promises), callback);
-};
-
-function noop(error) {
-  if (error) console.trace(error);
-};
-
-function id2object(error, result, operation, id, callback) {
-  if (error) return callback(error);
-
-  var operations = [
-    'getConnectedSinks',
-    'getMediaPipeline',
-    'getMediaSinks',
-    'getMediaSrcs',
-    'getParent'
-  ]
-
-  if (operations.indexOf(operation) != -1) {
-    var sessionId = result.sessionId;
-
-    return this.getMediaobjectById(id, function (error, result) {
-      if (error) return callback(error);
-
-      var result = {
-        sessionId: sessionId,
-        value: result
-      };
-
-      callback(null, result);
-    });
-  };
-
-  callback(null, result)
-};
-
-/**
- * Creates a connection with the Kurento Media Server
- *
- * @class
- *
- * @param {external:String} ws_uri - Address of the Kurento Media Server
- * @param {Object} [options]
- *   @property failAfter - Don't try to reconnect after several tries
- *     @default 5
- *   @property enableTransactions - Enable transactions functionality
- *     @default true
- *   @property access_token - Set access token for the WebSocket connection
- *   @property max_retries - Number of tries to send the requests
- *     @default 0
- *   @property request_timeout - Timeout between requests retries
- *     @default 20000
- *   @property response_timeout - Timeout while a response is being stored
- *     @default 20000
- *   @property duplicates_timeout - Timeout to ignore duplicated responses
- *     @default 20000
- * @param {KurentoClientApi~constructorCallback} [callback]
- */
-function KurentoClient(ws_uri, options, callback) {
-  if (!(this instanceof KurentoClient))
-    return new KurentoClient(ws_uri, options, callback);
-
-  var self = this;
-
-  EventEmitter.call(this);
-
-  // Promises to check previous RPC calls
-  var prevRpc = Promise.resolve(); // request has been send
-  var prevRpc_result = Promise.resolve(); // response has been received
-
-  // Fix optional parameters
-  if (options instanceof Function) {
-    callback = options;
-    options = undefined;
-  };
-
-  options = options || {};
-
-  var failAfter = options.failAfter
-  if (failAfter == undefined) failAfter = 5
-
-  options.enableTransactions = options.enableTransactions || true
-
-  options.request_timeout = options.request_timeout || BASE_TIMEOUT;
-  options.response_timeout = options.response_timeout || BASE_TIMEOUT;
-  options.duplicates_timeout = options.duplicates_timeout || BASE_TIMEOUT;
-
-  var objects = {};
-
-  function onNotification(message) {
-    var method = message.method;
-    var params = message.params.value;
-
-    var id = params.object;
-
-    var object = objects[id];
-    if (!object)
-      return console.warn("Unknown object id '" + id + "'", message);
-
-    switch (method) {
-    case 'onEvent':
-      object.emit(params.type, params.data);
-      break;
-
-      //      case 'onError':
-      //        object.emit('error', params.error);
-      //      break;
-
-    default:
-      console.warn("Unknown message type '" + method + "'");
-    };
-  };
-
-  //
-  // JsonRPC
-  //
-
-  if (typeof ws_uri == 'string') {
-    var access_token = options.access_token;
-    if (access_token != undefined) {
-      ws_uri = url.parse(ws_uri, true);
-      ws_uri.query.access_token = access_token;
-      ws_uri = url.format(ws_uri);
-
-      delete options.access_token;
-    };
-  }
-
-  var rpc = new RpcBuilder(JsonRPC, options, function (request) {
-    if (request instanceof RpcBuilder.RpcNotification) {
-      // Message is an unexpected request, notify error
-      if (request.duplicated != undefined)
-        return console.warning('Unexpected request:', request);
-
-      // Message is a notification, process it
-      return onNotification(request);
-    };
-
-    // Invalid message, notify error
-    console.error('Invalid request instance', request);
-  });
-
-  function connect(callback) {
-    //
-    // Reconnect websockets
-    //
-
-    var closed = false;
-    var re = reconnect({
-        failAfter: failAfter
-      }, function (ws_stream) {
-        if (closed)
-          ws_stream.writable = false;
-
-        rpc.transport = ws_stream;
-      })
-      .connect(ws_uri);
-
-    Object.defineProperty(this, '_re', {
-      configurable: true,
-      get: function () {
-        return re
-      }
-    })
-
-    this.close = function () {
-      closed = true;
-
-      prevRpc_result.then(re.disconnect.bind(re));
-    };
-
-    re.on('fail', this.emit.bind(this, 'disconnect'));
-
-    //
-    // Promise interface ("thenable")
-    //
-
-    this.then = function (onFulfilled, onRejected) {
-      return new Promise(function (resolve, reject) {
-        function success() {
-          re.removeListener('fail', failure);
-
-          var result;
-
-          if (onFulfilled)
-            try {
-              result = onFulfilled.call(self, self);
-            } catch (exception) {
-              if (!onRejected)
-                console.trace('Uncaugh exception', exception)
-
-              return reject(exception);
-            }
-
-          resolve(result);
-        };
-
-        function failure() {
-          re.removeListener('connection', success);
-
-          var result = new Error('Connection error');
-
-          if (onRejected)
-            try {
-              result = onRejected.call(self, result);
-            } catch (exception) {
-              return reject(exception);
-            } else
-              console.trace('Uncaugh exception', result)
-
-          reject(result);
-        };
-
-        if (re.connected)
-          success()
-        else if (!re.reconnect)
-          failure()
-        else {
-          re.once('connection', success);
-          re.once('fail', failure);
-        }
-      });
-    };
-
-    this.catch = this.then.bind(this, null);
-
-    if (callback)
-      this.then(callback.bind(undefined, null), callback);
-  };
-  connect.call(self, callback);
-
-  // Select what transactions mechanism to use
-  var encodeTransaction = options.enableTransactions ? commitTransactional :
-    commitSerial;
-
-  // Transactional API
-
-  var transactionsManager = new TransactionsManager(this,
-    function (operations, callback) {
-      var params = {
-        object: self,
-        operations: operations
-      };
-
-      encodeTransaction(params, callback)
-    });
-
-  this.beginTransaction = transactionsManager.beginTransaction.bind(
-    transactionsManager);
-  this.endTransaction = transactionsManager.endTransaction.bind(
-    transactionsManager);
-  this.transaction = transactionsManager.transaction.bind(transactionsManager);
-
-  // Encode commands
-
-  function encode(method, params, callback) {
-    self.then(function () {
-        // [ToDo] Use stacktrace of caller, not from response
-        rpc.encode(method, params, function (error, result) {
-          if (error)
-            error = extend(new Error(error.message || error), error);
-
-          callback(error, result);
-        });
-      },
-      function () {
-        connect.call(self, function (error) {
-          if (error) return callback(error);
-
-          encode(method, params, callback);
-        });
-      })
-  }
-
-  function encodeCreate(transaction, params, callback) {
-    if (transaction)
-      return transactionOperation.call(transaction, 'create', params,
-        callback);
-
-    if (transactionsManager.length)
-      return transactionOperation.call(transactionsManager, 'create',
-        params, callback);
-
-    callback = callback || noop;
-
-    function callback2(error, result) {
-      var mediaObject = params.object;
-
-      if (error) {
-        mediaObject.emit('_id', error);
-        return callback(error);
-      }
-
-      var id = result.value;
-
-      callback(null, registerObject(mediaObject, id));
-    }
-
-    deferred(null, params.constructorParams, null, function (error) {
-      if (error) return callback(error);
-
-      params.constructorParams = serializeParams(params.constructorParams);
-
-      encode('create', params, callback2);
-    });
-  };
-
-  /**
-   * Request a generic functionality to be procesed by the server
-   */
-  function encodeRpc(transaction, method, params, callback) {
-    if (transaction)
-      return transactionOperation.call(transaction, method, params,
-        callback);
-
-    var object = params.object;
-    if (object && object.transactions && object.transactions.length) {
-      var error = new TransactionNotCommitedException();
-      error.method = method;
-      error.params = params;
-
-      return setTimeout(callback, 0, error)
-    };
-
-    for (var key in params.operationParams) {
-      var object = params.operationParams[key];
-
-      if (object && object.transactions && object.transactions.length) {
-        var error = new TransactionNotCommitedException();
-        error.method = method;
-        error.params = params;
-
-        return setTimeout(callback, 0, error)
-      };
-    }
-
-    if (transactionsManager.length)
-      return transactionOperation.call(transactionsManager, method, params,
-        callback);
-
-    var promise = new Promise(function (resolve, reject) {
-      function callback2(error, result) {
-        var operation = params.operation;
-        var id = result ? result.value : undefined;
-
-        id2object.call(self, error, result, operation, id, function (
-          error, result) {
-          if (error) return reject(error);
-
-          resolve(result);
-        });
-      };
-
-      prevRpc = deferred(params.object, params.operationParams, prevRpc,
-        function (error) {
-          if (error) return reject(error);
-
-          params = serializeParams(params);
-          params.operationParams = serializeParams(params.operationParams);
-
-          encode(method, params, callback2);
-        })
-    });
-
-    prevRpc_result = promiseCallback(promise, callback);
-
-    if (method == 'release') prevRpc = prevRpc_result;
-  }
-
-  // Commit mechanisms
-
-  function commitTransactional(params, callback) {
-    if (transactionsManager.length)
-      return transactionOperation.call(transactionsManager, 'transaction',
-        params, callback);
-
-    var operations = params.operations;
-
-    for (var i = 0, operation; operation = operations[i]; i++) {
-      var object = operation.params.object;
-      if (object instanceof MediaObject && object.id === null) {
-        var error = new Error('MediaObject not found in server');
-        error.code = 40101;
-        error.object = object;
-
-        // Notify error to all the operations in the transaction
-        operations.forEach(function (operation) {
-          if (operation.method == 'create')
-            operation.params.object.emit('_id', error);
-
-          var callback = operation.callback;
-          if (callback instanceof Function)
-            callback(error);
-        });
-
-        return callback(error);
-      }
-    }
-
-    var promises = [];
-
-    function checkId(operation, param) {
-      if (param instanceof MediaObject && param.id === undefined) {
-        var index = operations.findIndex(function (element) {
-          return operation != element && element.params.object ===
-            param;
-        });
-
-        // MediaObject dependency is created in this transaction,
-        // set a new reference ID
-        if (index >= 0)
-          return 'newref:' + index;
-
-        // MediaObject dependency is created outside this transaction,
-        // wait until it's ready
-        promises.push(param);
-      }
-
-      return param
-    }
-
-    // Fix references to uninitialized MediaObjects
-    operations.forEach(function (operation) {
-      var params = operation.params;
-
-      switch (operation.method) {
-      case 'create':
-        var constructorParams = params.constructorParams;
-        for (var key in constructorParams)
-          constructorParams[key] = checkId(operation, constructorParams[
-            key]);
-        break;
-
-      default:
-        params.object = checkId(operation, params.object);
-
-        var operationParams = params.operationParams;
-        for (var key in operationParams)
-          operationParams[key] = checkId(operation, operationParams[key]);
-      };
-    });
-
-    function callback2(error, transaction_result) {
-      if (error) return callback(error);
-
-      operations.forEach(function (operation, index) {
-        var callback = operation.callback || noop;
-
-        var operation_response = transaction_result.value[index];
-        if (operation_response == undefined)
-          return callback(new Error(
-            'Command not executed in the server'));
-
-        var error = operation_response.error;
-        var result = operation_response.result;
-
-        var id;
-        if (result) id = result.value;
-
-        switch (operation.method) {
-        case 'create':
-          var mediaObject = operation.params.object;
-
-          if (error) {
-            mediaObject.emit('_id', error);
-            return callback(error)
-          }
-
-          callback(null, registerObject(mediaObject, id));
-          break;
-
-        default:
-          id2object.call(self, error, result, operation, id, callback);
-        }
-      })
-
-      callback(null, transaction_result);
-    };
-
-    Promise.all(promises).then(function () {
-        operations.forEach(serializeOperation)
-
-        encode('transaction', params, callback2);
-      },
-      callback);
-  }
-
-  function commitSerial(params, callback) {
-    if (transactionsManager.length)
-      return transactionOperation.call(transactionsManager, 'transaction',
-        params, callback);
-
-    var operations = params.operations;
-
-    async.each(operations, function (operation) {
-        switch (operation.method) {
-        case 'create':
-          encodeCreate(undefined, operation.params, operation.callback);
-          break;
-
-        case 'transaction':
-          commitSerial(operation.params.operations, operation.callback);
-          break;
-
-        default:
-          encodeRpc(undefined, operation.method, operation.params,
-            operation.callback);
-        }
-      },
-      callback)
-  }
-
-  function registerObject(mediaObject, id) {
-    var object = objects[id];
-    if (object) return object;
-
-    mediaObject.emit('_id', null, id);
-
-    objects[id] = mediaObject;
-
-    /**
-     * Remove the object from cache
-     */
-    mediaObject.once('release', function () {
-      delete objects[id];
-    });
-
-    return mediaObject;
-  }
-
-  // Creation of objects
-
-  var mediaObjectCreator = new MediaObjectCreator(undefined, encodeCreate,
-    encodeRpc, encodeTransaction);
-
-  function describe(id, callback) {
-    var mediaObject = objects[id];
-    if (mediaObject) return callback(null, mediaObject);
-
-    var params = {
-      object: id
-    };
-
-    function callback2(error, result) {
-      if (error) return callback(error);
-
-      var mediaObject = mediaObjectCreator.createInmediate(result);
-
-      return callback(null, registerObject(mediaObject, id));
-    }
-
-    encode('describe', params, callback2);
-  };
-
-  /**
-   * Get a MediaObject from its ID
-   *
-   * @param {(external:String|external:string[])} id - ID of the MediaElement
-   * @callback {getMediaobjectByIdCallback} callback
-   *
-   * @return {external:Promise}
-   */
-  this.getMediaobjectById = function (id, callback) {
-    return createPromise(id, describe, callback)
-  };
-  /**
-   * @callback KurentoClientApi~getMediaobjectByIdCallback
-   * @param {external:Error} error
-   * @param {(module:core/abstract~MediaElement|module:core/abstract~MediaElement[])} result
-   *  The requested MediaElement
-   */
-
-  /**
-   * Create a new instance of a MediaObject
-   *
-   * @param {external:String} type - Type of the element
-   * @param {external:string[]} [params]
-   * @callback {createMediaPipelineCallback} callback
-   *
-   * @return {module:KurentoClientApi~KurentoClient} The Kurento client itself
-   */
-  this.create = mediaObjectCreator.create.bind(mediaObjectCreator);
-  /**
-   * @callback KurentoClientApi~createCallback
-   * @param {external:Error} error
-   * @param {module:core/abstract~MediaElement} result
-   *  The created MediaElement
-   */
-};
-inherits(KurentoClient, EventEmitter);
-/**
- * @callback KurentoClientApi~constructorCallback
- * @param {external:Error} error
- * @param {module:KurentoClientApi~KurentoClient} client
- *  The created KurentoClient
- */
-
-var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
-
-/**
- * Connect the source of a media to the sink of the next one
- *
- * @param {...module:core/abstract~MediaObject} media - A media to be connected
- * @callback {module:KurentoClientApi~connectCallback} [callback]
- *
- * @return {external:Promise}
- *
- * @throws {SyntaxError}
- */
-KurentoClient.prototype.connect = function (media, callback) {
-  // Fix lenght-variable arguments
-  media = Array.prototype.slice.call(arguments, 0);
-  callback = (typeof media[media.length - 1] == 'function') ? media.pop() :
-    undefined;
-
-  // Check if we have enought media components
-  if (media.length < 2)
-    throw new SyntaxError("Need at least two media elements to connect");
-
-  // Check MediaElements are of the correct type
-  media.forEach(checkMediaElement);
-
-  // Generate promise
-  var promise = new Promise(function (resolve, reject) {
-    function callback(error, result) {
-      if (error) return reject(error);
-
-      resolve(result);
-    };
-
-    // Connect the media elements
-    var src = media[0];
-
-    async.each(media.slice(1), function (sink, callback) {
-      src.connect(sink, callback);
-      src = sink;
-    }, callback);
-  });
-
-  return promiseCallback(promise, callback);
-};
-/**
- * @callback KurentoClientApi~connectCallback
- * @param {external:Error} error
- */
-
-/**
- * Get a reference to the current Kurento Media Server we are connected
- *
- * @callback {module:KurentoClientApi~getServerManagerCallback} callback
- *
- * @return {external:Promise}
- */
-KurentoClient.prototype.getServerManager = function (callback) {
-  return this.getMediaobjectById('manager_ServerManager', callback)
-};
-/**
- * @callback KurentoClientApi~getServerManagerCallback
- * @param {external:Error} error
- * @param {module:core/abstract~ServerManager} server
- *  Info of the MediaServer instance
- */
 
 // Register Kurento basic elements
 
@@ -17179,4 +18393,4 @@ register(require('kurento-client-core'))
 register(require('kurento-client-elements'))
 register(require('kurento-client-filters'))
 
-},{"./MediaObjectCreator":1,"./TransactionsManager":2,"./createPromise":4,"./register":5,"async":6,"checktype":7,"es6-promise":8,"events":16,"extend":9,"inherits":39,"kurento-client-core":67,"kurento-client-elements":84,"kurento-client-filters":90,"kurento-jsonrpc":94,"promisecallback":99,"reconnect-ws":100,"url":36}]},{},[3]);
+},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./register":6,"checktype":8,"kurento-client-core":85,"kurento-client-elements":102,"kurento-client-filters":108}]},{},[4]);
