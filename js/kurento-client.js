@@ -1219,6 +1219,7 @@ var checkType = require('checktype');
 
 var abstracts = {};
 var classes = {};
+var complexTypes = {};
 
 function registerAbstracts(classes) {
   for (var name in classes) {
@@ -1242,9 +1243,20 @@ function registerClass(name, constructor) {
   classes[name] = constructor;
 }
 
-function registerComplexTypes(complexTypes) {
-  for (var name in complexTypes)
-    checkType[name] = complexTypes[name];
+function registerComplexTypes(types) {
+  for (var name in types) {
+    var constructor = types[name]
+
+    // Register constructor checker
+    var check = constructor.check;
+    if (check) {
+      checkType[name] = check;
+
+      // Register constructor
+      complexTypes[name] = constructor;
+    } else
+      checkType[name] = constructor;
+  }
 }
 
 function register(name, constructor) {
@@ -1290,6 +1302,7 @@ module.exports = register;
 
 register.abstracts = abstracts;
 register.classes = classes;
+register.complexTypes = complexTypes;
 
 },{"checktype":8}],7:[function(require,module,exports){
 (function (process){
@@ -9973,10 +9986,12 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 var MediaElement = require('./abstracts/MediaElement');
 
 /**
- * Creates a {@link module:core.HubPort HubPort} for the given {@link module:core/abstracts.Hub Hub}
+ * Creates a {@link module:core.HubPort HubPort} for the given {@link 
+ * module:core/abstracts.Hub Hub}
  *
  * @classdesc
- *  This {@link module:core/abstracts.MediaElement MediaElement} specifies a connection with a {@link module:core/abstracts.Hub Hub}
+ *  This {@link module:core/abstracts.MediaElement MediaElement} specifies a 
+ *  connection with a {@link module:core/abstracts.Hub Hub}
  *
  * @extends module:core/abstracts.MediaElement
  *
@@ -10064,7 +10079,10 @@ var MediaObject = require('./abstracts/MediaObject');
  * Create a {@link module:core.MediaPipeline MediaPipeline}
  *
  * @classdesc
- *  A pipeline is a container for a collection of {@link module:core/abstracts.MediaElement MediaElements} and :rom:cls:`MediaMixers<MediaMixer>`. It offers the methods needed to control the creation and connection of elements inside a certain pipeline.
+ *  A pipeline is a container for a collection of {@link 
+ *  module:core/abstracts.MediaElement MediaElements} and 
+ *  :rom:cls:`MediaMixers<MediaMixer>`. It offers the methods needed to control 
+ *  the creation and connection of elements inside a certain pipeline.
  *
  * @extends module:core/abstracts.MediaObject
  *
@@ -10152,7 +10170,8 @@ inherits(MediaPipeline, MediaObject);
 
 
 /**
- * Returns a string in dot (graphviz) format that represents the gstreamer elements inside the pipeline
+ * Returns a string in dot (graphviz) format that represents the gstreamer 
+ * elements inside the pipeline
  *
  * @alias module:core.MediaPipeline.getGstreamerDot
  *
@@ -10261,7 +10280,8 @@ var MediaElement = require('./abstracts/MediaElement');
  * Builder for the {@link module:core.PassThrough PassThrough}
  *
  * @classdesc
- *  This {@link module:core/abstracts.MediaElement MediaElement} that just passes media through
+ *  This {@link module:core/abstracts.MediaElement MediaElement} that just 
+ *  passes media through
  *
  * @extends module:core/abstracts.MediaElement
  *
@@ -10276,7 +10296,8 @@ inherits(PassThrough, MediaElement);
  * @alias module:core.PassThrough.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the element belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the element 
+ *  belongs
  */
 PassThrough.constructorParams = {
   mediaPipeline: {
@@ -10493,7 +10514,9 @@ BaseRtpEndpoint.prototype.getStats = function(callback){
  * @callback module:core/abstracts.BaseRtpEndpoint~getStatsCallback
  * @param {external:Error} error
  * @param {Object.<string, module:core/complexTypes.RTCStats>} result
- *  Delivers a successful result in the form of a RTC stats report. A RTC stats report represents a map between strings, identifying the inspected objects (RTCStats.id), and their corresponding RTCStats objects.
+ *  Delivers a successful result in the form of a RTC stats report. A RTC stats 
+ *  report represents a map between strings, identifying the inspected objects 
+ *  (RTCStats.id), and their corresponding RTCStats objects.
  */
 
 /**
@@ -10555,10 +10578,14 @@ var MediaElement = require('./MediaElement');
 
 /**
  * @classdesc
- *  Base interface for all end points. An Endpoint is a {@link module:core/abstracts.MediaElement MediaElement}
- *  that allow <a href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a> to interchange media contents with external systems,
- *  <a href="http<a href="http://<a href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a>org/docs/current/glossary.html#term-webrtc">WebRTC</a>.org/docs/current/glossary.html#term-rtp">RTP</a>different transport protocols and mechanisms, such as :term:`RTP`,
- *  :term:`WebRTC`, :term:`HTTP`, <code>file:/</code> URLs... An <code>Endpoint</code> may
+ *  Base interface for all end points. An Endpoint is a {@link 
+ *  module:core/abstracts.MediaElement MediaElement}
+ *  that allow <a 
+ *  href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a> to
+ *  <a href="http<a href="http://<a 
+ *  href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a>org/docs/current/glossary.html#term-webrtc">WebRTC</a>.org/docs/current/glossary.html#term-rtp">RTP</a>different
+ *  :term:`WebRTC`, :term:`HTTP`, <code>file:/</code> URLs... An 
+ *  <code>Endpoint</code> may
  *  contain both sources and sinks for different media types, to provide
  *  bidirectional communication.
  *
@@ -10631,7 +10658,9 @@ var MediaElement = require('./MediaElement');
 
 /**
  * @classdesc
- *  Base interface for all filters. This is a certain type of {@link module:core/abstracts.MediaElement MediaElement}, that processes media injected through its sinks, and delivers the outcome through its sources.
+ *  Base interface for all filters. This is a certain type of {@link 
+ *  module:core/abstracts.MediaElement MediaElement}, that processes media 
+ *  injected through its sinks, and delivers the outcome through its sources.
  *
  * @abstract
  * @extends module:core/abstracts.MediaElement
@@ -10706,7 +10735,7 @@ var MediaObject = require('./MediaObject');
 
 /**
  * @classdesc
- *  A Hub is a routing {@link module:core/abstracts.MediaObject MediaObject}. It connects several {@link module:core/abstracts.Endpoint endpoints } together
+ *  A Hub is a routing {@link module:core/abstracts.MediaObject MediaObject}. It
  *
  * @abstract
  * @extends module:core/abstracts.MediaObject
@@ -10818,9 +10847,12 @@ var MediaObject = require('./MediaObject');
 
 /**
  * @classdesc
- *  Basic building blocks of the media server, that can be interconnected through the API. A {@link module:core/abstracts.MediaElement MediaElement} is a module that encapsulates a specific media capability. They can be connected to create media pipelines where those capabilities are applied, in sequence, to the stream going through the pipeline.
- *  
- *     {@link module:core/abstracts.MediaElement MediaElement} objects are classified by its supported media type (audio, video, etc.)
+ *  Basic building blocks of the media server, that can be interconnected 
+ *  through the API. A {@link module:core/abstracts.MediaElement MediaElement} 
+ *  is a module that encapsulates a specific media capability. They can be 
+ *  connected to create media pipelines where those capabilities are applied, in
+ *     {@link module:core/abstracts.MediaElement MediaElement} objects are 
+ *     classified by its supported media type (audio, video, etc.)
  *
  * @abstract
  * @extends module:core/abstracts.MediaObject
@@ -10834,21 +10866,26 @@ inherits(MediaElement, MediaObject);
 
 
 /**
- * Connects two elements, with the given restrictions, current {@link module:core/abstracts.MediaElement MediaElement} will start emmit media to sink element. Connection could take place in the future, when both media element show capabilities for connecting with the given restrictions
+ * Connects two elements, with the given restrictions, current {@link 
+ * module:core/abstracts.MediaElement MediaElement} will start emmit media to 
+ * sink element. Connection could take place in the future, when both media 
+ * element show capabilities for connecting with the given restrictions
  *
  * @alias module:core/abstracts.MediaElement.connect
  *
  * @param {module:core/abstracts.MediaElement} sink
- *  the target {@link module:core/abstracts.MediaElement MediaElement} that will receive media
+ *  the target {@link module:core/abstracts.MediaElement MediaElement} that will
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
  *  the {@link MediaType} of the pads that will be connected
  *
  * @param {external:String} [sourceMediaDescription]
- *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  A textual description of the media source. Currently not used, aimed mainly 
+ *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
  * @param {external:String} [sinkMediaDescription]
- *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  A textual description of the media source. Currently not used, aimed mainly 
+ *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
  * @param {module:core/abstracts.MediaElement~connectCallback} [callback]
  *
@@ -10902,21 +10939,26 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
  */
 
 /**
- * Disconnects two elements, with the given restrictions, current {@link module:core/abstracts.MediaElement MediaElement} stops sending media to sink element. If the previously requested connection didn't took place it is also removed
+ * Disconnects two elements, with the given restrictions, current {@link 
+ * module:core/abstracts.MediaElement MediaElement} stops sending media to sink 
+ * element. If the previously requested connection didn't took place it is also 
+ * removed
  *
  * @alias module:core/abstracts.MediaElement.disconnect
  *
  * @param {module:core/abstracts.MediaElement} sink
- *  the target {@link module:core/abstracts.MediaElement MediaElement} that will stop receiving media
+ *  the target {@link module:core/abstracts.MediaElement MediaElement} that will
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
  *  the {@link MediaType} of the pads that will be connected
  *
  * @param {external:String} [sourceMediaDescription]
- *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  A textual description of the media source. Currently not used, aimed mainly 
+ *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
  * @param {external:String} [sinkMediaDescription]
- *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  A textual description of the media source. Currently not used, aimed mainly 
+ *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
  * @param {module:core/abstracts.MediaElement~disconnectCallback} [callback]
  *
@@ -10966,7 +11008,8 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
  */
 
 /**
- * Returns a string in dot (graphviz) format that represents the gstreamer elements inside
+ * Returns a string in dot (graphviz) format that represents the gstreamer 
+ * elements inside
  *
  * @alias module:core/abstracts.MediaElement.getGstreamerDot
  *
@@ -11015,15 +11058,19 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
  */
 
 /**
- * Returns a list of the connections information of the elements that ere receiving media from this element.
+ * Returns a list of the connections information of the elements that ere 
+ * receiving media from this element.
  *
  * @alias module:core/abstracts.MediaElement.getSinkConnections
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
- *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link module:core/abstracts.MediaElement#MediaType.DATA}
+ *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link 
+ *  module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link 
+ *  module:core/abstracts.MediaElement#MediaType.DATA}
  *
  * @param {external:String} [description]
- *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  A textual description of the media source. Currently not used, aimed mainly 
+ *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
  * @param {module:core/abstracts.MediaElement~getSinkConnectionsCallback} [callback]
  *
@@ -11066,19 +11113,24 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
  * @callback module:core/abstracts.MediaElement~getSinkConnectionsCallback
  * @param {external:Error} error
  * @param {module:core/complexTypes.ElementConnectionData} result
- *  A list of the connections information that arereceiving media from this element. The list will be empty if no sinks are found.
+ *  A list of the connections information that arereceiving media from this 
+ *  element. The list will be empty if no sinks are found.
  */
 
 /**
- * Get the connections information of the elements that are sending media to this element {@link module:core/abstracts.MediaElement MediaElement}
+ * Get the connections information of the elements that are sending media to 
+ * this element {@link module:core/abstracts.MediaElement MediaElement}
  *
  * @alias module:core/abstracts.MediaElement.getSourceConnections
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
- *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link module:core/abstracts.MediaElement#MediaType.DATA}
+ *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link 
+ *  module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link 
+ *  module:core/abstracts.MediaElement#MediaType.DATA}
  *
  * @param {external:String} [description]
- *  A textual description of the media source. Currently not used, aimed mainly for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  A textual description of the media source. Currently not used, aimed mainly 
+ *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
  * @param {module:core/abstracts.MediaElement~getSourceConnectionsCallback} [callback]
  *
@@ -11121,11 +11173,12 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
  * @callback module:core/abstracts.MediaElement~getSourceConnectionsCallback
  * @param {external:Error} error
  * @param {module:core/complexTypes.ElementConnectionData} result
- *  A list of the connections information that are sending media to this element. The list will be empty if no sources are found.
+ *  A list of the connections information that are sending media to this 
+ *  element. The list will be empty if no sources are found.
  */
 
 /**
- * Sets the type of data for the audio stream. MediaElements that do not support configuration of audio capabilities will raise an exception
+ * Sets the type of data for the audio stream. MediaElements that do not support
  *
  * @alias module:core/abstracts.MediaElement.setAudioFormat
  *
@@ -11155,7 +11208,7 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
  */
 
 /**
- * Sets the type of data for the video stream. MediaElements that do not support configuration of video capabilities will raise an exception
+ * Sets the type of data for the video stream. MediaElements that do not support
  *
  * @alias module:core/abstracts.MediaElement.setVideoFormat
  *
@@ -11263,6 +11316,9 @@ function MediaObject(){
   MediaObject.super_.call(this);
 
 
+  var self = this;
+
+
   //
   // Define object properties
   //
@@ -11319,7 +11375,7 @@ function MediaObject(){
 
     this.emit('_rpc', undefined, 'unsubscribe', params, function(error)
     {
-      if(error) return this.emit('error', error);
+      if(error) return self.emit('error', error);
 
       delete subscriptions[event];
     });
@@ -11348,7 +11404,7 @@ function MediaObject(){
 
     this.emit('_rpc', undefined, 'subscribe', params, function(error, token)
     {
-      if(error) return this.emit('error', error);
+      if(error) return self.emit('error', error);
 
       subscriptions[event] = token;
     });
@@ -11357,7 +11413,8 @@ function MediaObject(){
 inherits(MediaObject, EventEmitter);
 
 /**
- * Childs of current object, all returned objects have parent set to current object
+ * Childs of current object, all returned objects have parent set to current 
+ * object
  *
  * @alias module:core/abstracts.MediaObject#getChilds
  *
@@ -11381,7 +11438,9 @@ MediaObject.prototype.getChilds = function(callback){
  */
 
 /**
- * {@link module:core.MediaPipeline MediaPipeline} to which this MediaObject belong, or the pipeline itself if invoked over a {@link module:core.MediaPipeline MediaPipeline}
+ * {@link module:core.MediaPipeline MediaPipeline} to which this MediaObject 
+ * belong, or the pipeline itself if invoked over a {@link 
+ * module:core.MediaPipeline MediaPipeline}
  *
  * @alias module:core/abstracts.MediaObject#getMediaPipeline
  *
@@ -11405,7 +11464,8 @@ MediaObject.prototype.getMediaPipeline = function(callback){
  */
 
 /**
- * Object name. This is just a comodity to simplify developers life debugging, it is not used internally for indexing nor idenfiying the objects. By default is the object type followed by the object id.
+ * Object name. This is just a comodity to simplify developers life debugging, 
+ * it is not used internally for indexing nor idenfiying the objects. By default
  *
  * @alias module:core/abstracts.MediaObject#getName
  *
@@ -11429,7 +11489,8 @@ MediaObject.prototype.getName = function(callback){
  */
 
 /**
- * Object name. This is just a comodity to simplify developers life debugging, it is not used internally for indexing nor idenfiying the objects. By default is the object type followed by the object id.
+ * Object name. This is just a comodity to simplify developers life debugging, 
+ * it is not used internally for indexing nor idenfiying the objects. By default
  *
  * @alias module:core/abstracts.MediaObject#setName
  *
@@ -11457,7 +11518,10 @@ MediaObject.prototype.setName = function(name, callback){
  */
 
 /**
- * parent of this media object. The type of the parent depends on the type of the element. The parent of a :rom:cls:`MediaPad` is its {@link module:core/abstracts.MediaElement MediaElement}; the parent of a {@link module:core/abstracts.Hub Hub} or a {@link module:core/abstracts.MediaElement MediaElement} is its {@link module:core.MediaPipeline MediaPipeline}. A {@link module:core.MediaPipeline MediaPipeline} has no parent, i.e. the property is null
+ * parent of this media object. The type of the parent depends on the type of 
+ * the element. The parent of a :rom:cls:`MediaPad` is its {@link 
+ * module:core/abstracts.MediaElement MediaElement}; the parent of a {@link 
+ * module:core/abstracts.Hub Hub} or a {@link module:core/abstracts.MediaElement
  *
  * @alias module:core/abstracts.MediaObject#getParent
  *
@@ -11481,7 +11545,8 @@ MediaObject.prototype.getParent = function(callback){
  */
 
 /**
- * This property allows activate/deactivate sending the element tags in all its events.
+ * This property allows activate/deactivate sending the element tags in all its 
+ * events.
  *
  * @alias module:core/abstracts.MediaObject#getSendTagsInEvents
  *
@@ -11505,7 +11570,8 @@ MediaObject.prototype.getSendTagsInEvents = function(callback){
  */
 
 /**
- * This property allows activate/deactivate sending the element tags in all its events.
+ * This property allows activate/deactivate sending the element tags in all its 
+ * events.
  *
  * @alias module:core/abstracts.MediaObject#setSendTagsInEvents
  *
@@ -11535,7 +11601,6 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
 
 /**
  * Request a SessionSpec offer.
- * 
  *    This can be used to initiate a connection.
  *
  * @alias module:core/abstracts.MediaObject.addTag
@@ -11940,7 +12005,9 @@ var SessionEndpoint = require('./SessionEndpoint');
 
 /**
  * @classdesc
- *  Implements an SDP negotiation endpoint able to generate and process offers/responses and that configures resources according to negotiated Session Description
+ *  Implements an SDP negotiation endpoint able to generate and process 
+ *  offers/responses and that configures resources according to negotiated 
+ *  Session Description
  *
  * @abstract
  * @extends module:core/abstracts.SessionEndpoint
@@ -12013,7 +12080,6 @@ SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth,
 
 /**
  * Request a SessionSpec offer.
- * 
  *    This can be used to initiate a connection.
  *
  * @alias module:core/abstracts.SdpEndpoint.generateOffer
@@ -12039,9 +12105,11 @@ SdpEndpoint.prototype.generateOffer = function(callback){
  */
 
 /**
- * This method gives access to the SessionSpec offered by this NetworkConnection.
- * 
- * <hr/><b>Note</b> This method returns the local MediaSpec, negotiated or not. If no offer has been generated yet, it returns null. It an offer has been generated it returns the offer and if an answer has been processed it returns the negotiated local SessionSpec.
+ * This method gives access to the SessionSpec offered by this 
+ * NetworkConnection.
+ * <hr/><b>Note</b> This method returns the local MediaSpec, negotiated or not. 
+ * If no offer has been generated yet, it returns null. It an offer has been 
+ * generated it returns the offer and if an answer has been processed it returns
  *
  * @alias module:core/abstracts.SdpEndpoint.getLocalSessionDescriptor
  *
@@ -12067,8 +12135,9 @@ SdpEndpoint.prototype.getLocalSessionDescriptor = function(callback){
 
 /**
  * This method gives access to the remote session description.
- * 
- * <hr/><b>Note</b> This method returns the media previously agreed after a complete offer-answer exchange. If no media has been agreed yet, it returns null.
+ * <hr/><b>Note</b> This method returns the media previously agreed after a 
+ * complete offer-answer exchange. If no media has been agreed yet, it returns 
+ * null.
  *
  * @alias module:core/abstracts.SdpEndpoint.getRemoteSessionDescriptor
  *
@@ -12093,7 +12162,8 @@ SdpEndpoint.prototype.getRemoteSessionDescriptor = function(callback){
  */
 
 /**
- * Request the NetworkConnection to process the given SessionSpec answer (from the remote User Agent).
+ * Request the NetworkConnection to process the given SessionSpec answer (from 
+ * the remote User Agent).
  *
  * @alias module:core/abstracts.SdpEndpoint.processAnswer
  *
@@ -12125,7 +12195,8 @@ SdpEndpoint.prototype.processAnswer = function(answer, callback){
  */
 
 /**
- * Request the NetworkConnection to process the given SessionSpec offer (from the remote User Agent)
+ * Request the NetworkConnection to process the given SessionSpec offer (from 
+ * the remote User Agent)
  *
  * @alias module:core/abstracts.SdpEndpoint.processOffer
  *
@@ -12387,7 +12458,7 @@ var Endpoint = require('./Endpoint');
 
 /**
  * @classdesc
- *  Session based endpoint. A session is considered to be started when the media exchange starts. On the other hand, sessions terminate when a timeout, defined by the developer, takes place after the connection is lost.
+ *  Session based endpoint. A session is considered to be started when the media
  *
  * @abstract
  * @extends module:core/abstracts.Endpoint
@@ -12464,7 +12535,7 @@ var Endpoint = require('./Endpoint');
 
 /**
  * @classdesc
- *  Interface for endpoints the require a URI to work. An example of this, would be a :rom:cls:`PlayerEndpoint` whose URI property could be used to locate a file to stream
+ *  Interface for endpoints the require a URI to work. An example of this, would
  *
  * @abstract
  * @extends module:core/abstracts.Endpoint
@@ -12646,7 +12717,44 @@ exports.UriEndpoint = UriEndpoint;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+
+/**
+ * Format for audio media
+ *
+ * @constructor module:core/complexTypes.AudioCaps
+ *
+ * @property {module:core/complexTypes.AudioCodec} codec
+ *  Audio codec
+ * @property {external:Integer} bitrate
+ *  Bitrate
+ */
+function AudioCaps(audioCapsDict){
+  if(!(this instanceof AudioCaps))
+    return new AudioCaps(audioCapsDict)
+
+  // Check audioCapsDict has the required fields
+  checkType('AudioCodec', 'audioCapsDict.codec', audioCapsDict.codec, true);
+  checkType('int', 'audioCapsDict.bitrate', audioCapsDict.bitrate, true);
+
+  // Set object properties
+  Object.defineProperties(this, {
+    codec: {
+      writable: true,
+      enumerable: true,
+      value: audioCapsDict.codec
+    },
+    bitrate: {
+      writable: true,
+      enumerable: true,
+      value: audioCapsDict.bitrate
+    }
+  })
+}
 
 /**
  * Checker for {@link core/complexTypes.AudioCaps}
@@ -12658,27 +12766,14 @@ var checkType = require('kurento-client').checkType;
  */
 function checkAudioCaps(key, value)
 {
-  checkType('AudioCodec', key+'.codec', value.codec, true);
-  checkType('int', key+'.bitrate', value.bitrate, true);
+  if(!(value instanceof AudioCaps))
+    throw ChecktypeError(key, AudioCaps, value);
 };
 
 
-/**
- * Format for audio media
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.AudioCaps
- *
- * @type {Object}
- * @property {module:core/complexTypes.AudioCodec} codec
- *  Audio codec
- * @property {external:Integer} bitrate
- *  Bitrate
- */
+module.exports = AudioCaps;
 
-
-module.exports = checkAudioCaps;
+AudioCaps.check = checkAudioCaps;
 
 },{"kurento-client":"kurento-client"}],56:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
@@ -12698,7 +12793,17 @@ module.exports = checkAudioCaps;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Codec used for transmission of audio.
+ *
+ * @typedef core/complexTypes.AudioCodec
+ *
+ * @type {(OPUS|PCMU|RAW)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.AudioCodec}
@@ -12712,20 +12817,10 @@ function checkAudioCodec(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('OPUS|PCMU|RAW'))
     throw SyntaxError(key+' param is not one of [OPUS|PCMU|RAW] ('+value+')');
 };
-
-
-/**
- * Codec used for transmission of audio.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.AudioCodec
- *
- * @type {(OPUS|PCMU|RAW)}
- */
 
 
 module.exports = checkAudioCodec;
@@ -12748,30 +12843,15 @@ module.exports = checkAudioCodec;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
 
-/**
- * Checker for {@link core/complexTypes.ElementConnectionData}
- *
- * @memberof module:core/complexTypes
- *
- * @param {external:String} key
- * @param {module:core/complexTypes.ElementConnectionData} value
- */
-function checkElementConnectionData(key, value)
-{
-  checkType('MediaElement', key+'.source', value.source, true);
-  checkType('MediaElement', key+'.sink', value.sink, true);
-  checkType('MediaType', key+'.type', value.type, true);
-  checkType('String', key+'.sourceDescription', value.sourceDescription, true);
-  checkType('String', key+'.sinkDescription', value.sinkDescription, true);
-};
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
 
 
 /**
- * @typedef core/complexTypes.ElementConnectionData
+ * @constructor module:core/complexTypes.ElementConnectionData
  *
- * @type {Object}
  * @property {module:core/abstracts.MediaElement} source
  *  The source element in the connection
  * @property {module:core/abstracts.MediaElement} sink
@@ -12783,9 +12863,65 @@ function checkElementConnectionData(key, value)
  * @property {external:String} sinkDescription
  *  Description of sink media. Could be emty.
  */
+function ElementConnectionData(elementConnectionDataDict){
+  if(!(this instanceof ElementConnectionData))
+    return new ElementConnectionData(elementConnectionDataDict)
+
+  // Check elementConnectionDataDict has the required fields
+  checkType('MediaElement', 'elementConnectionDataDict.source', elementConnectionDataDict.source, true);
+  checkType('MediaElement', 'elementConnectionDataDict.sink', elementConnectionDataDict.sink, true);
+  checkType('MediaType', 'elementConnectionDataDict.type', elementConnectionDataDict.type, true);
+  checkType('String', 'elementConnectionDataDict.sourceDescription', elementConnectionDataDict.sourceDescription, true);
+  checkType('String', 'elementConnectionDataDict.sinkDescription', elementConnectionDataDict.sinkDescription, true);
+
+  // Set object properties
+  Object.defineProperties(this, {
+    source: {
+      writable: true,
+      enumerable: true,
+      value: elementConnectionDataDict.source
+    },
+    sink: {
+      writable: true,
+      enumerable: true,
+      value: elementConnectionDataDict.sink
+    },
+    type: {
+      writable: true,
+      enumerable: true,
+      value: elementConnectionDataDict.type
+    },
+    sourceDescription: {
+      writable: true,
+      enumerable: true,
+      value: elementConnectionDataDict.sourceDescription
+    },
+    sinkDescription: {
+      writable: true,
+      enumerable: true,
+      value: elementConnectionDataDict.sinkDescription
+    }
+  })
+}
+
+/**
+ * Checker for {@link core/complexTypes.ElementConnectionData}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.ElementConnectionData} value
+ */
+function checkElementConnectionData(key, value)
+{
+  if(!(value instanceof ElementConnectionData))
+    throw ChecktypeError(key, ElementConnectionData, value);
+};
 
 
-module.exports = checkElementConnectionData;
+module.exports = ElementConnectionData;
+
+ElementConnectionData.check = checkElementConnectionData;
 
 },{"kurento-client":"kurento-client"}],58:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
@@ -12805,7 +12941,18 @@ module.exports = checkElementConnectionData;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Type of filter to be created.
+ * Can take the values AUDIO, VIDEO or AUTODETECT.
+ *
+ * @typedef core/complexTypes.FilterType
+ *
+ * @type {(AUDIO|AUTODETECT|VIDEO)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.FilterType}
@@ -12819,21 +12966,10 @@ function checkFilterType(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('AUDIO|AUTODETECT|VIDEO'))
     throw SyntaxError(key+' param is not one of [AUDIO|AUTODETECT|VIDEO] ('+value+')');
 };
-
-
-/**
- * Type of filter to be created.
- * Can take the values AUDIO, VIDEO or AUTODETECT.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.FilterType
- *
- * @type {(AUDIO|AUTODETECT|VIDEO)}
- */
 
 
 module.exports = checkFilterType;
@@ -12856,7 +12992,45 @@ module.exports = checkFilterType;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+
+/**
+ * Type that represents a fraction of an integer numerator over an integer 
+ * denominator
+ *
+ * @constructor module:core/complexTypes.Fraction
+ *
+ * @property {external:Integer} numerator
+ *  the numerator of the fraction
+ * @property {external:Integer} denominator
+ *  the denominator of the fraction
+ */
+function Fraction(fractionDict){
+  if(!(this instanceof Fraction))
+    return new Fraction(fractionDict)
+
+  // Check fractionDict has the required fields
+  checkType('int', 'fractionDict.numerator', fractionDict.numerator, true);
+  checkType('int', 'fractionDict.denominator', fractionDict.denominator, true);
+
+  // Set object properties
+  Object.defineProperties(this, {
+    numerator: {
+      writable: true,
+      enumerable: true,
+      value: fractionDict.numerator
+    },
+    denominator: {
+      writable: true,
+      enumerable: true,
+      value: fractionDict.denominator
+    }
+  })
+}
 
 /**
  * Checker for {@link core/complexTypes.Fraction}
@@ -12868,27 +13042,14 @@ var checkType = require('kurento-client').checkType;
  */
 function checkFraction(key, value)
 {
-  checkType('int', key+'.numerator', value.numerator, true);
-  checkType('int', key+'.denominator', value.denominator, true);
+  if(!(value instanceof Fraction))
+    throw ChecktypeError(key, Fraction, value);
 };
 
 
-/**
- * Type that represents a fraction of an integer numerator over an integer denominator
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.Fraction
- *
- * @type {Object}
- * @property {external:Integer} numerator
- *  the numerator of the fraction
- * @property {external:Integer} denominator
- *  the denominator of the fraction
- */
+module.exports = Fraction;
 
-
-module.exports = checkFraction;
+Fraction.check = checkFraction;
 
 },{"kurento-client":"kurento-client"}],60:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
@@ -12908,7 +13069,17 @@ module.exports = checkFraction;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Details of gstreamer dot graphs
+ *
+ * @typedef core/complexTypes.GstreamerDotDetails
+ *
+ * @type {(SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.GstreamerDotDetails}
@@ -12922,20 +13093,10 @@ function checkGstreamerDotDetails(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL'))
     throw SyntaxError(key+' param is not one of [SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL] ('+value+')');
 };
-
-
-/**
- * Details of gstreamer dot graphs
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.GstreamerDotDetails
- *
- * @type {(SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL)}
- */
 
 
 module.exports = checkGstreamerDotDetails;
@@ -12958,7 +13119,18 @@ module.exports = checkGstreamerDotDetails;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Type of media stream to be exchanged.
+ * Can take the values AUDIO, DATA or VIDEO.
+ *
+ * @typedef core/complexTypes.MediaType
+ *
+ * @type {(AUDIO|DATA|VIDEO)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.MediaType}
@@ -12972,21 +13144,10 @@ function checkMediaType(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('AUDIO|DATA|VIDEO'))
     throw SyntaxError(key+' param is not one of [AUDIO|DATA|VIDEO] ('+value+')');
 };
-
-
-/**
- * Type of media stream to be exchanged.
- * Can take the values AUDIO, DATA or VIDEO.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.MediaType
- *
- * @type {(AUDIO|DATA|VIDEO)}
- */
 
 
 module.exports = checkMediaType;
@@ -13009,7 +13170,52 @@ module.exports = checkMediaType;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+
+/**
+ * Description of a loaded modules
+ *
+ * @constructor module:core/complexTypes.ModuleInfo
+ *
+ * @property {external:String} version
+ *  Module version
+ * @property {external:String} name
+ *  Module name
+ * @property {external:String} factories
+ *  Module available factories
+ */
+function ModuleInfo(moduleInfoDict){
+  if(!(this instanceof ModuleInfo))
+    return new ModuleInfo(moduleInfoDict)
+
+  // Check moduleInfoDict has the required fields
+  checkType('String', 'moduleInfoDict.version', moduleInfoDict.version, true);
+  checkType('String', 'moduleInfoDict.name', moduleInfoDict.name, true);
+  checkType('String', 'moduleInfoDict.factories', moduleInfoDict.factories, true);
+
+  // Set object properties
+  Object.defineProperties(this, {
+    version: {
+      writable: true,
+      enumerable: true,
+      value: moduleInfoDict.version
+    },
+    name: {
+      writable: true,
+      enumerable: true,
+      value: moduleInfoDict.name
+    },
+    factories: {
+      writable: true,
+      enumerable: true,
+      value: moduleInfoDict.factories
+    }
+  })
+}
 
 /**
  * Checker for {@link core/complexTypes.ModuleInfo}
@@ -13021,30 +13227,14 @@ var checkType = require('kurento-client').checkType;
  */
 function checkModuleInfo(key, value)
 {
-  checkType('String', key+'.version', value.version, true);
-  checkType('String', key+'.name', value.name, true);
-  checkType('String', key+'.factories', value.factories, true);
+  if(!(value instanceof ModuleInfo))
+    throw ChecktypeError(key, ModuleInfo, value);
 };
 
 
-/**
- * Description of a loaded modules
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.ModuleInfo
- *
- * @type {Object}
- * @property {external:String} version
- *  Module version
- * @property {external:String} name
- *  Module name
- * @property {external:String} factories
- *  Module available factories
- */
+module.exports = ModuleInfo;
 
-
-module.exports = checkModuleInfo;
+ModuleInfo.check = checkModuleInfo;
 
 },{"kurento-client":"kurento-client"}],63:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
@@ -13064,7 +13254,68 @@ module.exports = checkModuleInfo;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
+
+
+/**
+ *
+ * @constructor module:core/complexTypes.RTCCertificateStats
+ *
+ * @property {external:String} fingerprint
+ *  Only use the fingerprint value as defined in Section 5 of [RFC4572].
+ * @property {external:String} fingerprintAlgorithm
+ *  For instance, 'sha-256'.
+ * @property {external:String} base64Certificate
+ *  For example, DER-encoded, base-64 representation of a certifiate.
+ * @property {external:String} issuerCertificateId
+
+ * @extends module:core.RTCStats
+ */
+function RTCCertificateStats(rTCCertificateStatsDict){
+  if(!(this instanceof RTCCertificateStats))
+    return new RTCCertificateStats(rTCCertificateStatsDict)
+
+  // Check rTCCertificateStatsDict has the required fields
+  checkType('String', 'rTCCertificateStatsDict.fingerprint', rTCCertificateStatsDict.fingerprint, true);
+  checkType('String', 'rTCCertificateStatsDict.fingerprintAlgorithm', rTCCertificateStatsDict.fingerprintAlgorithm, true);
+  checkType('String', 'rTCCertificateStatsDict.base64Certificate', rTCCertificateStatsDict.base64Certificate, true);
+  checkType('String', 'rTCCertificateStatsDict.issuerCertificateId', rTCCertificateStatsDict.issuerCertificateId, true);
+
+  // Init parent class
+  RTCCertificateStats.super_.call(this, rTCCertificateStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    fingerprint: {
+      writable: true,
+      enumerable: true,
+      value: rTCCertificateStatsDict.fingerprint
+    },
+    fingerprintAlgorithm: {
+      writable: true,
+      enumerable: true,
+      value: rTCCertificateStatsDict.fingerprintAlgorithm
+    },
+    base64Certificate: {
+      writable: true,
+      enumerable: true,
+      value: rTCCertificateStatsDict.base64Certificate
+    },
+    issuerCertificateId: {
+      writable: true,
+      enumerable: true,
+      value: rTCCertificateStatsDict.issuerCertificateId
+    }
+  })
+}
+inherits(RTCCertificateStats, RTCStats)
 
 /**
  * Checker for {@link core/complexTypes.RTCCertificateStats}
@@ -13076,39 +13327,16 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCCertificateStats(key, value)
 {
-  checkType('String', key+'.fingerprint', value.fingerprint, true);
-  checkType('String', key+'.fingerprintAlgorithm', value.fingerprintAlgorithm, true);
-  checkType('String', key+'.base64Certificate', value.base64Certificate, true);
-  checkType('String', key+'.issuerCertificateId', value.issuerCertificateId, true);
-
-  checkType('RTCStats', key, value)
+  if(!(value instanceof RTCCertificateStats))
+    throw ChecktypeError(key, RTCCertificateStats, value);
 };
 
 
-/**
- * 
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCCertificateStats
- *
- * @type {Object}
- * @property {external:String} fingerprint
- *  Only use the fingerprint value as defined in Section 5 of [RFC4572].
- * @property {external:String} fingerprintAlgorithm
- *  For instance, 'sha-256'.
- * @property {external:String} base64Certificate
- *  For example, DER-encoded, base-64 representation of a certifiate.
- * @property {external:String} issuerCertificateId
- *  
+module.exports = RTCCertificateStats;
 
- * @extends module:core.RTCStats
- */
+RTCCertificateStats.check = checkRTCCertificateStats;
 
-
-module.exports = checkRTCCertificateStats;
-
-},{"kurento-client":"kurento-client"}],64:[function(require,module,exports){
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],64:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13126,36 +13354,21 @@ module.exports = checkRTCCertificateStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
 
-/**
- * Checker for {@link core/complexTypes.RTCCodec}
- *
- * @memberof module:core/complexTypes
- *
- * @param {external:String} key
- * @param {module:core/complexTypes.RTCCodec} value
- */
-function checkRTCCodec(key, value)
-{
-  checkType('int', key+'.payloadType', value.payloadType, true);
-  checkType('String', key+'.codec', value.codec, true);
-  checkType('int', key+'.clockRate', value.clockRate, true);
-  checkType('int', key+'.channels', value.channels, true);
-  checkType('String', key+'.parameters', value.parameters, true);
+var kurentoClient = require('kurento-client');
 
-  checkType('RTCStats', key, value)
-};
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
 
 
 /**
  * RTC codec statistics
  *
- * @memberof module:core/complexTypes
+ * @constructor module:core/complexTypes.RTCCodec
  *
- * @typedef core/complexTypes.RTCCodec
- *
- * @type {Object}
  * @property {external:Integer} payloadType
  *  Payload type as used in RTP encoding.
  * @property {external:String} codec
@@ -13169,11 +13382,71 @@ function checkRTCCodec(key, value)
 
  * @extends module:core.RTCStats
  */
+function RTCCodec(rTCCodecDict){
+  if(!(this instanceof RTCCodec))
+    return new RTCCodec(rTCCodecDict)
+
+  // Check rTCCodecDict has the required fields
+  checkType('int', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, true);
+  checkType('String', 'rTCCodecDict.codec', rTCCodecDict.codec, true);
+  checkType('int', 'rTCCodecDict.clockRate', rTCCodecDict.clockRate, true);
+  checkType('int', 'rTCCodecDict.channels', rTCCodecDict.channels, true);
+  checkType('String', 'rTCCodecDict.parameters', rTCCodecDict.parameters, true);
+
+  // Init parent class
+  RTCCodec.super_.call(this, rTCCodecDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    payloadType: {
+      writable: true,
+      enumerable: true,
+      value: rTCCodecDict.payloadType
+    },
+    codec: {
+      writable: true,
+      enumerable: true,
+      value: rTCCodecDict.codec
+    },
+    clockRate: {
+      writable: true,
+      enumerable: true,
+      value: rTCCodecDict.clockRate
+    },
+    channels: {
+      writable: true,
+      enumerable: true,
+      value: rTCCodecDict.channels
+    },
+    parameters: {
+      writable: true,
+      enumerable: true,
+      value: rTCCodecDict.parameters
+    }
+  })
+}
+inherits(RTCCodec, RTCStats)
+
+/**
+ * Checker for {@link core/complexTypes.RTCCodec}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCCodec} value
+ */
+function checkRTCCodec(key, value)
+{
+  if(!(value instanceof RTCCodec))
+    throw ChecktypeError(key, RTCCodec, value);
+};
 
 
-module.exports = checkRTCCodec;
+module.exports = RTCCodec;
 
-},{"kurento-client":"kurento-client"}],65:[function(require,module,exports){
+RTCCodec.check = checkRTCCodec;
+
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],65:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13191,7 +13464,17 @@ module.exports = checkRTCCodec;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Represents the state of the RTCDataChannel
+ *
+ * @typedef core/complexTypes.RTCDataChannelState
+ *
+ * @type {(connecting|open|closing|closed)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.RTCDataChannelState}
@@ -13205,20 +13488,10 @@ function checkRTCDataChannelState(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('connecting|open|closing|closed'))
     throw SyntaxError(key+' param is not one of [connecting|open|closing|closed] ('+value+')');
 };
-
-
-/**
- * Represents the state of the RTCDataChannel
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCDataChannelState
- *
- * @type {(connecting|open|closing|closed)}
- */
 
 
 module.exports = checkRTCDataChannelState;
@@ -13241,39 +13514,21 @@ module.exports = checkRTCDataChannelState;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
 
-/**
- * Checker for {@link core/complexTypes.RTCDataChannelStats}
- *
- * @memberof module:core/complexTypes
- *
- * @param {external:String} key
- * @param {module:core/complexTypes.RTCDataChannelStats} value
- */
-function checkRTCDataChannelStats(key, value)
-{
-  checkType('String', key+'.label', value.label, true);
-  checkType('String', key+'.protocol', value.protocol, true);
-  checkType('int', key+'.datachannelid', value.datachannelid, true);
-  checkType('RTCDataChannelState', key+'.state', value.state, true);
-  checkType('int', key+'.messagesSent', value.messagesSent, true);
-  checkType('int', key+'.bytesSent', value.bytesSent, true);
-  checkType('int', key+'.messagesReceived', value.messagesReceived, true);
-  checkType('int', key+'.bytesReceived', value.bytesReceived, true);
+var kurentoClient = require('kurento-client');
 
-  checkType('RTCStats', key, value)
-};
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
 
 
 /**
  * Statistics related to RTC data channels.
  *
- * @memberof module:core/complexTypes
+ * @constructor module:core/complexTypes.RTCDataChannelStats
  *
- * @typedef core/complexTypes.RTCDataChannelStats
- *
- * @type {Object}
  * @property {external:String} label
  *  The RTCDatachannel label.
  * @property {external:String} protocol
@@ -13285,19 +13540,99 @@ function checkRTCDataChannelStats(key, value)
  * @property {external:Integer} messagesSent
  *  Represents the total number of API 'message' events sent.
  * @property {external:Integer} bytesSent
- *  Represents the total number of payload bytes sent on this RTCDatachannel, i.e., not including headers or padding.
+ *  Represents the total number of payload bytes sent on this RTCDatachannel, 
+ *  i.e., not including headers or padding.
  * @property {external:Integer} messagesReceived
  *  Represents the total number of API 'message' events received.
  * @property {external:Integer} bytesReceived
- *  Represents the total number of bytes received on this RTCDatachannel, i.e., not including headers or padding.
+ *  Represents the total number of bytes received on this RTCDatachannel, i.e., 
+ *  not including headers or padding.
 
  * @extends module:core.RTCStats
  */
+function RTCDataChannelStats(rTCDataChannelStatsDict){
+  if(!(this instanceof RTCDataChannelStats))
+    return new RTCDataChannelStats(rTCDataChannelStatsDict)
+
+  // Check rTCDataChannelStatsDict has the required fields
+  checkType('String', 'rTCDataChannelStatsDict.label', rTCDataChannelStatsDict.label, true);
+  checkType('String', 'rTCDataChannelStatsDict.protocol', rTCDataChannelStatsDict.protocol, true);
+  checkType('int', 'rTCDataChannelStatsDict.datachannelid', rTCDataChannelStatsDict.datachannelid, true);
+  checkType('RTCDataChannelState', 'rTCDataChannelStatsDict.state', rTCDataChannelStatsDict.state, true);
+  checkType('int', 'rTCDataChannelStatsDict.messagesSent', rTCDataChannelStatsDict.messagesSent, true);
+  checkType('int', 'rTCDataChannelStatsDict.bytesSent', rTCDataChannelStatsDict.bytesSent, true);
+  checkType('int', 'rTCDataChannelStatsDict.messagesReceived', rTCDataChannelStatsDict.messagesReceived, true);
+  checkType('int', 'rTCDataChannelStatsDict.bytesReceived', rTCDataChannelStatsDict.bytesReceived, true);
+
+  // Init parent class
+  RTCDataChannelStats.super_.call(this, rTCDataChannelStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    label: {
+      writable: true,
+      enumerable: true,
+      value: rTCDataChannelStatsDict.label
+    },
+    protocol: {
+      writable: true,
+      enumerable: true,
+      value: rTCDataChannelStatsDict.protocol
+    },
+    datachannelid: {
+      writable: true,
+      enumerable: true,
+      value: rTCDataChannelStatsDict.datachannelid
+    },
+    state: {
+      writable: true,
+      enumerable: true,
+      value: rTCDataChannelStatsDict.state
+    },
+    messagesSent: {
+      writable: true,
+      enumerable: true,
+      value: rTCDataChannelStatsDict.messagesSent
+    },
+    bytesSent: {
+      writable: true,
+      enumerable: true,
+      value: rTCDataChannelStatsDict.bytesSent
+    },
+    messagesReceived: {
+      writable: true,
+      enumerable: true,
+      value: rTCDataChannelStatsDict.messagesReceived
+    },
+    bytesReceived: {
+      writable: true,
+      enumerable: true,
+      value: rTCDataChannelStatsDict.bytesReceived
+    }
+  })
+}
+inherits(RTCDataChannelStats, RTCStats)
+
+/**
+ * Checker for {@link core/complexTypes.RTCDataChannelStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCDataChannelStats} value
+ */
+function checkRTCDataChannelStats(key, value)
+{
+  if(!(value instanceof RTCDataChannelStats))
+    throw ChecktypeError(key, RTCDataChannelStats, value);
+};
 
 
-module.exports = checkRTCDataChannelStats;
+module.exports = RTCDataChannelStats;
 
-},{"kurento-client":"kurento-client"}],67:[function(require,module,exports){
+RTCDataChannelStats.check = checkRTCDataChannelStats;
+
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],67:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13315,7 +13650,89 @@ module.exports = checkRTCDataChannelStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
+
+
+/**
+ *
+ * @constructor module:core/complexTypes.RTCIceCandidateAttributes
+ *
+ * @property {external:String} ipAddress
+ *  It is the IP address of the candidate, allowing for IPv4 addresses, IPv6 
+ *  addresses, and fully qualified domain names (FQDNs).
+ * @property {external:Integer} portNumber
+ *  It is the port number of the candidate.
+ * @property {external:String} transport
+ *  Valid values for transport is one of udp and tcp. Based on the 'transport' 
+ *  defined in [RFC5245] section 15.1.
+ * @property {module:core/complexTypes.RTCStatsIceCandidateType} candidateType
+ *  The enumeration RTCStatsIceCandidateType is based on the cand-type defined 
+ *  in [RFC5245] section 15.1.
+ * @property {external:Integer} priority
+ *  Represents the priority of the candidate
+ * @property {external:String} addressSourceUrl
+ *  The URL of the TURN or STUN server indicated in the RTCIceServers that 
+ *  translated this IP address.
+
+ * @extends module:core.RTCStats
+ */
+function RTCIceCandidateAttributes(rTCIceCandidateAttributesDict){
+  if(!(this instanceof RTCIceCandidateAttributes))
+    return new RTCIceCandidateAttributes(rTCIceCandidateAttributesDict)
+
+  // Check rTCIceCandidateAttributesDict has the required fields
+  checkType('String', 'rTCIceCandidateAttributesDict.ipAddress', rTCIceCandidateAttributesDict.ipAddress, true);
+  checkType('int', 'rTCIceCandidateAttributesDict.portNumber', rTCIceCandidateAttributesDict.portNumber, true);
+  checkType('String', 'rTCIceCandidateAttributesDict.transport', rTCIceCandidateAttributesDict.transport, true);
+  checkType('RTCStatsIceCandidateType', 'rTCIceCandidateAttributesDict.candidateType', rTCIceCandidateAttributesDict.candidateType, true);
+  checkType('int', 'rTCIceCandidateAttributesDict.priority', rTCIceCandidateAttributesDict.priority, true);
+  checkType('String', 'rTCIceCandidateAttributesDict.addressSourceUrl', rTCIceCandidateAttributesDict.addressSourceUrl, true);
+
+  // Init parent class
+  RTCIceCandidateAttributes.super_.call(this, rTCIceCandidateAttributesDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    ipAddress: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidateAttributesDict.ipAddress
+    },
+    portNumber: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidateAttributesDict.portNumber
+    },
+    transport: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidateAttributesDict.transport
+    },
+    candidateType: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidateAttributesDict.candidateType
+    },
+    priority: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidateAttributesDict.priority
+    },
+    addressSourceUrl: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidateAttributesDict.addressSourceUrl
+    }
+  })
+}
+inherits(RTCIceCandidateAttributes, RTCStats)
 
 /**
  * Checker for {@link core/complexTypes.RTCIceCandidateAttributes}
@@ -13327,45 +13744,16 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCIceCandidateAttributes(key, value)
 {
-  checkType('String', key+'.ipAddress', value.ipAddress, true);
-  checkType('int', key+'.portNumber', value.portNumber, true);
-  checkType('String', key+'.transport', value.transport, true);
-  checkType('RTCStatsIceCandidateType', key+'.candidateType', value.candidateType, true);
-  checkType('int', key+'.priority', value.priority, true);
-  checkType('String', key+'.addressSourceUrl', value.addressSourceUrl, true);
-
-  checkType('RTCStats', key, value)
+  if(!(value instanceof RTCIceCandidateAttributes))
+    throw ChecktypeError(key, RTCIceCandidateAttributes, value);
 };
 
 
-/**
- * 
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCIceCandidateAttributes
- *
- * @type {Object}
- * @property {external:String} ipAddress
- *  It is the IP address of the candidate, allowing for IPv4 addresses, IPv6 addresses, and fully qualified domain names (FQDNs).
- * @property {external:Integer} portNumber
- *  It is the port number of the candidate.
- * @property {external:String} transport
- *  Valid values for transport is one of udp and tcp. Based on the 'transport' defined in [RFC5245] section 15.1.
- * @property {module:core/complexTypes.RTCStatsIceCandidateType} candidateType
- *  The enumeration RTCStatsIceCandidateType is based on the cand-type defined in [RFC5245] section 15.1.
- * @property {external:Integer} priority
- *  Represents the priority of the candidate
- * @property {external:String} addressSourceUrl
- *  The URL of the TURN or STUN server indicated in the RTCIceServers that translated this IP address.
+module.exports = RTCIceCandidateAttributes;
 
- * @extends module:core.RTCStats
- */
+RTCIceCandidateAttributes.check = checkRTCIceCandidateAttributes;
 
-
-module.exports = checkRTCIceCandidateAttributes;
-
-},{"kurento-client":"kurento-client"}],68:[function(require,module,exports){
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],68:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13383,7 +13771,152 @@ module.exports = checkRTCIceCandidateAttributes;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
+
+
+/**
+ *
+ * @constructor module:core/complexTypes.RTCIceCandidatePairStats
+ *
+ * @property {external:String} transportId
+ *  It is a unique identifier that is associated to the object that was 
+ *  inspected to produce the RTCTransportStats associated with this candidate 
+ *  pair.
+ * @property {external:String} localCandidateId
+ *  It is a unique identifier that is associated to the object that was 
+ *  inspected to produce the RTCIceCandidateAttributes for the local candidate 
+ *  associated with this candidate pair.
+ * @property {external:String} remoteCandidateId
+ *  It is a unique identifier that is associated to the object that was 
+ *  inspected to produce the RTCIceCandidateAttributes for the remote candidate 
+ *  associated with this candidate pair.
+ * @property {module:core/complexTypes.RTCStatsIceCandidatePairState} state
+ *  Represents the state of the checklist for the local and remote candidates in
+ * @property {external:Integer} priority
+ *  Calculated from candidate priorities as defined in [RFC5245] section 5.7.2.
+ * @property {external:Boolean} nominated
+ *  Related to updating the nominated flag described in Section 7.1.3.2.4 of 
+ *  [RFC5245].
+ * @property {external:Boolean} writable
+ *  Has gotten ACK to an ICE request.
+ * @property {external:Boolean} readable
+ *  Has gotten a valid incoming ICE request.
+ * @property {external:Integer} bytesSent
+ *  Represents the total number of payload bytes sent on this candidate pair, 
+ *  i.e., not including headers or padding.
+ * @property {external:Integer} bytesReceived
+ *  Represents the total number of payload bytes received on this candidate 
+ *  pair, i.e., not including headers or padding.
+ * @property {external:Number} roundTripTime
+ *  Represents the RTT computed by the STUN connectivity checks
+ * @property {external:Number} availableOutgoingBitrate
+ *  Measured in Bits per second, and is implementation dependent. It may be 
+ *  calculated by the underlying congestion control.
+ * @property {external:Number} availableIncomingBitrate
+ *  Measured in Bits per second, and is implementation dependent. It may be 
+ *  calculated by the underlying congestion control.
+
+ * @extends module:core.RTCStats
+ */
+function RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict){
+  if(!(this instanceof RTCIceCandidatePairStats))
+    return new RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict)
+
+  // Check rTCIceCandidatePairStatsDict has the required fields
+  checkType('String', 'rTCIceCandidatePairStatsDict.transportId', rTCIceCandidatePairStatsDict.transportId, true);
+  checkType('String', 'rTCIceCandidatePairStatsDict.localCandidateId', rTCIceCandidatePairStatsDict.localCandidateId, true);
+  checkType('String', 'rTCIceCandidatePairStatsDict.remoteCandidateId', rTCIceCandidatePairStatsDict.remoteCandidateId, true);
+  checkType('RTCStatsIceCandidatePairState', 'rTCIceCandidatePairStatsDict.state', rTCIceCandidatePairStatsDict.state, true);
+  checkType('int', 'rTCIceCandidatePairStatsDict.priority', rTCIceCandidatePairStatsDict.priority, true);
+  checkType('boolean', 'rTCIceCandidatePairStatsDict.nominated', rTCIceCandidatePairStatsDict.nominated, true);
+  checkType('boolean', 'rTCIceCandidatePairStatsDict.writable', rTCIceCandidatePairStatsDict.writable, true);
+  checkType('boolean', 'rTCIceCandidatePairStatsDict.readable', rTCIceCandidatePairStatsDict.readable, true);
+  checkType('int', 'rTCIceCandidatePairStatsDict.bytesSent', rTCIceCandidatePairStatsDict.bytesSent, true);
+  checkType('int', 'rTCIceCandidatePairStatsDict.bytesReceived', rTCIceCandidatePairStatsDict.bytesReceived, true);
+  checkType('float', 'rTCIceCandidatePairStatsDict.roundTripTime', rTCIceCandidatePairStatsDict.roundTripTime, true);
+  checkType('float', 'rTCIceCandidatePairStatsDict.availableOutgoingBitrate', rTCIceCandidatePairStatsDict.availableOutgoingBitrate, true);
+  checkType('float', 'rTCIceCandidatePairStatsDict.availableIncomingBitrate', rTCIceCandidatePairStatsDict.availableIncomingBitrate, true);
+
+  // Init parent class
+  RTCIceCandidatePairStats.super_.call(this, rTCIceCandidatePairStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    transportId: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.transportId
+    },
+    localCandidateId: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.localCandidateId
+    },
+    remoteCandidateId: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.remoteCandidateId
+    },
+    state: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.state
+    },
+    priority: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.priority
+    },
+    nominated: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.nominated
+    },
+    writable: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.writable
+    },
+    readable: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.readable
+    },
+    bytesSent: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.bytesSent
+    },
+    bytesReceived: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.bytesReceived
+    },
+    roundTripTime: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.roundTripTime
+    },
+    availableOutgoingBitrate: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.availableOutgoingBitrate
+    },
+    availableIncomingBitrate: {
+      writable: true,
+      enumerable: true,
+      value: rTCIceCandidatePairStatsDict.availableIncomingBitrate
+    }
+  })
+}
+inherits(RTCIceCandidatePairStats, RTCStats)
 
 /**
  * Checker for {@link core/complexTypes.RTCIceCandidatePairStats}
@@ -13395,66 +13928,16 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCIceCandidatePairStats(key, value)
 {
-  checkType('String', key+'.transportId', value.transportId, true);
-  checkType('String', key+'.localCandidateId', value.localCandidateId, true);
-  checkType('String', key+'.remoteCandidateId', value.remoteCandidateId, true);
-  checkType('RTCStatsIceCandidatePairState', key+'.state', value.state, true);
-  checkType('int', key+'.priority', value.priority, true);
-  checkType('boolean', key+'.nominated', value.nominated, true);
-  checkType('boolean', key+'.writable', value.writable, true);
-  checkType('boolean', key+'.readable', value.readable, true);
-  checkType('int', key+'.bytesSent', value.bytesSent, true);
-  checkType('int', key+'.bytesReceived', value.bytesReceived, true);
-  checkType('float', key+'.roundTripTime', value.roundTripTime, true);
-  checkType('float', key+'.availableOutgoingBitrate', value.availableOutgoingBitrate, true);
-  checkType('float', key+'.availableIncomingBitrate', value.availableIncomingBitrate, true);
-
-  checkType('RTCStats', key, value)
+  if(!(value instanceof RTCIceCandidatePairStats))
+    throw ChecktypeError(key, RTCIceCandidatePairStats, value);
 };
 
 
-/**
- * 
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCIceCandidatePairStats
- *
- * @type {Object}
- * @property {external:String} transportId
- *  It is a unique identifier that is associated to the object that was inspected to produce the RTCTransportStats associated with this candidate pair.
- * @property {external:String} localCandidateId
- *  It is a unique identifier that is associated to the object that was inspected to produce the RTCIceCandidateAttributes for the local candidate associated with this candidate pair.
- * @property {external:String} remoteCandidateId
- *  It is a unique identifier that is associated to the object that was inspected to produce the RTCIceCandidateAttributes for the remote candidate associated with this candidate pair.
- * @property {module:core/complexTypes.RTCStatsIceCandidatePairState} state
- *  Represents the state of the checklist for the local and remote candidates in a pair.
- * @property {external:Integer} priority
- *  Calculated from candidate priorities as defined in [RFC5245] section 5.7.2.
- * @property {external:Boolean} nominated
- *  Related to updating the nominated flag described in Section 7.1.3.2.4 of [RFC5245].
- * @property {external:Boolean} writable
- *  Has gotten ACK to an ICE request.
- * @property {external:Boolean} readable
- *  Has gotten a valid incoming ICE request.
- * @property {external:Integer} bytesSent
- *  Represents the total number of payload bytes sent on this candidate pair, i.e., not including headers or padding.
- * @property {external:Integer} bytesReceived
- *  Represents the total number of payload bytes received on this candidate pair, i.e., not including headers or padding.
- * @property {external:Number} roundTripTime
- *  Represents the RTT computed by the STUN connectivity checks
- * @property {external:Number} availableOutgoingBitrate
- *  Measured in Bits per second, and is implementation dependent. It may be calculated by the underlying congestion control.
- * @property {external:Number} availableIncomingBitrate
- *  Measured in Bits per second, and is implementation dependent. It may be calculated by the underlying congestion control.
+module.exports = RTCIceCandidatePairStats;
 
- * @extends module:core.RTCStats
- */
+RTCIceCandidatePairStats.check = checkRTCIceCandidatePairStats;
 
-
-module.exports = checkRTCIceCandidatePairStats;
-
-},{"kurento-client":"kurento-client"}],69:[function(require,module,exports){
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],69:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13472,36 +13955,22 @@ module.exports = checkRTCIceCandidatePairStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
 
-/**
- * Checker for {@link core/complexTypes.RTCInboundRTPStreamStats}
- *
- * @memberof module:core/complexTypes
- *
- * @param {external:String} key
- * @param {module:core/complexTypes.RTCInboundRTPStreamStats} value
- */
-function checkRTCInboundRTPStreamStats(key, value)
-{
-  checkType('int', key+'.packetsReceived', value.packetsReceived, true);
-  checkType('int', key+'.bytesReceived', value.bytesReceived, true);
-  checkType('int', key+'.packetsLost', value.packetsLost, true);
-  checkType('float', key+'.jitter', value.jitter, true);
-  checkType('float', key+'.fractionLost', value.fractionLost, true);
+var kurentoClient = require('kurento-client');
 
-  checkType('RTCRTPStreamStats', key, value)
-};
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCRTPStreamStats = require('./RTCRTPStreamStats');
 
 
 /**
- * Statistics that represents the measurement metrics for the incoming media stream.
+ * Statistics that represents the measurement metrics for the incoming media 
+ * stream.
  *
- * @memberof module:core/complexTypes
+ * @constructor module:core/complexTypes.RTCInboundRTPStreamStats
  *
- * @typedef core/complexTypes.RTCInboundRTPStreamStats
- *
- * @type {Object}
  * @property {external:Integer} packetsReceived
  *  Total number of RTP packets received for this SSRC.
  * @property {external:Integer} bytesReceived
@@ -13515,11 +13984,71 @@ function checkRTCInboundRTPStreamStats(key, value)
 
  * @extends module:core.RTCRTPStreamStats
  */
+function RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict){
+  if(!(this instanceof RTCInboundRTPStreamStats))
+    return new RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict)
+
+  // Check rTCInboundRTPStreamStatsDict has the required fields
+  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, true);
+  checkType('int', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, true);
+  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsLost', rTCInboundRTPStreamStatsDict.packetsLost, true);
+  checkType('float', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, true);
+  checkType('float', 'rTCInboundRTPStreamStatsDict.fractionLost', rTCInboundRTPStreamStatsDict.fractionLost, true);
+
+  // Init parent class
+  RTCInboundRTPStreamStats.super_.call(this, rTCInboundRTPStreamStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    packetsReceived: {
+      writable: true,
+      enumerable: true,
+      value: rTCInboundRTPStreamStatsDict.packetsReceived
+    },
+    bytesReceived: {
+      writable: true,
+      enumerable: true,
+      value: rTCInboundRTPStreamStatsDict.bytesReceived
+    },
+    packetsLost: {
+      writable: true,
+      enumerable: true,
+      value: rTCInboundRTPStreamStatsDict.packetsLost
+    },
+    jitter: {
+      writable: true,
+      enumerable: true,
+      value: rTCInboundRTPStreamStatsDict.jitter
+    },
+    fractionLost: {
+      writable: true,
+      enumerable: true,
+      value: rTCInboundRTPStreamStatsDict.fractionLost
+    }
+  })
+}
+inherits(RTCInboundRTPStreamStats, RTCRTPStreamStats)
+
+/**
+ * Checker for {@link core/complexTypes.RTCInboundRTPStreamStats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.RTCInboundRTPStreamStats} value
+ */
+function checkRTCInboundRTPStreamStats(key, value)
+{
+  if(!(value instanceof RTCInboundRTPStreamStats))
+    throw ChecktypeError(key, RTCInboundRTPStreamStats, value);
+};
 
 
-module.exports = checkRTCInboundRTPStreamStats;
+module.exports = RTCInboundRTPStreamStats;
 
-},{"kurento-client":"kurento-client"}],70:[function(require,module,exports){
+RTCInboundRTPStreamStats.check = checkRTCInboundRTPStreamStats;
+
+},{"./RTCRTPStreamStats":74,"inherits":40,"kurento-client":"kurento-client"}],70:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13537,7 +14066,54 @@ module.exports = checkRTCInboundRTPStreamStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
+
+
+/**
+ * Statistics related to the media stream.
+ *
+ * @constructor module:core/complexTypes.RTCMediaStreamStats
+ *
+ * @property {external:String} streamIdentifier
+ *  Stream identifier.
+ * @property {external:String} trackIds
+ *  This is the id of the stats object, not the track.id.
+
+ * @extends module:core.RTCStats
+ */
+function RTCMediaStreamStats(rTCMediaStreamStatsDict){
+  if(!(this instanceof RTCMediaStreamStats))
+    return new RTCMediaStreamStats(rTCMediaStreamStatsDict)
+
+  // Check rTCMediaStreamStatsDict has the required fields
+  checkType('String', 'rTCMediaStreamStatsDict.streamIdentifier', rTCMediaStreamStatsDict.streamIdentifier, true);
+  checkType('String', 'rTCMediaStreamStatsDict.trackIds', rTCMediaStreamStatsDict.trackIds, true);
+
+  // Init parent class
+  RTCMediaStreamStats.super_.call(this, rTCMediaStreamStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    streamIdentifier: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamStatsDict.streamIdentifier
+    },
+    trackIds: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamStatsDict.trackIds
+    }
+  })
+}
+inherits(RTCMediaStreamStats, RTCStats)
 
 /**
  * Checker for {@link core/complexTypes.RTCMediaStreamStats}
@@ -13549,33 +14125,16 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCMediaStreamStats(key, value)
 {
-  checkType('String', key+'.streamIdentifier', value.streamIdentifier, true);
-  checkType('String', key+'.trackIds', value.trackIds, true);
-
-  checkType('RTCStats', key, value)
+  if(!(value instanceof RTCMediaStreamStats))
+    throw ChecktypeError(key, RTCMediaStreamStats, value);
 };
 
 
-/**
- * Statistics related to the media stream.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCMediaStreamStats
- *
- * @type {Object}
- * @property {external:String} streamIdentifier
- *  Stream identifier.
- * @property {external:String} trackIds
- *  This is the id of the stats object, not the track.id.
+module.exports = RTCMediaStreamStats;
 
- * @extends module:core.RTCStats
- */
+RTCMediaStreamStats.check = checkRTCMediaStreamStats;
 
-
-module.exports = checkRTCMediaStreamStats;
-
-},{"kurento-client":"kurento-client"}],71:[function(require,module,exports){
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],71:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13593,7 +14152,158 @@ module.exports = checkRTCMediaStreamStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
+
+
+/**
+ * Statistics related to the media stream.
+ *
+ * @constructor module:core/complexTypes.RTCMediaStreamTrackStats
+ *
+ * @property {external:String} trackIdentifier
+ *  Represents the track.id property.
+ * @property {external:Boolean} remoteSource
+ *  true indicates that this is a remote source. false in other case.
+ * @property {external:String} ssrcIds
+ *  Synchronized sources.
+ * @property {external:Integer} frameWidth
+ *  Only makes sense for video media streams and represents the width of the 
+ *  video frame for this SSRC.
+ * @property {external:Integer} frameHeight
+ *  Only makes sense for video media streams and represents the height of the 
+ *  video frame for this SSRC.
+ * @property {external:Number} framesPerSecond
+ *  Only valid for video. It represents the nominal FPS value.
+ * @property {external:Integer} framesSent
+ *  Only valid for video. It represents the total number of frames sent for this
+ * @property {external:Integer} framesReceived
+ *  Only valid for video and when remoteSource is set to true. It represents the
+ * @property {external:Integer} framesDecoded
+ *  Only valid for video. It represents the total number of frames correctly 
+ *  decoded for this SSRC. 
+ * @property {external:Integer} framesDropped
+ *  Only valid for video. The total number of frames dropped predecode or 
+ *  dropped because the frame missed its display deadline.
+ * @property {external:Integer} framesCorrupted
+ *  Only valid for video. The total number of corrupted frames that have been 
+ *  detected.
+ * @property {external:Number} audioLevel
+ *  Only valid for audio, and the value is between 0..1 (linear), where 1.0 
+ *  represents 0 dBov.
+ * @property {external:Number} echoReturnLoss
+ *  Only present on audio tracks sourced from a microphone where echo 
+ *  cancellation is applied. Calculated in decibels.
+ * @property {external:Number} echoReturnLossEnhancement
+ *  Only present on audio tracks sourced from a microphone where echo 
+ *  cancellation is applied.
+
+ * @extends module:core.RTCStats
+ */
+function RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict){
+  if(!(this instanceof RTCMediaStreamTrackStats))
+    return new RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict)
+
+  // Check rTCMediaStreamTrackStatsDict has the required fields
+  checkType('String', 'rTCMediaStreamTrackStatsDict.trackIdentifier', rTCMediaStreamTrackStatsDict.trackIdentifier, true);
+  checkType('boolean', 'rTCMediaStreamTrackStatsDict.remoteSource', rTCMediaStreamTrackStatsDict.remoteSource, true);
+  checkType('String', 'rTCMediaStreamTrackStatsDict.ssrcIds', rTCMediaStreamTrackStatsDict.ssrcIds, true);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.frameWidth', rTCMediaStreamTrackStatsDict.frameWidth, true);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.frameHeight', rTCMediaStreamTrackStatsDict.frameHeight, true);
+  checkType('float', 'rTCMediaStreamTrackStatsDict.framesPerSecond', rTCMediaStreamTrackStatsDict.framesPerSecond, true);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesSent', rTCMediaStreamTrackStatsDict.framesSent, true);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesReceived', rTCMediaStreamTrackStatsDict.framesReceived, true);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDecoded', rTCMediaStreamTrackStatsDict.framesDecoded, true);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDropped', rTCMediaStreamTrackStatsDict.framesDropped, true);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesCorrupted', rTCMediaStreamTrackStatsDict.framesCorrupted, true);
+  checkType('float', 'rTCMediaStreamTrackStatsDict.audioLevel', rTCMediaStreamTrackStatsDict.audioLevel, true);
+  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLoss', rTCMediaStreamTrackStatsDict.echoReturnLoss, true);
+  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement', rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement, true);
+
+  // Init parent class
+  RTCMediaStreamTrackStats.super_.call(this, rTCMediaStreamTrackStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    trackIdentifier: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.trackIdentifier
+    },
+    remoteSource: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.remoteSource
+    },
+    ssrcIds: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.ssrcIds
+    },
+    frameWidth: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.frameWidth
+    },
+    frameHeight: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.frameHeight
+    },
+    framesPerSecond: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.framesPerSecond
+    },
+    framesSent: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.framesSent
+    },
+    framesReceived: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.framesReceived
+    },
+    framesDecoded: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.framesDecoded
+    },
+    framesDropped: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.framesDropped
+    },
+    framesCorrupted: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.framesCorrupted
+    },
+    audioLevel: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.audioLevel
+    },
+    echoReturnLoss: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.echoReturnLoss
+    },
+    echoReturnLossEnhancement: {
+      writable: true,
+      enumerable: true,
+      value: rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement
+    }
+  })
+}
+inherits(RTCMediaStreamTrackStats, RTCStats)
 
 /**
  * Checker for {@link core/complexTypes.RTCMediaStreamTrackStats}
@@ -13605,69 +14315,16 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCMediaStreamTrackStats(key, value)
 {
-  checkType('String', key+'.trackIdentifier', value.trackIdentifier, true);
-  checkType('boolean', key+'.remoteSource', value.remoteSource, true);
-  checkType('String', key+'.ssrcIds', value.ssrcIds, true);
-  checkType('int', key+'.frameWidth', value.frameWidth, true);
-  checkType('int', key+'.frameHeight', value.frameHeight, true);
-  checkType('float', key+'.framesPerSecond', value.framesPerSecond, true);
-  checkType('int', key+'.framesSent', value.framesSent, true);
-  checkType('int', key+'.framesReceived', value.framesReceived, true);
-  checkType('int', key+'.framesDecoded', value.framesDecoded, true);
-  checkType('int', key+'.framesDropped', value.framesDropped, true);
-  checkType('int', key+'.framesCorrupted', value.framesCorrupted, true);
-  checkType('float', key+'.audioLevel', value.audioLevel, true);
-  checkType('float', key+'.echoReturnLoss', value.echoReturnLoss, true);
-  checkType('float', key+'.echoReturnLossEnhancement', value.echoReturnLossEnhancement, true);
-
-  checkType('RTCStats', key, value)
+  if(!(value instanceof RTCMediaStreamTrackStats))
+    throw ChecktypeError(key, RTCMediaStreamTrackStats, value);
 };
 
 
-/**
- * Statistics related to the media stream.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCMediaStreamTrackStats
- *
- * @type {Object}
- * @property {external:String} trackIdentifier
- *  Represents the track.id property.
- * @property {external:Boolean} remoteSource
- *  true indicates that this is a remote source. false in other case.
- * @property {external:String} ssrcIds
- *  Synchronized sources.
- * @property {external:Integer} frameWidth
- *  Only makes sense for video media streams and represents the width of the video frame for this SSRC.
- * @property {external:Integer} frameHeight
- *  Only makes sense for video media streams and represents the height of the video frame for this SSRC.
- * @property {external:Number} framesPerSecond
- *  Only valid for video. It represents the nominal FPS value.
- * @property {external:Integer} framesSent
- *  Only valid for video. It represents the total number of frames sent for this SSRC.
- * @property {external:Integer} framesReceived
- *  Only valid for video and when remoteSource is set to true. It represents the total number of frames received for this SSRC.
- * @property {external:Integer} framesDecoded
- *  Only valid for video. It represents the total number of frames correctly decoded for this SSRC. 
- * @property {external:Integer} framesDropped
- *  Only valid for video. The total number of frames dropped predecode or dropped because the frame missed its display deadline.
- * @property {external:Integer} framesCorrupted
- *  Only valid for video. The total number of corrupted frames that have been detected.
- * @property {external:Number} audioLevel
- *  Only valid for audio, and the value is between 0..1 (linear), where 1.0 represents 0 dBov.
- * @property {external:Number} echoReturnLoss
- *  Only present on audio tracks sourced from a microphone where echo cancellation is applied. Calculated in decibels.
- * @property {external:Number} echoReturnLossEnhancement
- *  Only present on audio tracks sourced from a microphone where echo cancellation is applied.
+module.exports = RTCMediaStreamTrackStats;
 
- * @extends module:core.RTCStats
- */
+RTCMediaStreamTrackStats.check = checkRTCMediaStreamTrackStats;
 
-
-module.exports = checkRTCMediaStreamTrackStats;
-
-},{"kurento-client":"kurento-client"}],72:[function(require,module,exports){
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],72:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13685,7 +14342,72 @@ module.exports = checkRTCMediaStreamTrackStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCRTPStreamStats = require('./RTCRTPStreamStats');
+
+
+/**
+ * Statistics that represents the measurement metrics for the outgoing media 
+ * stream.
+ *
+ * @constructor module:core/complexTypes.RTCOutboundRTPStreamStats
+ *
+ * @property {external:Integer} packetsSent
+ *  Total number of RTP packets sent for this SSRC.
+ * @property {external:Integer} bytesSent
+ *  Total number of bytes sent for this SSRC.
+ * @property {external:Number} targetBitrate
+ *  Presently configured bitrate target of this SSRC, in bits per second.
+ * @property {external:Number} roundTripTime
+ *  Estimated round trip time (seconds) for this SSRC based on the RTCP 
+ *  timestamp.
+
+ * @extends module:core.RTCRTPStreamStats
+ */
+function RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict){
+  if(!(this instanceof RTCOutboundRTPStreamStats))
+    return new RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict)
+
+  // Check rTCOutboundRTPStreamStatsDict has the required fields
+  checkType('int', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, true);
+  checkType('int', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, true);
+  checkType('float', 'rTCOutboundRTPStreamStatsDict.targetBitrate', rTCOutboundRTPStreamStatsDict.targetBitrate, true);
+  checkType('float', 'rTCOutboundRTPStreamStatsDict.roundTripTime', rTCOutboundRTPStreamStatsDict.roundTripTime, true);
+
+  // Init parent class
+  RTCOutboundRTPStreamStats.super_.call(this, rTCOutboundRTPStreamStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    packetsSent: {
+      writable: true,
+      enumerable: true,
+      value: rTCOutboundRTPStreamStatsDict.packetsSent
+    },
+    bytesSent: {
+      writable: true,
+      enumerable: true,
+      value: rTCOutboundRTPStreamStatsDict.bytesSent
+    },
+    targetBitrate: {
+      writable: true,
+      enumerable: true,
+      value: rTCOutboundRTPStreamStatsDict.targetBitrate
+    },
+    roundTripTime: {
+      writable: true,
+      enumerable: true,
+      value: rTCOutboundRTPStreamStatsDict.roundTripTime
+    }
+  })
+}
+inherits(RTCOutboundRTPStreamStats, RTCRTPStreamStats)
 
 /**
  * Checker for {@link core/complexTypes.RTCOutboundRTPStreamStats}
@@ -13697,39 +14419,16 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCOutboundRTPStreamStats(key, value)
 {
-  checkType('int', key+'.packetsSent', value.packetsSent, true);
-  checkType('int', key+'.bytesSent', value.bytesSent, true);
-  checkType('float', key+'.targetBitrate', value.targetBitrate, true);
-  checkType('float', key+'.roundTripTime', value.roundTripTime, true);
-
-  checkType('RTCRTPStreamStats', key, value)
+  if(!(value instanceof RTCOutboundRTPStreamStats))
+    throw ChecktypeError(key, RTCOutboundRTPStreamStats, value);
 };
 
 
-/**
- * Statistics that represents the measurement metrics for the outgoing media stream.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCOutboundRTPStreamStats
- *
- * @type {Object}
- * @property {external:Integer} packetsSent
- *  Total number of RTP packets sent for this SSRC.
- * @property {external:Integer} bytesSent
- *  Total number of bytes sent for this SSRC.
- * @property {external:Number} targetBitrate
- *  Presently configured bitrate target of this SSRC, in bits per second.
- * @property {external:Number} roundTripTime
- *  Estimated round trip time (seconds) for this SSRC based on the RTCP timestamp.
+module.exports = RTCOutboundRTPStreamStats;
 
- * @extends module:core.RTCRTPStreamStats
- */
+RTCOutboundRTPStreamStats.check = checkRTCOutboundRTPStreamStats;
 
-
-module.exports = checkRTCOutboundRTPStreamStats;
-
-},{"kurento-client":"kurento-client"}],73:[function(require,module,exports){
+},{"./RTCRTPStreamStats":74,"inherits":40,"kurento-client":"kurento-client"}],73:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13747,7 +14446,54 @@ module.exports = checkRTCOutboundRTPStreamStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
+
+
+/**
+ * Statistics related to the peer connection.
+ *
+ * @constructor module:core/complexTypes.RTCPeerConnectionStats
+ *
+ * @property {external:Integer} dataChannelsOpened
+ *  Represents the number of unique datachannels opened.
+ * @property {external:Integer} dataChannelsClosed
+ *  Represents the number of unique datachannels closed.
+
+ * @extends module:core.RTCStats
+ */
+function RTCPeerConnectionStats(rTCPeerConnectionStatsDict){
+  if(!(this instanceof RTCPeerConnectionStats))
+    return new RTCPeerConnectionStats(rTCPeerConnectionStatsDict)
+
+  // Check rTCPeerConnectionStatsDict has the required fields
+  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, true);
+  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsClosed', rTCPeerConnectionStatsDict.dataChannelsClosed, true);
+
+  // Init parent class
+  RTCPeerConnectionStats.super_.call(this, rTCPeerConnectionStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    dataChannelsOpened: {
+      writable: true,
+      enumerable: true,
+      value: rTCPeerConnectionStatsDict.dataChannelsOpened
+    },
+    dataChannelsClosed: {
+      writable: true,
+      enumerable: true,
+      value: rTCPeerConnectionStatsDict.dataChannelsClosed
+    }
+  })
+}
+inherits(RTCPeerConnectionStats, RTCStats)
 
 /**
  * Checker for {@link core/complexTypes.RTCPeerConnectionStats}
@@ -13759,33 +14505,16 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCPeerConnectionStats(key, value)
 {
-  checkType('int', key+'.dataChannelsOpened', value.dataChannelsOpened, true);
-  checkType('int', key+'.dataChannelsClosed', value.dataChannelsClosed, true);
-
-  checkType('RTCStats', key, value)
+  if(!(value instanceof RTCPeerConnectionStats))
+    throw ChecktypeError(key, RTCPeerConnectionStats, value);
 };
 
 
-/**
- * Statistics related to the peer connection.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCPeerConnectionStats
- *
- * @type {Object}
- * @property {external:Integer} dataChannelsOpened
- *  Represents the number of unique datachannels opened.
- * @property {external:Integer} dataChannelsClosed
- *  Represents the number of unique datachannels closed.
+module.exports = RTCPeerConnectionStats;
 
- * @extends module:core.RTCStats
- */
+RTCPeerConnectionStats.check = checkRTCPeerConnectionStats;
 
-
-module.exports = checkRTCPeerConnectionStats;
-
-},{"kurento-client":"kurento-client"}],74:[function(require,module,exports){
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],74:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13803,7 +14532,125 @@ module.exports = checkRTCPeerConnectionStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
+
+
+/**
+ * Statistics for the RTP stream
+ *
+ * @constructor module:core/complexTypes.RTCRTPStreamStats
+ *
+ * @property {external:String} ssrc
+ *  The synchronized source SSRC
+ * @property {external:String} associateStatsId
+ *  The associateStatsId is used for looking up the corresponding (local/remote)
+ * @property {external:Boolean} isRemote
+ *  false indicates that the statistics are measured locally, while true 
+ *  indicates that the measurements were done at the remote endpoint and 
+ *  reported in an RTCP RR/XR.
+ * @property {external:String} mediaTrackId
+ *  Track identifier.
+ * @property {external:String} transportId
+ *  It is a unique identifier that is associated to the object that was 
+ *  inspected to produce the RTCTransportStats associated with this RTP stream.
+ * @property {external:String} codecId
+ *  The codec identifier
+ * @property {external:Integer} firCount
+ *  Count the total number of Full Intra Request (FIR) packets received by the 
+ *  sender. This metric is only valid for video and is sent by receiver.
+ * @property {external:Integer} pliCount
+ *  Count the total number of Packet Loss Indication (PLI) packets received by 
+ *  the sender and is sent by receiver.
+ * @property {external:Integer} nackCount
+ *  Count the total number of Negative ACKnowledgement (NACK) packets received 
+ *  by the sender and is sent by receiver.
+ * @property {external:Integer} sliCount
+ *  Count the total number of Slice Loss Indication (SLI) packets received by 
+ *  the sender. This metric is only valid for video and is sent by receiver.
+
+ * @extends module:core.RTCStats
+ */
+function RTCRTPStreamStats(rTCRTPStreamStatsDict){
+  if(!(this instanceof RTCRTPStreamStats))
+    return new RTCRTPStreamStats(rTCRTPStreamStatsDict)
+
+  // Check rTCRTPStreamStatsDict has the required fields
+  checkType('String', 'rTCRTPStreamStatsDict.ssrc', rTCRTPStreamStatsDict.ssrc, true);
+  checkType('String', 'rTCRTPStreamStatsDict.associateStatsId', rTCRTPStreamStatsDict.associateStatsId, true);
+  checkType('boolean', 'rTCRTPStreamStatsDict.isRemote', rTCRTPStreamStatsDict.isRemote, true);
+  checkType('String', 'rTCRTPStreamStatsDict.mediaTrackId', rTCRTPStreamStatsDict.mediaTrackId, true);
+  checkType('String', 'rTCRTPStreamStatsDict.transportId', rTCRTPStreamStatsDict.transportId, true);
+  checkType('String', 'rTCRTPStreamStatsDict.codecId', rTCRTPStreamStatsDict.codecId, true);
+  checkType('int', 'rTCRTPStreamStatsDict.firCount', rTCRTPStreamStatsDict.firCount, true);
+  checkType('int', 'rTCRTPStreamStatsDict.pliCount', rTCRTPStreamStatsDict.pliCount, true);
+  checkType('int', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, true);
+  checkType('int', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, true);
+
+  // Init parent class
+  RTCRTPStreamStats.super_.call(this, rTCRTPStreamStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    ssrc: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.ssrc
+    },
+    associateStatsId: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.associateStatsId
+    },
+    isRemote: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.isRemote
+    },
+    mediaTrackId: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.mediaTrackId
+    },
+    transportId: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.transportId
+    },
+    codecId: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.codecId
+    },
+    firCount: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.firCount
+    },
+    pliCount: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.pliCount
+    },
+    nackCount: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.nackCount
+    },
+    sliCount: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.sliCount
+    }
+  })
+}
+inherits(RTCRTPStreamStats, RTCStats)
 
 /**
  * Checker for {@link core/complexTypes.RTCRTPStreamStats}
@@ -13815,57 +14662,16 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCRTPStreamStats(key, value)
 {
-  checkType('String', key+'.ssrc', value.ssrc, true);
-  checkType('String', key+'.associateStatsId', value.associateStatsId, true);
-  checkType('boolean', key+'.isRemote', value.isRemote, true);
-  checkType('String', key+'.mediaTrackId', value.mediaTrackId, true);
-  checkType('String', key+'.transportId', value.transportId, true);
-  checkType('String', key+'.codecId', value.codecId, true);
-  checkType('int', key+'.firCount', value.firCount, true);
-  checkType('int', key+'.pliCount', value.pliCount, true);
-  checkType('int', key+'.nackCount', value.nackCount, true);
-  checkType('int', key+'.sliCount', value.sliCount, true);
-
-  checkType('RTCStats', key, value)
+  if(!(value instanceof RTCRTPStreamStats))
+    throw ChecktypeError(key, RTCRTPStreamStats, value);
 };
 
 
-/**
- * Statistics for the RTP stream
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCRTPStreamStats
- *
- * @type {Object}
- * @property {external:String} ssrc
- *  The synchronized source SSRC
- * @property {external:String} associateStatsId
- *  The associateStatsId is used for looking up the corresponding (local/remote) RTCStats object for a given SSRC.
- * @property {external:Boolean} isRemote
- *  false indicates that the statistics are measured locally, while true indicates that the measurements were done at the remote endpoint and reported in an RTCP RR/XR.
- * @property {external:String} mediaTrackId
- *  Track identifier.
- * @property {external:String} transportId
- *  It is a unique identifier that is associated to the object that was inspected to produce the RTCTransportStats associated with this RTP stream.
- * @property {external:String} codecId
- *  The codec identifier
- * @property {external:Integer} firCount
- *  Count the total number of Full Intra Request (FIR) packets received by the sender. This metric is only valid for video and is sent by receiver.
- * @property {external:Integer} pliCount
- *  Count the total number of Packet Loss Indication (PLI) packets received by the sender and is sent by receiver.
- * @property {external:Integer} nackCount
- *  Count the total number of Negative ACKnowledgement (NACK) packets received by the sender and is sent by receiver.
- * @property {external:Integer} sliCount
- *  Count the total number of Slice Loss Indication (SLI) packets received by the sender. This metric is only valid for video and is sent by receiver.
+module.exports = RTCRTPStreamStats;
 
- * @extends module:core.RTCStats
- */
+RTCRTPStreamStats.check = checkRTCRTPStreamStats;
 
-
-module.exports = checkRTCRTPStreamStats;
-
-},{"kurento-client":"kurento-client"}],75:[function(require,module,exports){
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],75:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13883,7 +14689,53 @@ module.exports = checkRTCRTPStreamStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+
+/**
+ * An RTCStats dictionary represents the stats gathered.
+ *
+ * @constructor module:core/complexTypes.RTCStats
+ *
+ * @property {external:String} id
+ *  A unique id that is associated with the object that was inspected to produce
+ * @property {module:core/complexTypes.RTCStatsType} type
+ *  The type of this object.
+ * @property {external:Number} timestamp
+ *  The timestamp associated with this object. The time is relative to the UNIX 
+ *  epoch (Jan 1, 1970, UTC).
+ */
+function RTCStats(rTCStatsDict){
+  if(!(this instanceof RTCStats))
+    return new RTCStats(rTCStatsDict)
+
+  // Check rTCStatsDict has the required fields
+  checkType('String', 'rTCStatsDict.id', rTCStatsDict.id, true);
+  checkType('RTCStatsType', 'rTCStatsDict.type', rTCStatsDict.type, true);
+  checkType('float', 'rTCStatsDict.timestamp', rTCStatsDict.timestamp, true);
+
+  // Set object properties
+  Object.defineProperties(this, {
+    id: {
+      writable: true,
+      enumerable: true,
+      value: rTCStatsDict.id
+    },
+    type: {
+      writable: true,
+      enumerable: true,
+      value: rTCStatsDict.type
+    },
+    timestamp: {
+      writable: true,
+      enumerable: true,
+      value: rTCStatsDict.timestamp
+    }
+  })
+}
 
 /**
  * Checker for {@link core/complexTypes.RTCStats}
@@ -13895,30 +14747,14 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCStats(key, value)
 {
-  checkType('String', key+'.id', value.id, true);
-  checkType('RTCStatsType', key+'.type', value.type, true);
-  checkType('float', key+'.timestamp', value.timestamp, true);
+  if(!(value instanceof RTCStats))
+    throw ChecktypeError(key, RTCStats, value);
 };
 
 
-/**
- * An RTCStats dictionary represents the stats gathered.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCStats
- *
- * @type {Object}
- * @property {external:String} id
- *  A unique id that is associated with the object that was inspected to produce this RTCStats object.
- * @property {module:core/complexTypes.RTCStatsType} type
- *  The type of this object.
- * @property {external:Number} timestamp
- *  The timestamp associated with this object. The time is relative to the UNIX epoch (Jan 1, 1970, UTC).
- */
+module.exports = RTCStats;
 
-
-module.exports = checkRTCStats;
+RTCStats.check = checkRTCStats;
 
 },{"kurento-client":"kurento-client"}],76:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
@@ -13938,7 +14774,18 @@ module.exports = checkRTCStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Represents the state of the checklist for the local and remote candidates in 
+ * a pair.
+ *
+ * @typedef core/complexTypes.RTCStatsIceCandidatePairState
+ *
+ * @type {(frozen|waiting|inprogress|failed|succeeded|cancelled)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.RTCStatsIceCandidatePairState}
@@ -13952,20 +14799,10 @@ function checkRTCStatsIceCandidatePairState(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('frozen|waiting|inprogress|failed|succeeded|cancelled'))
     throw SyntaxError(key+' param is not one of [frozen|waiting|inprogress|failed|succeeded|cancelled] ('+value+')');
 };
-
-
-/**
- * Represents the state of the checklist for the local and remote candidates in a pair.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCStatsIceCandidatePairState
- *
- * @type {(frozen|waiting|inprogress|failed|succeeded|cancelled)}
- */
 
 
 module.exports = checkRTCStatsIceCandidatePairState;
@@ -13988,7 +14825,17 @@ module.exports = checkRTCStatsIceCandidatePairState;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Types of candidates
+ *
+ * @typedef core/complexTypes.RTCStatsIceCandidateType
+ *
+ * @type {(host|serverreflexive|peerreflexive|relayed)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.RTCStatsIceCandidateType}
@@ -14002,20 +14849,10 @@ function checkRTCStatsIceCandidateType(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('host|serverreflexive|peerreflexive|relayed'))
     throw SyntaxError(key+' param is not one of [host|serverreflexive|peerreflexive|relayed] ('+value+')');
 };
-
-
-/**
- * Types of candidates
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCStatsIceCandidateType
- *
- * @type {(host|serverreflexive|peerreflexive|relayed)}
- */
 
 
 module.exports = checkRTCStatsIceCandidateType;
@@ -14038,7 +14875,17 @@ module.exports = checkRTCStatsIceCandidateType;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * The type of the object.
+ *
+ * @typedef core/complexTypes.RTCStatsType
+ *
+ * @type {(inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.RTCStatsType}
@@ -14052,20 +14899,10 @@ function checkRTCStatsType(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate'))
     throw SyntaxError(key+' param is not one of [inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate] ('+value+')');
 };
-
-
-/**
- * The type of the object.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCStatsType
- *
- * @type {(inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate)}
- */
 
 
 module.exports = checkRTCStatsType;
@@ -14088,7 +14925,100 @@ module.exports = checkRTCStatsType;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var RTCStats = require('./RTCStats');
+
+
+/**
+ * Statistics related to RTC data channels.
+ *
+ * @constructor module:core/complexTypes.RTCTransportStats
+ *
+ * @property {external:Integer} bytesSent
+ *  Represents the total number of payload bytes sent on this PeerConnection, 
+ *  i.e., not including headers or padding.
+ * @property {external:Integer} bytesReceived
+ *  Represents the total number of bytes received on this PeerConnection, i.e., 
+ *  not including headers or padding.
+ * @property {external:String} rtcpTransportStatsId
+ *  If RTP and RTCP are not multiplexed, this is the id of the transport that 
+ *  gives stats for the RTCP component, and this record has only the RTP 
+ *  component stats.
+ * @property {external:Boolean} activeConnection
+ *  Set to true when transport is active.
+ * @property {external:String} selectedCandidatePairId
+ *  It is a unique identifier that is associated to the object that was 
+ *  inspected to produce the RTCIceCandidatePairStats associated with this 
+ *  transport.
+ * @property {external:String} localCertificateId
+ *  For components where DTLS is negotiated, give local certificate.
+ * @property {external:String} remoteCertificateId
+ *  For components where DTLS is negotiated, give remote certificate.
+
+ * @extends module:core.RTCStats
+ */
+function RTCTransportStats(rTCTransportStatsDict){
+  if(!(this instanceof RTCTransportStats))
+    return new RTCTransportStats(rTCTransportStatsDict)
+
+  // Check rTCTransportStatsDict has the required fields
+  checkType('int', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, true);
+  checkType('int', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, true);
+  checkType('String', 'rTCTransportStatsDict.rtcpTransportStatsId', rTCTransportStatsDict.rtcpTransportStatsId, true);
+  checkType('boolean', 'rTCTransportStatsDict.activeConnection', rTCTransportStatsDict.activeConnection, true);
+  checkType('String', 'rTCTransportStatsDict.selectedCandidatePairId', rTCTransportStatsDict.selectedCandidatePairId, true);
+  checkType('String', 'rTCTransportStatsDict.localCertificateId', rTCTransportStatsDict.localCertificateId, true);
+  checkType('String', 'rTCTransportStatsDict.remoteCertificateId', rTCTransportStatsDict.remoteCertificateId, true);
+
+  // Init parent class
+  RTCTransportStats.super_.call(this, rTCTransportStatsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    bytesSent: {
+      writable: true,
+      enumerable: true,
+      value: rTCTransportStatsDict.bytesSent
+    },
+    bytesReceived: {
+      writable: true,
+      enumerable: true,
+      value: rTCTransportStatsDict.bytesReceived
+    },
+    rtcpTransportStatsId: {
+      writable: true,
+      enumerable: true,
+      value: rTCTransportStatsDict.rtcpTransportStatsId
+    },
+    activeConnection: {
+      writable: true,
+      enumerable: true,
+      value: rTCTransportStatsDict.activeConnection
+    },
+    selectedCandidatePairId: {
+      writable: true,
+      enumerable: true,
+      value: rTCTransportStatsDict.selectedCandidatePairId
+    },
+    localCertificateId: {
+      writable: true,
+      enumerable: true,
+      value: rTCTransportStatsDict.localCertificateId
+    },
+    remoteCertificateId: {
+      writable: true,
+      enumerable: true,
+      value: rTCTransportStatsDict.remoteCertificateId
+    }
+  })
+}
+inherits(RTCTransportStats, RTCStats)
 
 /**
  * Checker for {@link core/complexTypes.RTCTransportStats}
@@ -14100,48 +15030,16 @@ var checkType = require('kurento-client').checkType;
  */
 function checkRTCTransportStats(key, value)
 {
-  checkType('int', key+'.bytesSent', value.bytesSent, true);
-  checkType('int', key+'.bytesReceived', value.bytesReceived, true);
-  checkType('String', key+'.rtcpTransportStatsId', value.rtcpTransportStatsId, true);
-  checkType('boolean', key+'.activeConnection', value.activeConnection, true);
-  checkType('String', key+'.selectedCandidatePairId', value.selectedCandidatePairId, true);
-  checkType('String', key+'.localCertificateId', value.localCertificateId, true);
-  checkType('String', key+'.remoteCertificateId', value.remoteCertificateId, true);
-
-  checkType('RTCStats', key, value)
+  if(!(value instanceof RTCTransportStats))
+    throw ChecktypeError(key, RTCTransportStats, value);
 };
 
 
-/**
- * Statistics related to RTC data channels.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.RTCTransportStats
- *
- * @type {Object}
- * @property {external:Integer} bytesSent
- *  Represents the total number of payload bytes sent on this PeerConnection, i.e., not including headers or padding.
- * @property {external:Integer} bytesReceived
- *  Represents the total number of bytes received on this PeerConnection, i.e., not including headers or padding.
- * @property {external:String} rtcpTransportStatsId
- *  If RTP and RTCP are not multiplexed, this is the id of the transport that gives stats for the RTCP component, and this record has only the RTP component stats.
- * @property {external:Boolean} activeConnection
- *  Set to true when transport is active.
- * @property {external:String} selectedCandidatePairId
- *  It is a unique identifier that is associated to the object that was inspected to produce the RTCIceCandidatePairStats associated with this transport.
- * @property {external:String} localCertificateId
- *  For components where DTLS is negotiated, give local certificate.
- * @property {external:String} remoteCertificateId
- *  For components where DTLS is negotiated, give remote certificate.
+module.exports = RTCTransportStats;
 
- * @extends module:core.RTCStats
- */
+RTCTransportStats.check = checkRTCTransportStats;
 
-
-module.exports = checkRTCTransportStats;
-
-},{"kurento-client":"kurento-client"}],80:[function(require,module,exports){
+},{"./RTCStats":75,"inherits":40,"kurento-client":"kurento-client"}],80:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14159,7 +15057,60 @@ module.exports = checkRTCTransportStats;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+
+/**
+ * Description of the mediaserver
+ *
+ * @constructor module:core/complexTypes.ServerInfo
+ *
+ * @property {external:String} version
+ *  MediaServer version
+ * @property {module:core/complexTypes.ModuleInfo} modules
+ *  Descriptor of all modules loaded by the server
+ * @property {module:core/complexTypes.ServerType} type
+ *  Describes the type of mediaserver
+ * @property {external:String} capabilities
+ *  Describes the capabilities that this server supports
+ */
+function ServerInfo(serverInfoDict){
+  if(!(this instanceof ServerInfo))
+    return new ServerInfo(serverInfoDict)
+
+  // Check serverInfoDict has the required fields
+  checkType('String', 'serverInfoDict.version', serverInfoDict.version, true);
+  checkType('ModuleInfo', 'serverInfoDict.modules', serverInfoDict.modules, true);
+  checkType('ServerType', 'serverInfoDict.type', serverInfoDict.type, true);
+  checkType('String', 'serverInfoDict.capabilities', serverInfoDict.capabilities, true);
+
+  // Set object properties
+  Object.defineProperties(this, {
+    version: {
+      writable: true,
+      enumerable: true,
+      value: serverInfoDict.version
+    },
+    modules: {
+      writable: true,
+      enumerable: true,
+      value: serverInfoDict.modules
+    },
+    type: {
+      writable: true,
+      enumerable: true,
+      value: serverInfoDict.type
+    },
+    capabilities: {
+      writable: true,
+      enumerable: true,
+      value: serverInfoDict.capabilities
+    }
+  })
+}
 
 /**
  * Checker for {@link core/complexTypes.ServerInfo}
@@ -14171,33 +15122,14 @@ var checkType = require('kurento-client').checkType;
  */
 function checkServerInfo(key, value)
 {
-  checkType('String', key+'.version', value.version, true);
-  checkType('ModuleInfo', key+'.modules', value.modules, true);
-  checkType('ServerType', key+'.type', value.type, true);
-  checkType('String', key+'.capabilities', value.capabilities, true);
+  if(!(value instanceof ServerInfo))
+    throw ChecktypeError(key, ServerInfo, value);
 };
 
 
-/**
- * Description of the mediaserver
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.ServerInfo
- *
- * @type {Object}
- * @property {external:String} version
- *  MediaServer version
- * @property {module:core/complexTypes.ModuleInfo} modules
- *  Descriptor of all modules loaded by the server
- * @property {module:core/complexTypes.ServerType} type
- *  Describes the type of mediaserver
- * @property {external:String} capabilities
- *  Describes the capabilities that this server supports
- */
+module.exports = ServerInfo;
 
-
-module.exports = checkServerInfo;
+ServerInfo.check = checkServerInfo;
 
 },{"kurento-client":"kurento-client"}],81:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
@@ -14217,7 +15149,17 @@ module.exports = checkServerInfo;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Indicates if the server is a real media server or a proxy
+ *
+ * @typedef core/complexTypes.ServerType
+ *
+ * @type {(KMS|KCS)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.ServerType}
@@ -14231,20 +15173,10 @@ function checkServerType(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('KMS|KCS'))
     throw SyntaxError(key+' param is not one of [KMS|KCS] ('+value+')');
 };
-
-
-/**
- * Indicates if the server is a real media server or a proxy
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.ServerType
- *
- * @type {(KMS|KCS)}
- */
 
 
 module.exports = checkServerType;
@@ -14267,7 +15199,44 @@ module.exports = checkServerType;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+
+/**
+ * Pair key-value with info about a MediaObject
+ *
+ * @constructor module:core/complexTypes.Tag
+ *
+ * @property {external:String} key
+ *  Tag key
+ * @property {external:String} value
+ *  Tag Value
+ */
+function Tag(tagDict){
+  if(!(this instanceof Tag))
+    return new Tag(tagDict)
+
+  // Check tagDict has the required fields
+  checkType('String', 'tagDict.key', tagDict.key, true);
+  checkType('String', 'tagDict.value', tagDict.value, true);
+
+  // Set object properties
+  Object.defineProperties(this, {
+    key: {
+      writable: true,
+      enumerable: true,
+      value: tagDict.key
+    },
+    value: {
+      writable: true,
+      enumerable: true,
+      value: tagDict.value
+    }
+  })
+}
 
 /**
  * Checker for {@link core/complexTypes.Tag}
@@ -14279,27 +15248,14 @@ var checkType = require('kurento-client').checkType;
  */
 function checkTag(key, value)
 {
-  checkType('String', key+'.key', value.key, true);
-  checkType('String', key+'.value', value.value, true);
+  if(!(value instanceof Tag))
+    throw ChecktypeError(key, Tag, value);
 };
 
 
-/**
- * Pair key-value with info about a MediaObject
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.Tag
- *
- * @type {Object}
- * @property {external:String} key
- *  Tag key
- * @property {external:String} value
- *  Tag Value
- */
+module.exports = Tag;
 
-
-module.exports = checkTag;
+Tag.check = checkTag;
 
 },{"kurento-client":"kurento-client"}],83:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
@@ -14319,7 +15275,44 @@ module.exports = checkTag;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+
+/**
+ * Format for video media
+ *
+ * @constructor module:core/complexTypes.VideoCaps
+ *
+ * @property {module:core/complexTypes.VideoCodec} codec
+ *  Video codec
+ * @property {module:core/complexTypes.Fraction} framerate
+ *  Framerate
+ */
+function VideoCaps(videoCapsDict){
+  if(!(this instanceof VideoCaps))
+    return new VideoCaps(videoCapsDict)
+
+  // Check videoCapsDict has the required fields
+  checkType('VideoCodec', 'videoCapsDict.codec', videoCapsDict.codec, true);
+  checkType('Fraction', 'videoCapsDict.framerate', videoCapsDict.framerate, true);
+
+  // Set object properties
+  Object.defineProperties(this, {
+    codec: {
+      writable: true,
+      enumerable: true,
+      value: videoCapsDict.codec
+    },
+    framerate: {
+      writable: true,
+      enumerable: true,
+      value: videoCapsDict.framerate
+    }
+  })
+}
 
 /**
  * Checker for {@link core/complexTypes.VideoCaps}
@@ -14331,27 +15324,14 @@ var checkType = require('kurento-client').checkType;
  */
 function checkVideoCaps(key, value)
 {
-  checkType('VideoCodec', key+'.codec', value.codec, true);
-  checkType('Fraction', key+'.framerate', value.framerate, true);
+  if(!(value instanceof VideoCaps))
+    throw ChecktypeError(key, VideoCaps, value);
 };
 
 
-/**
- * Format for video media
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.VideoCaps
- *
- * @type {Object}
- * @property {module:core/complexTypes.VideoCodec} codec
- *  Video codec
- * @property {module:core/complexTypes.Fraction} framerate
- *  Framerate
- */
+module.exports = VideoCaps;
 
-
-module.exports = checkVideoCaps;
+VideoCaps.check = checkVideoCaps;
 
 },{"kurento-client":"kurento-client"}],84:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
@@ -14371,7 +15351,17 @@ module.exports = checkVideoCaps;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Codec used for transmission of video.
+ *
+ * @typedef core/complexTypes.VideoCodec
+ *
+ * @type {(VP8|H264|RAW)}
+ */
 
 /**
  * Checker for {@link core/complexTypes.VideoCodec}
@@ -14385,20 +15375,10 @@ function checkVideoCodec(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('VP8|H264|RAW'))
     throw SyntaxError(key+' param is not one of [VP8|H264|RAW] ('+value+')');
 };
-
-
-/**
- * Codec used for transmission of video.
- *
- * @memberof module:core/complexTypes
- *
- * @typedef core/complexTypes.VideoCodec
- *
- * @type {(VP8|H264|RAW)}
- */
 
 
 module.exports = checkVideoCodec;
@@ -14565,7 +15545,11 @@ var Hub = require('kurento-client-core').abstracts.Hub;
  * Create for the given pipeline
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that mixes the {@link module:elements.AlphaBlending#MediaType.AUDIO} stream of its connected sources and constructs one output with {@link module:elements.AlphaBlending#MediaType.VIDEO} streams of its connected sources into its sink
+ *  A {@link module:core/abstracts.Hub Hub} that mixes the {@link 
+ *  module:elements.AlphaBlending#MediaType.AUDIO} stream of its connected 
+ *  sources and constructs one output with {@link 
+ *  module:elements.AlphaBlending#MediaType.VIDEO} streams of its connected 
+ *  sources into its sink
  *
  * @extends module:core/abstracts.Hub
  *
@@ -14618,19 +15602,21 @@ AlphaBlending.prototype.setMaster = function(source, zOrder, callback){
  * @alias module:elements.AlphaBlending.setPortProperties
  *
  * @param {external:Number} relativeX
- *  The x position relative to the master port. Values from 0 to 1 are accepted. The value 0, indicates the coordinate 0 in the master image.
+ *  The x position relative to the master port. Values from 0 to 1 are accepted.
  *
  * @param {external:Number} relativeY
- *  The y position relative to the master port. Values from 0 to 1 are accepted. The value 0, indicates the coordinate 0 in the master image.
+ *  The y position relative to the master port. Values from 0 to 1 are accepted.
  *
  * @param {external:Integer} zOrder
  *  The order in z to draw the images. The greatest value of z is in the top.
  *
  * @param {external:Number} relativeWidth
- *  The image width relative to the master port width. Values from 0 to 1 are accepted.
+ *  The image width relative to the master port width. Values from 0 to 1 are 
+ *  accepted.
  *
  * @param {external:Number} relativeHeight
- *  The image height relative to the master port height. Values from 0 to 1 are accepted.
+ *  The image height relative to the master port height. Values from 0 to 1 are 
+ *  accepted.
  *
  * @param {module:core.HubPort} port
  *  The reference to the confingured port.
@@ -14671,7 +15657,8 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
  * @alias module:elements.AlphaBlending.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
+ *  belongs
  */
 AlphaBlending.constructorParams = {
   mediaPipeline: {
@@ -14736,7 +15723,11 @@ var Hub = require('kurento-client-core').abstracts.Hub;
  * Create for the given pipeline
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that mixes the {@link module:elements.Composite#MediaType.AUDIO} stream of its connected sources and constructs a grid with the {@link module:elements.Composite#MediaType.VIDEO} streams of its connected sources into its sink
+ *  A {@link module:core/abstracts.Hub Hub} that mixes the {@link 
+ *  module:elements.Composite#MediaType.AUDIO} stream of its connected sources 
+ *  and constructs a grid with the {@link 
+ *  module:elements.Composite#MediaType.VIDEO} streams of its connected sources 
+ *  into its sink
  *
  * @extends module:core/abstracts.Hub
  *
@@ -14751,7 +15742,8 @@ inherits(Composite, Hub);
  * @alias module:elements.Composite.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
+ *  belongs
  */
 Composite.constructorParams = {
   mediaPipeline: {
@@ -14816,10 +15808,11 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var Hub = require('kurento-client-core').abstracts.Hub;
 
 /**
- * Create a {@link module:elements.Dispatcher Dispatcher} belonging to the given pipeline.
+ * Create a {@link module:elements.Dispatcher Dispatcher} belonging to the given
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that allows routing between arbitrary port pairs
+ *  A {@link module:core/abstracts.Hub Hub} that allows routing between 
+ *  arbitrary port pairs
  *
  * @extends module:core/abstracts.Hub
  *
@@ -14832,7 +15825,8 @@ inherits(Dispatcher, Hub);
 
 
 /**
- * Connects each corresponding {@link MediaType} of the given source port with the sink port.
+ * Connects each corresponding {@link MediaType} of the given source port with 
+ * the sink port.
  *
  * @alias module:elements.Dispatcher.connect
  *
@@ -14874,7 +15868,8 @@ Dispatcher.prototype.connect = function(source, sink, callback){
  * @alias module:elements.Dispatcher.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
+ *  belongs
  */
 Dispatcher.constructorParams = {
   mediaPipeline: {
@@ -14939,10 +15934,11 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var Hub = require('kurento-client-core').abstracts.Hub;
 
 /**
- * Create a {@link module:elements.DispatcherOneToMany DispatcherOneToMany} belonging to the given pipeline.
+ * Create a {@link module:elements.DispatcherOneToMany DispatcherOneToMany} 
+ * belonging to the given pipeline.
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that sends a given source to all the connected sinks
+ *  A {@link module:core/abstracts.Hub Hub} that sends a given source to all the
  *
  * @extends module:core/abstracts.Hub
  *
@@ -14978,7 +15974,8 @@ DispatcherOneToMany.prototype.removeSource = function(callback){
  */
 
 /**
- * Sets the source port that will be connected to the sinks of every {@link module:core.HubPort HubPort} of the dispatcher
+ * Sets the source port that will be connected to the sinks of every {@link 
+ * module:core.HubPort HubPort} of the dispatcher
  *
  * @alias module:elements.DispatcherOneToMany.setSource
  *
@@ -15011,7 +16008,8 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
  * @alias module:elements.DispatcherOneToMany.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
+ *  belongs
  */
 DispatcherOneToMany.constructorParams = {
   mediaPipeline: {
@@ -15076,9 +16074,10 @@ var HttpEndpoint = require('./abstracts/HttpEndpoint');
  * Builder for the {@link module:elements.HttpGetEndpoint HttpGetEndpoint}.
  *
  * @classdesc
- *  An <code>HttpGetEndpoint</code> contains SOURCE pads for AUDIO and VIDEO, delivering media using HTML5 pseudo-streaming mechanism.
- *  
- *     This type of endpoint provide unidirectional communications. Its :rom:cls:`MediaSink` is associated with the HTTP GET method
+ *  An <code>HttpGetEndpoint</code> contains SOURCE pads for AUDIO and VIDEO, 
+ *  delivering media using HTML5 pseudo-streaming mechanism.
+ *     This type of endpoint provide unidirectional communications. Its 
+ *     :rom:cls:`MediaSink` is associated with the HTTP GET method
  *
  * @extends module:elements/abstracts.HttpEndpoint
  *
@@ -15094,17 +16093,18 @@ inherits(HttpGetEndpoint, HttpEndpoint);
  *
  * @property {external:Integer} [disconnectionTimeout]
  *  disconnection timeout in seconds.
- *  
- *  This is the time that an http endpoint will wait for a reconnection, in case an HTTP connection is lost.
+ *  This is the time that an http endpoint will wait for a reconnection, in case
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
+ *  belongs
  *
  * @property {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
  *  the {@link MediaProfileSpecType} (WEBM, MP4...) for the endpoint
  *
  * @property {external:Boolean} [terminateOnEOS]
- *  raise a :rom:evnt:`MediaSessionTerminated` event when the associated player raises a :rom:evnt:`EndOfStream`, and thus terminate the media session
+ *  raise a :rom:evnt:`MediaSessionTerminated` event when the associated player 
+ *  raises a :rom:evnt:`EndOfStream`, and thus terminate the media session
  */
 HttpGetEndpoint.constructorParams = {
   disconnectionTimeout: {
@@ -15181,9 +16181,12 @@ var HttpEndpoint = require('./abstracts/HttpEndpoint');
  * Builder for the {@link module:elements.HttpPostEndpoint HttpPostEndpoint}.
  *
  * @classdesc
- *  An {@link module:elements.HttpPostEndpoint HttpPostEndpoint} contains SINK pads for AUDIO and VIDEO, which provide access to an HTTP file upload function
- *  
- *     This type of endpoint provide unidirectional communications. Its :rom:cls:`MediaSources <MediaSource>` are accessed through the <a href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a> POST method.
+ *  An {@link module:elements.HttpPostEndpoint HttpPostEndpoint} contains SINK 
+ *  pads for AUDIO and VIDEO, which provide access to an HTTP file upload 
+ *  function
+ *     This type of endpoint provide unidirectional communications. Its 
+ *     :rom:cls:`MediaSources <MediaSource>` are accessed through the <a 
+ *     href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a>
  *
  * @extends module:elements/abstracts.HttpEndpoint
  *
@@ -15200,13 +16203,17 @@ inherits(HttpPostEndpoint, HttpEndpoint);
  * @alias module:elements.HttpPostEndpoint.constructorParams
  *
  * @property {external:Integer} [disconnectionTimeout]
- *  This is the time that an http endpoint will wait for a reconnection, in case an HTTP connection is lost.
+ *  This is the time that an http endpoint will wait for a reconnection, in case
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
+ *  belongs
  *
  * @property {external:Boolean} [useEncodedMedia]
- *  configures the endpoint to use encoded media instead of raw media. If the parameter is not set then the element uses raw media. Changing this parameter could affect in a severe way to stability because key frames lost will not be generated. Changing the media type does not affect to the result except in the performance (just in the case where original media and target media are the same) and in the problem with the key frames. We strongly recommended not to use this parameter because correct behaviour is not guarantied.
+ *  configures the endpoint to use encoded media instead of raw media. If the 
+ *  parameter is not set then the element uses raw media. Changing this 
+ *  parameter could affect in a severe way to stability because key frames lost 
+ *  will not be generated. Changing the media type does not affect to the result
  */
 HttpPostEndpoint.constructorParams = {
   disconnectionTimeout: {
@@ -15282,7 +16289,7 @@ var Hub = require('kurento-client-core').abstracts.Hub;
  * Create a {@link module:elements.Mixer Mixer} belonging to the given pipeline.
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that allows routing of video between arbitrary port pairs and mixing of audio among several ports
+ *  A {@link module:core/abstracts.Hub Hub} that allows routing of video between
  *
  * @extends module:core/abstracts.Hub
  *
@@ -15295,7 +16302,8 @@ inherits(Mixer, Hub);
 
 
 /**
- * Connects each corresponding {@link MediaType} of the given source port with the sink port.
+ * Connects each corresponding {@link MediaType} of the given source port with 
+ * the sink port.
  *
  * @alias module:elements.Mixer.connect
  *
@@ -15339,7 +16347,7 @@ Mixer.prototype.connect = function(media, source, sink, callback){
  */
 
 /**
- * Disonnects each corresponding {@link MediaType} of the given source port from the sink port.
+ * Disonnects each corresponding {@link MediaType} of the given source port from
  *
  * @alias module:elements.Mixer.disconnect
  *
@@ -15382,7 +16390,8 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
  * @alias module:elements.Mixer.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the Mixer belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the Mixer 
+ *  belongs
  */
 Mixer.constructorParams = {
   mediaPipeline: {
@@ -15452,7 +16461,9 @@ var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
  * @classdesc
  *  Retrieves content from seekable sources in reliable
  *  mode (does not discard media information) and inject 
- *  them into <a href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a>. It
+ *  them into <a 
+ *  href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a>. 
+ *  It
  *  contains one :rom:cls:`MediaSource` for each media type detected.
  *
  * @extends module:core/abstracts.UriEndpoint
@@ -15494,7 +16505,8 @@ PlayerEndpoint.prototype.play = function(callback){
  * @alias module:elements.PlayerEndpoint.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  The {@link module:core.MediaPipeline MediaPipeline} this PlayerEndpoint belongs to.
+ *  The {@link module:core.MediaPipeline MediaPipeline} this PlayerEndpoint 
+ *  belongs to.
  *
  * @property {external:String} uri
  *  URI that will be played
@@ -15502,7 +16514,8 @@ PlayerEndpoint.prototype.play = function(callback){
  * @property {external:Boolean} [useEncodedMedia]
  *  use encoded instead of raw media. If the parameter is false then the
  *  element uses raw media. Changing this parameter can affect stability
- *  severely, as lost key frames lost will not be regenerated. Changing the media type does not
+ *  severely, as lost key frames lost will not be regenerated. Changing the 
+ *  media type does not
  *  affect to the result except in the performance (just in the case where
  *  original media and target media are the same) and in the problem with the
  *  key frames. We strongly recommended not to use this parameter because
@@ -15580,10 +16593,9 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
 
 /**
- * 
  *
  * @classdesc
- *  Provides function to store contents in reliable mode (doesn't discard data). It contains :rom:cls:`MediaSink` pads for audio and video.
+ *  Provides function to store contents in reliable mode (doesn't discard data).
  *
  * @extends module:core/abstracts.UriEndpoint
  *
@@ -15622,13 +16634,18 @@ RecorderEndpoint.prototype.record = function(callback){
  * @alias module:elements.RecorderEndpoint.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
+ *  belongs
  *
  * @property {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
- *  Choose either a {@link module:elements.RecorderEndpoint#MediaProfileSpecType.WEBM} or a {@link module:elements.RecorderEndpoint#MediaProfileSpecType.MP4} profile for recording
+ *  Choose either a {@link 
+ *  module:elements.RecorderEndpoint#MediaProfileSpecType.WEBM} or a {@link 
+ *  module:elements.RecorderEndpoint#MediaProfileSpecType.MP4} profile for 
+ *  recording
  *
  * @property {external:Boolean} [stopOnEndOfStream]
- *  Forces the recorder endpoint to finish processing data when an <a href="http://www.kurento.org/docs/current/glossary.html#term-eos">EOS</a> is detected in the stream
+ *  Forces the recorder endpoint to finish processing data when an <a 
+ *  href="http://www.kurento.org/docs/current/glossary.html#term-eos">EOS</a> is
  *
  * @property {external:String} uri
  *  URI where the recording will be stored
@@ -15709,7 +16726,10 @@ var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
  * Builder for the {@link module:elements.RtpEndpoint RtpEndpoint}
  *
  * @classdesc
- *  Endpoint that provides bidirectional content delivery capabilities with remote networked peers through RTP protocol. An {@link module:elements.RtpEndpoint RtpEndpoint} contains paired sink and source :rom:cls:`MediaPad` for audio and video.
+ *  Endpoint that provides bidirectional content delivery capabilities with 
+ *  remote networked peers through RTP protocol. An {@link 
+ *  module:elements.RtpEndpoint RtpEndpoint} contains paired sink and source 
+ *  :rom:cls:`MediaPad` for audio and video.
  *
  * @extends module:core/abstracts.SdpEndpoint
  *
@@ -15724,7 +16744,8 @@ inherits(RtpEndpoint, SdpEndpoint);
  * @alias module:elements.RtpEndpoint.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
+ *  belongs
  */
 RtpEndpoint.constructorParams = {
   mediaPipeline: {
@@ -15792,7 +16813,8 @@ var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
  * Builder for the {@link module:elements.WebRtcEndpoint WebRtcEndpoint}
  *
  * @classdesc
- *  WebRtcEndpoint interface. This type of <code>Endpoint</code> offers media streaming using WebRTC.
+ *  WebRtcEndpoint interface. This type of <code>Endpoint</code> offers media 
+ *  streaming using WebRTC.
  *
  * @extends module:core/abstracts.BaseRtpEndpoint
  *
@@ -15944,7 +16966,8 @@ WebRtcEndpoint.prototype.addIceCandidate = function(candidate, callback){
 
 /**
  * Init the gathering of ICE candidates.
- * It must be called after SdpEndpoint::generateOffer or SdpEndpoint::processOffer
+ * It must be called after SdpEndpoint::generateOffer or 
+ * SdpEndpoint::processOffer
  *
  * @alias module:elements.WebRtcEndpoint.gatherCandidates
  *
@@ -15970,7 +16993,8 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
  * @alias module:elements.WebRtcEndpoint.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
+ *  belongs
  */
 WebRtcEndpoint.constructorParams = {
   mediaPipeline: {
@@ -16036,7 +17060,8 @@ var SessionEndpoint = require('kurento-client-core').abstracts.SessionEndpoint;
 
 /**
  * @classdesc
- *  Endpoint that enables Kurento to work as an HTTP server, allowing peer HTTP clients to access media.
+ *  Endpoint that enables Kurento to work as an HTTP server, allowing peer HTTP 
+ *  clients to access media.
  *
  * @abstract
  * @extends module:core/abstracts.SessionEndpoint
@@ -16155,7 +17180,55 @@ exports.HttpEndpoint = HttpEndpoint;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+
+/**
+ * IceCandidate representation based on standard 
+ * (http://www.w3.org/TR/webrtc/#rtcicecandidate-type).
+ *
+ * @constructor module:elements/complexTypes.IceCandidate
+ *
+ * @property {external:String} candidate
+ *  The candidate-attribute as defined in section 15.1 of ICE (rfc5245).
+ * @property {external:String} sdpMid
+ *  If present, this contains the identifier of the 'media stream 
+ *  identification'.
+ * @property {external:Integer} sdpMLineIndex
+ *  The index (starting at zero) of the m-line in the SDP this candidate is 
+ *  associated with.
+ */
+function IceCandidate(iceCandidateDict){
+  if(!(this instanceof IceCandidate))
+    return new IceCandidate(iceCandidateDict)
+
+  // Check iceCandidateDict has the required fields
+  checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, true);
+  checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, true);
+  checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, true);
+
+  // Set object properties
+  Object.defineProperties(this, {
+    candidate: {
+      writable: true,
+      enumerable: true,
+      value: iceCandidateDict.candidate
+    },
+    sdpMid: {
+      writable: true,
+      enumerable: true,
+      value: iceCandidateDict.sdpMid
+    },
+    sdpMLineIndex: {
+      writable: true,
+      enumerable: true,
+      value: iceCandidateDict.sdpMLineIndex
+    }
+  })
+}
 
 /**
  * Checker for {@link elements/complexTypes.IceCandidate}
@@ -16167,30 +17240,14 @@ var checkType = require('kurento-client').checkType;
  */
 function checkIceCandidate(key, value)
 {
-  checkType('String', key+'.candidate', value.candidate, true);
-  checkType('String', key+'.sdpMid', value.sdpMid, true);
-  checkType('int', key+'.sdpMLineIndex', value.sdpMLineIndex, true);
+  if(!(value instanceof IceCandidate))
+    throw ChecktypeError(key, IceCandidate, value);
 };
 
 
-/**
- * IceCandidate representation based on standard (http://www.w3.org/TR/webrtc/#rtcicecandidate-type).
- *
- * @memberof module:elements/complexTypes
- *
- * @typedef elements/complexTypes.IceCandidate
- *
- * @type {Object}
- * @property {external:String} candidate
- *  The candidate-attribute as defined in section 15.1 of ICE (rfc5245).
- * @property {external:String} sdpMid
- *  If present, this contains the identifier of the 'media stream identification'.
- * @property {external:Integer} sdpMLineIndex
- *  The index (starting at zero) of the m-line in the SDP this candidate is associated with.
- */
+module.exports = IceCandidate;
 
-
-module.exports = checkIceCandidate;
+IceCandidate.check = checkIceCandidate;
 
 },{"kurento-client":"kurento-client"}],101:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
@@ -16210,7 +17267,17 @@ module.exports = checkIceCandidate;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * States of an ICE component.
+ *
+ * @typedef elements/complexTypes.IceComponentState
+ *
+ * @type {(DISCONNECTED|GATHERING|CONNECTING|CONNECTED|READY|FAILED)}
+ */
 
 /**
  * Checker for {@link elements/complexTypes.IceComponentState}
@@ -16224,20 +17291,10 @@ function checkIceComponentState(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('DISCONNECTED|GATHERING|CONNECTING|CONNECTED|READY|FAILED'))
     throw SyntaxError(key+' param is not one of [DISCONNECTED|GATHERING|CONNECTING|CONNECTED|READY|FAILED] ('+value+')');
 };
-
-
-/**
- * States of an ICE component.
- *
- * @memberof module:elements/complexTypes
- *
- * @typedef elements/complexTypes.IceComponentState
- *
- * @type {(DISCONNECTED|GATHERING|CONNECTING|CONNECTED|READY|FAILED)}
- */
 
 
 module.exports = checkIceComponentState;
@@ -16260,7 +17317,18 @@ module.exports = checkIceComponentState;
  *
  */
 
-var checkType = require('kurento-client').checkType;
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * Media Profile.
+ * Currently WEBM and MP4 are supported.
+ *
+ * @typedef elements/complexTypes.MediaProfileSpecType
+ *
+ * @type {(WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY)}
+ */
 
 /**
  * Checker for {@link elements/complexTypes.MediaProfileSpecType}
@@ -16274,22 +17342,10 @@ function checkMediaProfileSpecType(key, value)
 {
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
+
   if(!value.match('WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY'))
     throw SyntaxError(key+' param is not one of [WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY] ('+value+')');
 };
-
-
-/**
- * Media Profile.
- * 
- * Currently WEBM and MP4 are supported.
- *
- * @memberof module:elements/complexTypes
- *
- * @typedef elements/complexTypes.MediaProfileSpecType
- *
- * @type {(WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY)}
- */
 
 
 module.exports = checkMediaProfileSpecType;
@@ -16415,10 +17471,11 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var Filter = require('kurento-client-core').abstracts.Filter;
 
 /**
- * FaceOverlayFilter interface. This type of {@link module:core/abstracts.Filter Filter} detects faces in a video feed. The face is then overlaid with an image.
+ * FaceOverlayFilter interface. This type of {@link module:core/abstracts.Filter
  *
  * @classdesc
- *  FaceOverlayFilter interface. This type of {@link module:core/abstracts.Filter Filter} detects faces in a video feed. The face is then overlaid with an image.
+ *  FaceOverlayFilter interface. This type of {@link 
+ *  module:core/abstracts.Filter Filter} detects faces in a video feed. The face
  *
  * @extends module:core/abstracts.Filter
  *
@@ -16439,35 +17496,42 @@ inherits(FaceOverlayFilter, Filter);
  *  URI where the image is located
  *
  * @param {external:Number} offsetXPercent
- *  the offset applied to the image, from the X coordinate of the detected face upper right corner. A positive value indicates right displacement, while a negative value moves the overlaid image to the left. This offset is specified as a percentage of the face width.
- *  
- *  For example, to cover the detected face with the overlaid image, the parameter has to be <code>0.0</code>. Values of <code>1.0</code> or <code>-1.0</code> indicate that the image upper right corner will be at the face´s X coord, +- the face´s width.
- *  
+ *  the offset applied to the image, from the X coordinate of the detected face 
+ *  upper right corner. A positive value indicates right displacement, while a 
+ *  negative value moves the overlaid image to the left. This offset is 
+ *  specified as a percentage of the face width.
+ *  For example, to cover the detected face with the overlaid image, the 
+ *  parameter has to be <code>0.0</code>. Values of <code>1.0</code> or 
+ *  <code>-1.0</code> indicate that the image upper right corner will be at the 
+ *  face´s X coord, +- the face´s width.
  *  <hr/><b>Note</b>
- *  
  *      The parameter name is misleading, the value is not a percent but a ratio
  *
  * @param {external:Number} offsetYPercent
- *  the offset applied to the image, from the Y coordinate of the detected face upper right corner. A positive value indicates up displacement, while a negative value moves the overlaid image down. This offset is specified as a percentage of the face width.
- *  
- *  For example, to cover the detected face with the overlaid image, the parameter has to be <code>0.0</code>. Values of <code>1.0</code> or <code>-1.0</code> indicate that the image upper right corner will be at the face´s Y coord, +- the face´s width.
- *  
+ *  the offset applied to the image, from the Y coordinate of the detected face 
+ *  upper right corner. A positive value indicates up displacement, while a 
+ *  negative value moves the overlaid image down. This offset is specified as a 
+ *  percentage of the face width.
+ *  For example, to cover the detected face with the overlaid image, the 
+ *  parameter has to be <code>0.0</code>. Values of <code>1.0</code> or 
+ *  <code>-1.0</code> indicate that the image upper right corner will be at the 
+ *  face´s Y coord, +- the face´s width.
  *  <hr/><b>Note</b>
- *  
  *      The parameter name is misleading, the value is not a percent but a ratio
  *
  * @param {external:Number} widthPercent
- *  proportional width of the overlaid image, relative to the width of the detected face. A value of 1.0 implies that the overlaid image will have the same width as the detected face. Values greater than 1.0 are allowed, while negative values are forbidden.
- *  
+ *  proportional width of the overlaid image, relative to the width of the 
+ *  detected face. A value of 1.0 implies that the overlaid image will have the 
+ *  same width as the detected face. Values greater than 1.0 are allowed, while 
+ *  negative values are forbidden.
  *  <hr/><b>Note</b>
- *  
  *      The parameter name is misleading, the value is not a percent but a ratio
  *
  * @param {external:Number} heightPercent
- *  proportional height of the overlaid image, relative to the height of the detected face. A value of 1.0 implies that the overlaid image will have the same height as the detected face. Values greater than 1.0 are allowed, while negative values are forbidden.
- *  
+ *  proportional height of the overlaid image, relative to the height of the 
+ *  detected face. A value of 1.0 implies that the overlaid image will have the 
+ *  same height as the detected face. Values greater than 1.0 are allowed, while
  *  <hr/><b>Note</b>
- *  
  *      The parameter name is misleading, the value is not a percent but a ratio
  *
  * @param {module:filters.FaceOverlayFilter~setOverlayedImageCallback} [callback]
@@ -16501,7 +17565,8 @@ FaceOverlayFilter.prototype.setOverlayedImage = function(uri, offsetXPercent, of
  */
 
 /**
- * Clear the image to be shown over each detected face. Stops overlaying the faces.
+ * Clear the image to be shown over each detected face. Stops overlaying the 
+ * faces.
  *
  * @alias module:filters.FaceOverlayFilter.unsetOverlayedImage
  *
@@ -16592,7 +17657,8 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  * Create a {@link module:filters.GStreamerFilter GStreamerFilter}
  *
  * @classdesc
- *  This is a generic filter interface, that creates GStreamer filters in the media server.
+ *  This is a generic filter interface, that creates GStreamer filters in the 
+ *  media server.
  *
  * @extends module:core/abstracts.Filter
  *
@@ -16607,13 +17673,15 @@ inherits(GStreamerFilter, Filter);
  * @alias module:filters.GStreamerFilter.constructorParams
  *
  * @property {external:String} command
- *  command that would be used to instantiate the filter, as in `gst-launch <http://rpm.pbone.net/index.php3/stat/45/idpl/19531544/numer/1/nazwa/gst-launch-1.0>`__
+ *  command that would be used to instantiate the filter, as in `gst-launch 
+ *  <http://rpm.pbone.net/index.php3/stat/45/idpl/19531544/numer/1/nazwa/gst-launch-1.0>`__
  *
  * @property {external:FilterType} [filterType]
  *  Filter type that define if the filter is set as audio, video or autodetect
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter 
+ *  belongs
  */
 GStreamerFilter.constructorParams = {
   command: {
@@ -16687,7 +17755,10 @@ var Filter = require('kurento-client-core').abstracts.Filter;
  * Builder for the {@link module:filters.ZBarFilter ZBarFilter}.
  *
  * @classdesc
- *  This filter detects <a href="http://www.kurento.org/docs/current/glossary.html#term-qr">QR</a> codes in a video feed. When a code is found, the filter raises a :rom:evnt:`CodeFound` event.
+ *  This filter detects <a 
+ *  href="http://www.kurento.org/docs/current/glossary.html#term-qr">QR</a> 
+ *  codes in a video feed. When a code is found, the filter raises a 
+ *  :rom:evnt:`CodeFound` event.
  *
  * @extends module:core/abstracts.Filter
  *
@@ -16704,7 +17775,8 @@ inherits(ZBarFilter, Filter);
  * @alias module:filters.ZBarFilter.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter belongs
+ *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter 
+ *  belongs
  */
 ZBarFilter.constructorParams = {
   mediaPipeline: {
