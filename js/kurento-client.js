@@ -17325,6 +17325,64 @@ WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
  * @param {external:Error} error
  */
 
+/**
+ * TURN server URL with this format: 
+ * 'user:password@address:port(?transport=[udp|tcp|tls])'.
+ * 'address' must be an IP (not a domain).
+ * 'transport' is optional (UDP by default).
+ *
+ * @alias module:elements.WebRtcEndpoint#getTurnUrl
+ *
+ * @param {module:elements.WebRtcEndpoint~getTurnUrlCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getTurnUrl = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  return this._invoke(transaction, 'getTurnUrl', callback);
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getTurnUrlCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
+
+/**
+ * TURN server URL with this format: 
+ * 'user:password@address:port(?transport=[udp|tcp|tls])'.
+ * 'address' must be an IP (not a domain).
+ * 'transport' is optional (UDP by default).
+ *
+ * @alias module:elements.WebRtcEndpoint#setTurnUrl
+ *
+ * @param {external:String} turnUrl
+ * @param {module:elements.WebRtcEndpoint~setTurnUrlCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('String', 'turnUrl', turnUrl, {required: true});
+
+  var params = {
+    turnUrl: turnUrl,
+  };
+
+  return this._invoke(transaction, 'setTurnUrl', params, callback);
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~setTurnUrlCallback
+ * @param {external:Error} error
+ */
+
 
 /**
  * Provide a remote ICE candidate
