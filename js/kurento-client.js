@@ -114,35 +114,6 @@ function noop(error) {
   if (error) console.trace(error);
 };
 
-function id2object(error, result, operation, id, callback) {
-  if (error) return callback(error);
-
-  var operations = [
-    'getConnectedSinks',
-    'getMediaPipeline',
-    'getMediaSinks',
-    'getMediaSrcs',
-    'getParent'
-  ]
-
-  if (operations.indexOf(operation) != -1) {
-    var sessionId = result.sessionId;
-
-    return this.getMediaobjectById(id, function (error, result) {
-      if (error) return callback(error);
-
-      var result = {
-        sessionId: sessionId,
-        value: result
-      };
-
-      callback(null, result);
-    });
-  };
-
-  callback(null, result)
-};
-
 /**
  * Creates a connection with the Kurento Media Server
  *
@@ -184,6 +155,7 @@ function KurentoClient(ws_uri, options, callback) {
   };
 
   options = options || {};
+  if (callback) callback = callback.bind(this)
 
   var failAfter = options.failAfter
   if (failAfter == undefined) failAfter = 5
@@ -248,95 +220,6 @@ function KurentoClient(ws_uri, options, callback) {
     // Invalid message, notify error
     console.error('Invalid request instance', request);
   });
-
-  function connect(callback) {
-    //
-    // Reconnect websockets
-    //
-
-    var closed = false;
-    var re = reconnect({
-        failAfter: failAfter
-      }, function (ws_stream) {
-        if (closed)
-          ws_stream.writable = false;
-
-        rpc.transport = ws_stream;
-      })
-      .connect(ws_uri);
-
-    Object.defineProperty(this, '_re', {
-      configurable: true,
-      get: function () {
-        return re
-      }
-    })
-
-    this.close = function () {
-      closed = true;
-
-      prevRpc_result.then(re.disconnect.bind(re));
-    };
-
-    re.on('fail', this.emit.bind(this, 'disconnect'));
-
-    //
-    // Promise interface ("thenable")
-    //
-
-    this.then = function (onFulfilled, onRejected) {
-      return new Promise(function (resolve, reject) {
-        function success() {
-          re.removeListener('fail', failure);
-
-          var result;
-
-          if (onFulfilled)
-            try {
-              result = onFulfilled.call(self, self);
-            } catch (exception) {
-              if (!onRejected)
-                console.trace('Uncaugh exception', exception)
-
-              return reject(exception);
-            }
-
-          resolve(result);
-        };
-
-        function failure() {
-          re.removeListener('connection', success);
-
-          var result = new Error('Connection error');
-
-          if (onRejected)
-            try {
-              result = onRejected.call(self, result);
-            } catch (exception) {
-              return reject(exception);
-            } else
-              console.trace('Uncaugh exception', result)
-
-          reject(result);
-        };
-
-        if (re.connected)
-          success()
-        else if (!re.reconnect)
-          failure()
-        else {
-          re.once('connection', success);
-          re.once('fail', failure);
-        }
-      });
-    };
-
-    this.catch = this.then.bind(this, null);
-
-    if (callback)
-      this.then(callback.bind(undefined, null), callback);
-  };
-  connect.call(self, callback);
 
   // Select what transactions mechanism to use
   var encodeTransaction = options.enableTransactions ? commitTransactional :
@@ -449,15 +332,9 @@ function KurentoClient(ws_uri, options, callback) {
 
     var promise = new Promise(function (resolve, reject) {
       function callback2(error, result) {
-        var operation = params.operation;
-        var id = result ? result.value : undefined;
+        if (error) return reject(error);
 
-        id2object.call(self, error, result, operation, id, function (
-          error, result) {
-          if (error) return reject(error);
-
-          resolve(result);
-        });
+        resolve(result);
       };
 
       prevRpc = deferred(params.object, params.operationParams, prevRpc,
@@ -579,7 +456,9 @@ function KurentoClient(ws_uri, options, callback) {
           break;
 
         default:
-          id2object.call(self, error, result, operation, id, callback);
+          if (error) return callback(error);
+
+          callback(null, result);
         }
       })
 
@@ -639,8 +518,26 @@ function KurentoClient(ws_uri, options, callback) {
 
   // Creation of objects
 
+  /**
+   * Get a MediaObject from its ID
+   *
+   * @param {(external:String|external:string[])} id - ID of the MediaElement
+   * @callback {getMediaobjectByIdCallback} callback
+   *
+   * @return {external:Promise}
+   */
+  this.getMediaobjectById = function (id, callback) {
+    return createPromise(id, describe, callback)
+  };
+  /**
+   * @callback KurentoClientApi~getMediaobjectByIdCallback
+   * @param {external:Error} error
+   * @param {(module:core/abstract~MediaElement|module:core/abstract~MediaElement[])} result
+   *  The requested MediaElement
+   */
+
   var mediaObjectCreator = new MediaObjectCreator(undefined, encodeCreate,
-    encodeRpc, encodeTransaction);
+    encodeRpc, encodeTransaction, this.getMediaobjectById.bind(this));
 
   function describe(id, callback) {
     var mediaObject = objects[id];
@@ -662,24 +559,6 @@ function KurentoClient(ws_uri, options, callback) {
   };
 
   /**
-   * Get a MediaObject from its ID
-   *
-   * @param {(external:String|external:string[])} id - ID of the MediaElement
-   * @callback {getMediaobjectByIdCallback} callback
-   *
-   * @return {external:Promise}
-   */
-  this.getMediaobjectById = function (id, callback) {
-    return createPromise(id, describe, callback)
-  };
-  /**
-   * @callback KurentoClientApi~getMediaobjectByIdCallback
-   * @param {external:Error} error
-   * @param {(module:core/abstract~MediaElement|module:core/abstract~MediaElement[])} result
-   *  The requested MediaElement
-   */
-
-  /**
    * Create a new instance of a MediaObject
    *
    * @param {external:String} type - Type of the element
@@ -695,6 +574,130 @@ function KurentoClient(ws_uri, options, callback) {
    * @param {module:core/abstract~MediaElement} result
    *  The created MediaElement
    */
+
+  function connect(callback) {
+    //
+    // Reconnect websockets
+    //
+
+    var closed = false;
+    var re = reconnect({
+        failAfter: failAfter
+      }, function (ws_stream) {
+        if (closed)
+          ws_stream.writable = false;
+
+        rpc.transport = ws_stream;
+      })
+      .connect(ws_uri);
+
+    // Object.defineProperty(this, '_re', {
+    //   configurable: true,
+    //   get: function () {
+    //     return re
+    //   }
+    // })
+
+    this.close = function () {
+      closed = true;
+
+      prevRpc_result.then(re.disconnect.bind(re));
+    };
+
+    re.on('fail', this.emit.bind(this, 'disconnect'));
+
+    //
+    // Promise interface ("thenable")
+    //
+
+    this.then = function (onFulfilled, onRejected) {
+      return new Promise(function (resolve, reject) {
+        function success() {
+          re.removeListener('fail', failure);
+
+          var result;
+
+          if (onFulfilled)
+            try {
+              result = onFulfilled.call(self, self);
+            } catch (exception) {
+              if (!onRejected)
+                console.trace('Uncaugh exception', exception)
+
+              return reject(exception);
+            }
+
+          resolve(result);
+        };
+
+        function failure() {
+          re.removeListener('connection', success);
+
+          var result = new Error('Connection error');
+
+          if (onRejected)
+            try {
+              result = onRejected.call(self, result);
+            } catch (exception) {
+              return reject(exception);
+            } else
+              console.trace('Uncaugh exception', result)
+
+          reject(result);
+        };
+
+        if (re.connected)
+          success()
+        else if (!re.reconnect)
+          failure()
+        else {
+          re.once('connection', success);
+          re.once('fail', failure);
+        }
+      });
+    };
+
+    this.catch = this.then.bind(this, null);
+
+    // Check for available modules in the Kurento Media Server
+
+    var promise = this.getServerManager()
+      .then(function (serverManager) {
+        return serverManager.getInfo()
+      })
+      .then(function (info) {
+        var serverModules = info.modules.map(function (module) {
+          return module.name
+        })
+
+        var notInstalled = KurentoClient.register.modules.filter(
+          function (module) {
+            return serverModules.indexOf(module) < 0
+          })
+
+        var length = notInstalled.length
+        if (length) {
+          if (length === 1)
+            var message = "Module '" + notInstalled[0] +
+              "' is not installed in the Kurento Media Server"
+          else
+            var message = "Modules '" + notInstalled.slice(0, -1).join(
+                "', '") + "' and '" + notInstalled[length - 1] +
+              "' are not installed in the Kurento Media Server"
+
+          var error = new Error(message)
+          error.modules = notInstalled
+
+          return Promise.reject(error)
+        }
+
+        return Promise.resolve(self)
+      })
+
+    if (callback)
+      promise.then(callback.bind(undefined, null), callback);
+  };
+  connect.call(self, callback);
 };
 inherits(KurentoClient, EventEmitter);
 /**
@@ -827,14 +830,16 @@ function createConstructor(item) {
   return constructor;
 }
 
-function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction) {
+function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
+  describe) {
   if (!(this instanceof MediaObjectCreator))
     return new MediaObjectCreator(host, encodeCreate, encodeRpc,
-      encodeTransaction)
+      encodeTransaction, describe)
 
   function createObject(constructor) {
     var mediaObject = new constructor()
 
+    mediaObject.on('_describe', describe);
     mediaObject.on('_rpc', encodeRpc);
 
     if (mediaObject instanceof register.abstracts.Hub || mediaObject instanceof register
@@ -1201,6 +1206,7 @@ var checkType = require('checktype');
 var abstracts = {};
 var classes = {};
 var complexTypes = {};
+var modules = [];
 
 function registerAbstracts(classes) {
   for (var name in classes) {
@@ -1240,6 +1246,11 @@ function registerComplexTypes(types) {
   }
 }
 
+function registerModule(name) {
+  modules.push(name)
+  modules.sort()
+}
+
 function register(name, constructor) {
   // Adjust parameters
   if (typeof name != 'string') {
@@ -1253,8 +1264,7 @@ function register(name, constructor) {
   // Registering a function
   if (constructor instanceof Function) {
     // Registration name
-    if (!name)
-      name = constructor.name
+    if (!name) name = constructor.name
 
     if (name == undefined)
       throw new Error("Can't register an anonymous module");
@@ -1263,20 +1273,30 @@ function register(name, constructor) {
   }
 
   // Registering a plugin
-  else
-    for (key in constructor)
+  else {
+    if (!name) name = constructor.name
+
+    if (name) registerModule(name)
+
+    for (var key in constructor) {
+      var value = constructor[key]
+
+      if (typeof value === 'string') continue
+
       switch (key) {
       case 'abstracts':
-        registerAbstracts(constructor[key])
+        registerAbstracts(value)
         break
 
       case 'complexTypes':
-        registerComplexTypes(constructor[key])
+        registerComplexTypes(value)
         break
 
       default:
-        registerClass(key, constructor[key])
+        registerClass(key, value)
       }
+    }
+  }
 };
 
 module.exports = register;
@@ -1284,6 +1304,7 @@ module.exports = register;
 register.abstracts = abstracts;
 register.classes = classes;
 register.complexTypes = complexTypes;
+register.modules = modules;
 
 },{"checktype":8}],7:[function(require,module,exports){
 (function (process){
@@ -9964,6 +9985,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var MediaElement = require('./abstracts/MediaElement');
 
+
 /**
  * Creates a {@link module:core.HubPort HubPort} for the given {@link 
  * module:core/abstracts.Hub Hub}
@@ -9980,6 +10002,7 @@ function HubPort(){
   HubPort.super_.call(this);
 };
 inherits(HubPort, MediaElement);
+
 
 /**
  * @alias module:core.HubPort.constructorParams
@@ -10000,6 +10023,7 @@ HubPort.constructorParams = {
  * @extends module:core/abstracts.MediaElement.events
  */
 HubPort.events = MediaElement.events;
+
 
 /**
  * Checker for {@link core.HubPort}
@@ -10053,6 +10077,12 @@ var TransactionsManager = kurentoClient.TransactionsManager;
 var transactionOperation = TransactionsManager.transactionOperation;
 
 var MediaObject = require('./abstracts/MediaObject');
+
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
 
 /**
  * Create a {@link module:core.MediaPipeline MediaPipeline}
@@ -10121,10 +10151,12 @@ function MediaPipeline(){
     self.emit('_transaction', params, callback);
   }
 
+  var describe = this.emit.bind(this, '_describe');
+
 
   // Creation of objects
 
-  var mediaObjectCreator = new MediaObjectCreator(this, encodeCreate, encodeRpc, encodeTransaction);
+  var mediaObjectCreator = new MediaObjectCreator(this, encodeCreate, encodeRpc, encodeTransaction, describe);
 
   /**
    * Create a new instance of a {module:core/abstract.MediaObject} attached to
@@ -10148,6 +10180,11 @@ function MediaPipeline(){
 inherits(MediaPipeline, MediaObject);
 
 
+//
+// Public methods
+//
+
+
 /**
  * Returns a string in dot (graphviz) format that represents the gstreamer 
  * elements inside the pipeline
@@ -10169,6 +10206,8 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
   callback = arguments[arguments.length-1] instanceof Function
            ? Array.prototype.pop.call(arguments)
            : undefined;
+
+  callback = (callback || noop).bind(this)
 
   switch(arguments.length){
     case 0: details = undefined;
@@ -10198,6 +10237,7 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
  *  The dot graph
  */
 
+
 /**
  * @alias module:core.MediaPipeline.constructorParams
  */
@@ -10209,6 +10249,7 @@ MediaPipeline.constructorParams = {};
  * @extends module:core/abstracts.MediaObject.events
  */
 MediaPipeline.events = MediaObject.events;
+
 
 /**
  * Checker for {@link core.MediaPipeline}
@@ -10255,6 +10296,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var MediaElement = require('./abstracts/MediaElement');
 
+
 /**
  * Builder for the {@link module:core.PassThrough PassThrough}
  *
@@ -10270,6 +10312,7 @@ function PassThrough(){
   PassThrough.super_.call(this);
 };
 inherits(PassThrough, MediaElement);
+
 
 /**
  * @alias module:core.PassThrough.constructorParams
@@ -10291,6 +10334,7 @@ PassThrough.constructorParams = {
  * @extends module:core/abstracts.MediaElement.events
  */
 PassThrough.events = MediaElement.events;
+
 
 /**
  * Checker for {@link core.PassThrough}
@@ -10340,6 +10384,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var SdpEndpoint = require('./SdpEndpoint');
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * @classdesc
  *  Base class to manage common RTP features.
@@ -10353,6 +10403,11 @@ function BaseRtpEndpoint(){
   BaseRtpEndpoint.super_.call(this);
 };
 inherits(BaseRtpEndpoint, SdpEndpoint);
+
+
+//
+// Public properties
+//
 
 /**
  * Maximum video bandwidth for sending.
@@ -10372,6 +10427,8 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getMaxVideoSendBandwidth', callback);
 };
@@ -10431,6 +10488,8 @@ BaseRtpEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'getMinVideoSendBandwidth', callback);
 };
 /**
@@ -10471,6 +10530,11 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
  */
 
 
+//
+// Public methods
+//
+
+
 /**
  * Provides statistics collected for this endpoint
  *
@@ -10498,6 +10562,7 @@ BaseRtpEndpoint.prototype.getStats = function(callback){
  *  (RTCStats.id), and their corresponding RTCStats objects.
  */
 
+
 /**
  * @alias module:core/abstracts.BaseRtpEndpoint.constructorParams
  */
@@ -10509,6 +10574,7 @@ BaseRtpEndpoint.constructorParams = {};
  * @extends module:core/abstracts.SdpEndpoint.events
  */
 BaseRtpEndpoint.events = SdpEndpoint.events;
+
 
 /**
  * Checker for {@link core/abstracts.BaseRtpEndpoint}
@@ -10555,6 +10621,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var MediaElement = require('./MediaElement');
 
+
 /**
  * @classdesc
  *  Base interface for all end points. An Endpoint is a {@link 
@@ -10578,6 +10645,7 @@ function Endpoint(){
 };
 inherits(Endpoint, MediaElement);
 
+
 /**
  * @alias module:core/abstracts.Endpoint.constructorParams
  */
@@ -10589,6 +10657,7 @@ Endpoint.constructorParams = {};
  * @extends module:core/abstracts.MediaElement.events
  */
 Endpoint.events = MediaElement.events;
+
 
 /**
  * Checker for {@link core/abstracts.Endpoint}
@@ -10635,6 +10704,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var MediaElement = require('./MediaElement');
 
+
 /**
  * @classdesc
  *  Base interface for all filters. This is a certain type of {@link 
@@ -10651,6 +10721,7 @@ function Filter(){
 };
 inherits(Filter, MediaElement);
 
+
 /**
  * @alias module:core/abstracts.Filter.constructorParams
  */
@@ -10662,6 +10733,7 @@ Filter.constructorParams = {};
  * @extends module:core/abstracts.MediaElement.events
  */
 Filter.events = MediaElement.events;
+
 
 /**
  * Checker for {@link core/abstracts.Filter}
@@ -10712,6 +10784,12 @@ var HubPort = require('../HubPort');
 
 var MediaObject = require('./MediaObject');
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * @classdesc
  *  A Hub is a routing {@link module:core/abstracts.MediaObject MediaObject}. It
@@ -10741,6 +10819,8 @@ Hub.prototype.createHubPort = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   var mediaObject = new HubPort()
 
   mediaObject.on('_rpc', this.emit.bind(this, '_rpc'));
@@ -10764,6 +10844,7 @@ Hub.prototype.createHubPort = function(callback){
  *  The created HubPort
  */
 
+
 /**
  * @alias module:core/abstracts.Hub.constructorParams
  */
@@ -10775,6 +10856,7 @@ Hub.constructorParams = {};
  * @extends module:core/abstracts.MediaObject.events
  */
 Hub.events = MediaObject.events;
+
 
 /**
  * Checker for {@link core/abstracts.Hub}
@@ -10824,6 +10906,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var MediaObject = require('./MediaObject');
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * @classdesc
  *  Basic building blocks of the media server, that can be interconnected 
@@ -10842,6 +10930,11 @@ function MediaElement(){
   MediaElement.super_.call(this);
 };
 inherits(MediaElement, MediaObject);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -10878,6 +10971,8 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
   callback = arguments[arguments.length-1] instanceof Function
            ? Array.prototype.pop.call(arguments)
            : undefined;
+
+  callback = (callback || noop).bind(this)
 
   switch(arguments.length){
     case 1: mediaType = undefined;
@@ -10952,6 +11047,8 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
            ? Array.prototype.pop.call(arguments)
            : undefined;
 
+  callback = (callback || noop).bind(this)
+
   switch(arguments.length){
     case 1: mediaType = undefined;
     case 2: sourceMediaDescription = undefined;
@@ -11008,6 +11105,8 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
            ? Array.prototype.pop.call(arguments)
            : undefined;
 
+  callback = (callback || noop).bind(this)
+
   switch(arguments.length){
     case 0: details = undefined;
     break;
@@ -11063,6 +11162,8 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
   callback = arguments[arguments.length-1] instanceof Function
            ? Array.prototype.pop.call(arguments)
            : undefined;
+
+  callback = (callback || noop).bind(this)
 
   switch(arguments.length){
     case 0: mediaType = undefined;
@@ -11123,6 +11224,8 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
   callback = arguments[arguments.length-1] instanceof Function
            ? Array.prototype.pop.call(arguments)
            : undefined;
+
+  callback = (callback || noop).bind(this)
 
   switch(arguments.length){
     case 0: mediaType = undefined;
@@ -11216,6 +11319,7 @@ MediaElement.prototype.setVideoFormat = function(caps, callback){
  * @param {external:Error} error
  */
 
+
 /**
  * @alias module:core/abstracts.MediaElement.constructorParams
  */
@@ -11227,6 +11331,7 @@ MediaElement.constructorParams = {};
  * @extends module:core/abstracts.MediaObject.events
  */
 MediaElement.events = MediaObject.events;
+
 
 /**
  * Checker for {@link core/abstracts.MediaElement}
@@ -11279,6 +11384,12 @@ var Promise = require('es6-promise').Promise;
 var promiseCallback = require('promisecallback');
 
 var EventEmitter = require('events').EventEmitter;
+
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
 
 /**
  * @classdesc
@@ -11391,6 +11502,11 @@ function MediaObject(){
 };
 inherits(MediaObject, EventEmitter);
 
+
+//
+// Public properties
+//
+
 /**
  * Childs of current object, all returned objects have parent set to current 
  * object
@@ -11408,7 +11524,14 @@ MediaObject.prototype.getChilds = function(callback){
 
   if(!arguments.length) callback = undefined;
 
-  return this._invoke(transaction, 'getChilds', callback);
+  callback = (callback || noop).bind(this)
+
+  return this._invoke(transaction, 'getChilds', function(error, result)
+  {
+    if (error) return callback(error);
+
+    this.emit('_describe', result, callback);
+  });
 };
 /**
  * @callback module:core/abstracts.MediaObject~getChildsCallback
@@ -11434,7 +11557,14 @@ MediaObject.prototype.getMediaPipeline = function(callback){
 
   if(!arguments.length) callback = undefined;
 
-  return this._invoke(transaction, 'getMediaPipeline', callback);
+  callback = (callback || noop).bind(this)
+
+  return this._invoke(transaction, 'getMediaPipeline', function(error, result)
+  {
+    if (error) return callback(error);
+
+    this.emit('_describe', result, callback);
+  });
 };
 /**
  * @callback module:core/abstracts.MediaObject~getMediaPipelineCallback
@@ -11458,6 +11588,8 @@ MediaObject.prototype.getName = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getName', callback);
 };
@@ -11515,7 +11647,14 @@ MediaObject.prototype.getParent = function(callback){
 
   if(!arguments.length) callback = undefined;
 
-  return this._invoke(transaction, 'getParent', callback);
+  callback = (callback || noop).bind(this)
+
+  return this._invoke(transaction, 'getParent', function(error, result)
+  {
+    if (error) return callback(error);
+
+    this.emit('_describe', result, callback);
+  });
 };
 /**
  * @callback module:core/abstracts.MediaObject~getParentCallback
@@ -11539,6 +11678,8 @@ MediaObject.prototype.getSendTagsInEvents = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getSendTagsInEvents', callback);
 };
@@ -11576,6 +11717,11 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
  * @callback module:core/abstracts.MediaObject~setSendTagsInEventsCallback
  * @param {external:Error} error
  */
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -11782,7 +11928,18 @@ MediaObject.prototype._invoke = function(transaction, method, params, callback){
     });
   }
 
-  promise = promiseCallback(promise, callback);
+  var then = promise.then
+  promise.then = function(onFulfilled, onRejected)
+  {
+    if(onFulfilled instanceof Function) onFulfilled = onFulfilled.bind(self)
+    if(onRejected  instanceof Function) onRejected  = onRejected.bind(self)
+
+    then.call(this, onFulfilled, onRejected)
+
+    return this
+  }
+
+  promise = promiseCallback(promise, callback, this);
 
   return promise
 };
@@ -11806,6 +11963,8 @@ MediaObject.prototype.release = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   var self = this;
 
@@ -11924,6 +12083,7 @@ Object.defineProperty(MediaObject.prototype, 'commited',
   get: function(){return this.id !== undefined;}
 });
 
+
 /**
  * @alias module:core/abstracts.MediaObject.constructorParams
  */
@@ -11933,6 +12093,7 @@ MediaObject.constructorParams = {};
  * @alias module:core/abstracts.MediaObject.events
  */
 MediaObject.events = ['Error'];
+
 
 /**
  * Checker for {@link core/abstracts.MediaObject}
@@ -11982,6 +12143,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var SessionEndpoint = require('./SessionEndpoint');
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * @classdesc
  *  Implements an SDP negotiation endpoint able to generate and process 
@@ -11997,6 +12164,11 @@ function SdpEndpoint(){
   SdpEndpoint.super_.call(this);
 };
 inherits(SdpEndpoint, SessionEndpoint);
+
+
+//
+// Public properties
+//
 
 /**
  * Maximum video bandwidth for receiving.
@@ -12016,6 +12188,8 @@ SdpEndpoint.prototype.getMaxVideoRecvBandwidth = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getMaxVideoRecvBandwidth', callback);
 };
@@ -12055,6 +12229,11 @@ SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth,
  * @callback module:core/abstracts.SdpEndpoint~setMaxVideoRecvBandwidthCallback
  * @param {external:Error} error
  */
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -12206,6 +12385,7 @@ SdpEndpoint.prototype.processOffer = function(offer, callback){
  *  The chosen configuration from the ones stated in the SDP offer
  */
 
+
 /**
  * @alias module:core/abstracts.SdpEndpoint.constructorParams
  */
@@ -12217,6 +12397,7 @@ SdpEndpoint.constructorParams = {};
  * @extends module:core/abstracts.SessionEndpoint.events
  */
 SdpEndpoint.events = SessionEndpoint.events;
+
 
 /**
  * Checker for {@link core/abstracts.SdpEndpoint}
@@ -12265,6 +12446,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var MediaObject = require('./MediaObject');
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * @classdesc
  *  This is a standalone object for managing the MediaServer
@@ -12282,6 +12469,11 @@ function ServerManager(){
 };
 inherits(ServerManager, MediaObject);
 
+
+//
+// Public properties
+//
+
 /**
  * Server information, version, modules, factories, etc
  *
@@ -12297,6 +12489,8 @@ ServerManager.prototype.getInfo = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getInfo', callback);
 };
@@ -12322,6 +12516,8 @@ ServerManager.prototype.getMetadata = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'getMetadata', callback);
 };
 /**
@@ -12346,7 +12542,14 @@ ServerManager.prototype.getPipelines = function(callback){
 
   if(!arguments.length) callback = undefined;
 
-  return this._invoke(transaction, 'getPipelines', callback);
+  callback = (callback || noop).bind(this)
+
+  return this._invoke(transaction, 'getPipelines', function(error, result)
+  {
+    if (error) return callback(error);
+
+    this.emit('_describe', result, callback);
+  });
 };
 /**
  * @callback module:core/abstracts.ServerManager~getPipelinesCallback
@@ -12370,6 +12573,8 @@ ServerManager.prototype.getSessions = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'getSessions', callback);
 };
 /**
@@ -12377,6 +12582,7 @@ ServerManager.prototype.getSessions = function(callback){
  * @param {external:Error} error
  * @param {external:String} result
  */
+
 
 /**
  * @alias module:core/abstracts.ServerManager.constructorParams
@@ -12389,6 +12595,7 @@ ServerManager.constructorParams = {};
  * @extends module:core/abstracts.MediaObject.events
  */
 ServerManager.events = MediaObject.events.concat(['ObjectCreated', 'ObjectDestroyed']);
+
 
 /**
  * Checker for {@link core/abstracts.ServerManager}
@@ -12435,6 +12642,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var Endpoint = require('./Endpoint');
 
+
 /**
  * @classdesc
  *  Session based endpoint. A session is considered to be started when the media
@@ -12452,6 +12660,7 @@ function SessionEndpoint(){
 };
 inherits(SessionEndpoint, Endpoint);
 
+
 /**
  * @alias module:core/abstracts.SessionEndpoint.constructorParams
  */
@@ -12463,6 +12672,7 @@ SessionEndpoint.constructorParams = {};
  * @extends module:core/abstracts.Endpoint.events
  */
 SessionEndpoint.events = Endpoint.events.concat(['MediaSessionStarted', 'MediaSessionTerminated']);
+
 
 /**
  * Checker for {@link core/abstracts.SessionEndpoint}
@@ -12512,6 +12722,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var Endpoint = require('./Endpoint');
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * @classdesc
  *  Interface for endpoints the require a URI to work. An example of this, would
@@ -12525,6 +12741,11 @@ function UriEndpoint(){
   UriEndpoint.super_.call(this);
 };
 inherits(UriEndpoint, Endpoint);
+
+
+//
+// Public properties
+//
 
 /**
  * The uri for this endpoint.
@@ -12542,6 +12763,8 @@ UriEndpoint.prototype.getUri = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'getUri', callback);
 };
 /**
@@ -12549,6 +12772,11 @@ UriEndpoint.prototype.getUri = function(callback){
  * @param {external:Error} error
  * @param {external:String} result
  */
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -12597,6 +12825,7 @@ UriEndpoint.prototype.stop = function(callback){
  * @param {external:Error} error
  */
 
+
 /**
  * @alias module:core/abstracts.UriEndpoint.constructorParams
  */
@@ -12608,6 +12837,7 @@ UriEndpoint.constructorParams = {};
  * @extends module:core/abstracts.Endpoint.events
  */
 UriEndpoint.events = Endpoint.events;
+
 
 /**
  * Checker for {@link core/abstracts.UriEndpoint}
@@ -15871,6 +16101,10 @@ exports.VideoCodec = VideoCodec;
  * @license LGPL
  */
 
+Object.defineProperty(exports, 'name',    {value: 'core'});
+Object.defineProperty(exports, 'version', {value: '6.0.0-dev'});
+
+
 var HubPort = require('./HubPort');
 var MediaPipeline = require('./MediaPipeline');
 var PassThrough = require('./PassThrough');
@@ -15912,6 +16146,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var Hub = require('kurento-client-core').abstracts.Hub;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * Create for the given pipeline
  *
@@ -15930,6 +16170,11 @@ function AlphaBlending(){
   AlphaBlending.super_.call(this);
 };
 inherits(AlphaBlending, Hub);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -16024,6 +16269,7 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
  * @param {external:Error} error
  */
 
+
 /**
  * @alias module:elements.AlphaBlending.constructorParams
  *
@@ -16044,6 +16290,7 @@ AlphaBlending.constructorParams = {
  * @extends module:core/abstracts.Hub.events
  */
 AlphaBlending.events = Hub.events;
+
 
 /**
  * Checker for {@link elements.AlphaBlending}
@@ -16090,6 +16337,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var Hub = require('kurento-client-core').abstracts.Hub;
 
+
 /**
  * Create for the given pipeline
  *
@@ -16108,6 +16356,7 @@ function Composite(){
   Composite.super_.call(this);
 };
 inherits(Composite, Hub);
+
 
 /**
  * @alias module:elements.Composite.constructorParams
@@ -16129,6 +16378,7 @@ Composite.constructorParams = {
  * @extends module:core/abstracts.Hub.events
  */
 Composite.events = Hub.events;
+
 
 /**
  * Checker for {@link elements.Composite}
@@ -16178,6 +16428,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var Hub = require('kurento-client-core').abstracts.Hub;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * Create a {@link module:elements.Dispatcher Dispatcher} belonging to the given
  *
@@ -16193,6 +16449,11 @@ function Dispatcher(){
   Dispatcher.super_.call(this);
 };
 inherits(Dispatcher, Hub);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -16235,6 +16496,7 @@ Dispatcher.prototype.connect = function(source, sink, callback){
  * @param {external:Error} error
  */
 
+
 /**
  * @alias module:elements.Dispatcher.constructorParams
  *
@@ -16255,6 +16517,7 @@ Dispatcher.constructorParams = {
  * @extends module:core/abstracts.Hub.events
  */
 Dispatcher.events = Hub.events;
+
 
 /**
  * Checker for {@link elements.Dispatcher}
@@ -16304,6 +16567,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var Hub = require('kurento-client-core').abstracts.Hub;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * Create a {@link module:elements.DispatcherOneToMany DispatcherOneToMany} 
  * belonging to the given pipeline.
@@ -16319,6 +16588,11 @@ function DispatcherOneToMany(){
   DispatcherOneToMany.super_.call(this);
 };
 inherits(DispatcherOneToMany, Hub);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -16375,6 +16649,7 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
  * @param {external:Error} error
  */
 
+
 /**
  * @alias module:elements.DispatcherOneToMany.constructorParams
  *
@@ -16395,6 +16670,7 @@ DispatcherOneToMany.constructorParams = {
  * @extends module:core/abstracts.Hub.events
  */
 DispatcherOneToMany.events = Hub.events;
+
 
 /**
  * Checker for {@link elements.DispatcherOneToMany}
@@ -16441,6 +16717,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var HttpEndpoint = require('./abstracts/HttpEndpoint');
 
+
 /**
  * Builder for the {@link module:elements.HttpGetEndpoint HttpGetEndpoint}.
  *
@@ -16458,6 +16735,7 @@ function HttpGetEndpoint(){
   HttpGetEndpoint.super_.call(this);
 };
 inherits(HttpGetEndpoint, HttpEndpoint);
+
 
 /**
  * @alias module:elements.HttpGetEndpoint.constructorParams
@@ -16502,6 +16780,7 @@ HttpGetEndpoint.constructorParams = {
  * @extends module:elements/abstracts.HttpEndpoint.events
  */
 HttpGetEndpoint.events = HttpEndpoint.events;
+
 
 /**
  * Checker for {@link elements.HttpGetEndpoint}
@@ -16548,6 +16827,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var HttpEndpoint = require('./abstracts/HttpEndpoint');
 
+
 /**
  * Builder for the {@link module:elements.HttpPostEndpoint HttpPostEndpoint}.
  *
@@ -16569,6 +16849,7 @@ function HttpPostEndpoint(){
   HttpPostEndpoint.super_.call(this);
 };
 inherits(HttpPostEndpoint, HttpEndpoint);
+
 
 /**
  * @alias module:elements.HttpPostEndpoint.constructorParams
@@ -16607,6 +16888,7 @@ HttpPostEndpoint.constructorParams = {
  * @extends module:elements/abstracts.HttpEndpoint.events
  */
 HttpPostEndpoint.events = HttpEndpoint.events.concat(['EndOfStream']);
+
 
 /**
  * Checker for {@link elements.HttpPostEndpoint}
@@ -16656,6 +16938,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var Hub = require('kurento-client-core').abstracts.Hub;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * Create a {@link module:elements.Mixer Mixer} belonging to the given pipeline.
  *
@@ -16670,6 +16958,11 @@ function Mixer(){
   Mixer.super_.call(this);
 };
 inherits(Mixer, Hub);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -16757,6 +17050,7 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
  * @param {external:Error} error
  */
 
+
 /**
  * @alias module:elements.Mixer.constructorParams
  *
@@ -16777,6 +17071,7 @@ Mixer.constructorParams = {
  * @extends module:core/abstracts.Hub.events
  */
 Mixer.events = Hub.events;
+
 
 /**
  * Checker for {@link elements.Mixer}
@@ -16826,6 +17121,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * Create a PlayerEndpoint
  *
@@ -16847,6 +17148,11 @@ function PlayerEndpoint(){
   PlayerEndpoint.super_.call(this);
 };
 inherits(PlayerEndpoint, UriEndpoint);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -16871,6 +17177,7 @@ PlayerEndpoint.prototype.play = function(callback){
  * @callback module:elements.PlayerEndpoint~playCallback
  * @param {external:Error} error
  */
+
 
 /**
  * @alias module:elements.PlayerEndpoint.constructorParams
@@ -16914,6 +17221,7 @@ PlayerEndpoint.constructorParams = {
  * @extends module:core/abstracts.UriEndpoint.events
  */
 PlayerEndpoint.events = UriEndpoint.events.concat(['EndOfStream']);
+
 
 /**
  * Checker for {@link elements.PlayerEndpoint}
@@ -16963,6 +17271,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  *
  * @classdesc
@@ -16976,6 +17290,11 @@ function RecorderEndpoint(){
   RecorderEndpoint.super_.call(this);
 };
 inherits(RecorderEndpoint, UriEndpoint);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -17000,6 +17319,7 @@ RecorderEndpoint.prototype.record = function(callback){
  * @callback module:elements.RecorderEndpoint~recordCallback
  * @param {external:Error} error
  */
+
 
 /**
  * @alias module:elements.RecorderEndpoint.constructorParams
@@ -17048,6 +17368,7 @@ RecorderEndpoint.constructorParams = {
  */
 RecorderEndpoint.events = UriEndpoint.events;
 
+
 /**
  * Checker for {@link elements.RecorderEndpoint}
  *
@@ -17093,6 +17414,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
 
+
 /**
  * Builder for the {@link module:elements.RtpEndpoint RtpEndpoint}
  *
@@ -17110,6 +17432,7 @@ function RtpEndpoint(){
   RtpEndpoint.super_.call(this);
 };
 inherits(RtpEndpoint, SdpEndpoint);
+
 
 /**
  * @alias module:elements.RtpEndpoint.constructorParams
@@ -17131,6 +17454,7 @@ RtpEndpoint.constructorParams = {
  * @extends module:core/abstracts.SdpEndpoint.events
  */
 RtpEndpoint.events = SdpEndpoint.events;
+
 
 /**
  * Checker for {@link elements.RtpEndpoint}
@@ -17180,6 +17504,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * Builder for the {@link module:elements.WebRtcEndpoint WebRtcEndpoint}
  *
@@ -17200,6 +17530,11 @@ function WebRtcEndpoint(){
 };
 inherits(WebRtcEndpoint, BaseRtpEndpoint);
 
+
+//
+// Public properties
+//
+
 /**
  * Address of the STUN server (Only IP address are supported)
  *
@@ -17215,6 +17550,8 @@ WebRtcEndpoint.prototype.getStunServerAddress = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getStunServerAddress', callback);
 };
@@ -17267,6 +17604,8 @@ WebRtcEndpoint.prototype.getStunServerPort = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getStunServerPort', callback);
 };
@@ -17323,6 +17662,8 @@ WebRtcEndpoint.prototype.getTurnUrl = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'getTurnUrl', callback);
 };
 /**
@@ -17361,6 +17702,11 @@ WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
  * @callback module:elements.WebRtcEndpoint~setTurnUrlCallback
  * @param {external:Error} error
  */
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -17418,6 +17764,7 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
  * @param {external:Error} error
  */
 
+
 /**
  * @alias module:elements.WebRtcEndpoint.constructorParams
  *
@@ -17438,6 +17785,7 @@ WebRtcEndpoint.constructorParams = {
  * @extends module:core/abstracts.BaseRtpEndpoint.events
  */
 WebRtcEndpoint.events = BaseRtpEndpoint.events.concat(['OnIceCandidate', 'OnIceComponentStateChanged', 'OnIceGatheringDone']);
+
 
 /**
  * Checker for {@link elements.WebRtcEndpoint}
@@ -17487,6 +17835,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var SessionEndpoint = require('kurento-client-core').abstracts.SessionEndpoint;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * @classdesc
  *  Endpoint that enables Kurento to work as an HTTP server, allowing peer HTTP 
@@ -17501,6 +17855,11 @@ function HttpEndpoint(){
   HttpEndpoint.super_.call(this);
 };
 inherits(HttpEndpoint, SessionEndpoint);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -17528,6 +17887,7 @@ HttpEndpoint.prototype.getUrl = function(callback){
  *  The url as a String
  */
 
+
 /**
  * @alias module:elements/abstracts.HttpEndpoint.constructorParams
  */
@@ -17539,6 +17899,7 @@ HttpEndpoint.constructorParams = {};
  * @extends module:core/abstracts.SessionEndpoint.events
  */
 HttpEndpoint.events = SessionEndpoint.events;
+
 
 /**
  * Checker for {@link elements/abstracts.HttpEndpoint}
@@ -17863,6 +18224,10 @@ exports.MediaProfileSpecType = MediaProfileSpecType;
  * @license LGPL
  */
 
+Object.defineProperty(exports, 'name',    {value: 'elements'});
+Object.defineProperty(exports, 'version', {value: '6.0.0-dev'});
+
+
 var AlphaBlending = require('./AlphaBlending');
 var Composite = require('./Composite');
 var Dispatcher = require('./Dispatcher');
@@ -17920,6 +18285,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var Filter = require('kurento-client-core').abstracts.Filter;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * FaceOverlayFilter interface. This type of {@link module:core/abstracts.Filter
  *
@@ -17935,6 +18306,11 @@ function FaceOverlayFilter(){
   FaceOverlayFilter.super_.call(this);
 };
 inherits(FaceOverlayFilter, Filter);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -18038,6 +18414,7 @@ FaceOverlayFilter.prototype.unsetOverlayedImage = function(callback){
  * @param {external:Error} error
  */
 
+
 /**
  * @alias module:filters.FaceOverlayFilter.constructorParams
  *
@@ -18057,6 +18434,7 @@ FaceOverlayFilter.constructorParams = {
  * @extends module:core/abstracts.Filter.events
  */
 FaceOverlayFilter.events = Filter.events;
+
 
 /**
  * Checker for {@link filters.FaceOverlayFilter}
@@ -18103,6 +18481,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var Filter = require('kurento-client-core').abstracts.Filter;
 
+
 /**
  * Create a {@link module:filters.GStreamerFilter GStreamerFilter}
  *
@@ -18118,6 +18497,7 @@ function GStreamerFilter(){
   GStreamerFilter.super_.call(this);
 };
 inherits(GStreamerFilter, Filter);
+
 
 /**
  * @alias module:filters.GStreamerFilter.constructorParams
@@ -18155,6 +18535,7 @@ GStreamerFilter.constructorParams = {
  * @extends module:core/abstracts.Filter.events
  */
 GStreamerFilter.events = Filter.events;
+
 
 /**
  * Checker for {@link filters.GStreamerFilter}
@@ -18204,6 +18585,12 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var Filter = require('kurento-client-core').abstracts.Filter;
 
+
+function noop(error) {
+  if (error) console.trace(error);
+};
+
+
 /**
  * ImageOverlayFilter interface. This type of {@link 
  * module:core/abstracts.Filter Filter} draws an image in a configured position 
@@ -18221,6 +18608,11 @@ function ImageOverlayFilter(){
   ImageOverlayFilter.super_.call(this);
 };
 inherits(ImageOverlayFilter, Filter);
+
+
+//
+// Public methods
+//
 
 
 /**
@@ -18310,6 +18702,7 @@ ImageOverlayFilter.prototype.removeImage = function(id, callback){
  * @param {external:Error} error
  */
 
+
 /**
  * @alias module:filters.ImageOverlayFilter.constructorParams
  *
@@ -18329,6 +18722,7 @@ ImageOverlayFilter.constructorParams = {
  * @extends module:core/abstracts.Filter.events
  */
 ImageOverlayFilter.events = Filter.events;
+
 
 /**
  * Checker for {@link filters.ImageOverlayFilter}
@@ -18375,6 +18769,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var Filter = require('kurento-client-core').abstracts.Filter;
 
+
 /**
  * Builder for the {@link module:filters.ZBarFilter ZBarFilter}.
  *
@@ -18394,6 +18789,7 @@ function ZBarFilter(){
   ZBarFilter.super_.call(this);
 };
 inherits(ZBarFilter, Filter);
+
 
 /**
  * @alias module:filters.ZBarFilter.constructorParams
@@ -18415,6 +18811,7 @@ ZBarFilter.constructorParams = {
  * @extends module:core/abstracts.Filter.events
  */
 ZBarFilter.events = Filter.events.concat(['CodeFound']);
+
 
 /**
  * Checker for {@link filters.ZBarFilter}
@@ -18461,6 +18858,7 @@ var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var Filter = require('kurento-client-core').abstracts.Filter;
 
+
 /**
  * @classdesc
  *  Generic OpenCV Filter
@@ -18475,6 +18873,7 @@ function OpenCVFilter(){
 };
 inherits(OpenCVFilter, Filter);
 
+
 /**
  * @alias module:filters/abstracts.OpenCVFilter.constructorParams
  */
@@ -18486,6 +18885,7 @@ OpenCVFilter.constructorParams = {};
  * @extends module:core/abstracts.Filter.events
  */
 OpenCVFilter.events = Filter.events;
+
 
 /**
  * Checker for {@link filters/abstracts.OpenCVFilter}
@@ -18564,6 +18964,10 @@ exports.OpenCVFilter = OpenCVFilter;
  * @copyright 2013-2014 Kurento (http://kurento.org/)
  * @license LGPL
  */
+
+Object.defineProperty(exports, 'name',    {value: 'filters'});
+Object.defineProperty(exports, 'version', {value: '6.0.0-dev'});
+
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
 var GStreamerFilter = require('./GStreamerFilter');
@@ -19648,7 +20052,7 @@ if (WebSocket) ws.prototype = WebSocket.prototype;
 /**
  * Define a callback as the continuation of a promise
  */
-function promiseCallback(promise, callback)
+function promiseCallback(promise, callback, thisArg)
 {
   if(callback)
   {
@@ -19656,7 +20060,7 @@ function promiseCallback(promise, callback)
     {
       try
       {
-        callback(error, result);
+        callback.call(thisArg, error, result);
       }
       catch(exception)
       {
