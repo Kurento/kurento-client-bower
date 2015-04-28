@@ -2612,7 +2612,7 @@ checkType.String  = checkString;
  * @copyright Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors (Conversion to ES6 API by Jake Archibald)
  * @license   Licensed under MIT license
  *            See https://raw.githubusercontent.com/jakearchibald/es6-promise/master/LICENSE
- * @version   2.1.0
+ * @version   2.1.1
  */
 
 (function() {
@@ -2814,7 +2814,7 @@ checkType.String  = checkString;
     function lib$es6$promise$$internal$$handleOwnThenable(promise, thenable) {
       if (thenable._state === lib$es6$promise$$internal$$FULFILLED) {
         lib$es6$promise$$internal$$fulfill(promise, thenable._result);
-      } else if (promise._state === lib$es6$promise$$internal$$REJECTED) {
+      } else if (thenable._state === lib$es6$promise$$internal$$REJECTED) {
         lib$es6$promise$$internal$$reject(promise, thenable._result);
       } else {
         lib$es6$promise$$internal$$subscribe(thenable, undefined, function(value) {
@@ -3568,12 +3568,20 @@ checkType.String  = checkString;
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"_process":19}],10:[function(require,module,exports){
 var hasOwn = Object.prototype.hasOwnProperty;
-var toString = Object.prototype.toString;
+var toStr = Object.prototype.toString;
 var undefined;
+
+var isArray = function isArray(arr) {
+	if (typeof Array.isArray === 'function') {
+		return Array.isArray(arr);
+	}
+
+	return toStr.call(arr) === '[object Array]';
+};
 
 var isPlainObject = function isPlainObject(obj) {
 	'use strict';
-	if (!obj || toString.call(obj) !== '[object Object]') {
+	if (!obj || toStr.call(obj) !== '[object Object]') {
 		return false;
 	}
 
@@ -3625,10 +3633,10 @@ module.exports = function extend() {
 				}
 
 				// Recurse if we're merging plain objects or arrays
-				if (deep && copy && (isPlainObject(copy) || (copyIsArray = Array.isArray(copy)))) {
+				if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
 					if (copyIsArray) {
 						copyIsArray = false;
-						clone = src && Array.isArray(src) ? src : [];
+						clone = src && isArray(src) ? src : [];
 					} else {
 						clone = src && isPlainObject(src) ? src : {};
 					}
@@ -11397,6 +11405,38 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
 };
 /**
  * @callback module:core/abstracts.MediaElement~setAudioFormatCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Allows change the target bitrate for the media output, if the media is 
+ * encoded using VP8 or H264. This method only works if it is called before the 
+ * media starts to flow.
+ *
+ * @alias module:core/abstracts.MediaElement.setOutputBitrate
+ *
+ * @param {external:Integer} bitrate
+ *  Configure the enconding media bitrate in kbps
+ *
+ * @param {module:core/abstracts.MediaElement~setOutputBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.setOutputBitrate = function(bitrate, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'bitrate', bitrate, {required: true});
+
+  var params = {
+    bitrate: bitrate,
+  };
+
+  return this._invoke(transaction, 'setOutputBitrate', params, callback);
+};
+/**
+ * @callback module:core/abstracts.MediaElement~setOutputBitrateCallback
  * @param {external:Error} error
  */
 
