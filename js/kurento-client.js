@@ -2587,9 +2587,7 @@ function checkParams(params, scheme, class_name)
 
     var s = scheme[key];
 
-    var options = {required: s.required, isArray: s.isList};
-
-    checkType(s.type, key, value, options);
+    checkType(s.type, key, value, s);
 
     if(value == undefined) continue;
 
@@ -2613,9 +2611,7 @@ function checkMethodParams(callparams, method_params)
     var key = param.name;
     var value = callparams[index];
 
-    var options = {required: param.required, isArray: param.isList};
-
-    checkType(param.type, key, value, options);
+    checkType(param.type, key, value, param);
 
     result[key] = value;
   }
