@@ -776,6 +776,26 @@ KurentoClient.prototype.getServerManager = function (callback) {
  *  Info of the MediaServer instance
  */
 
+//
+// Helper function to return a singleton client for a particular ws_uri
+//
+var singletons = {};
+
+KurentoClient.getSingleton = function (ws_uri, callback) {
+  var client = singletons[ws_uri]
+  if (!client)
+    client = KurentoClient(ws_uri, function (error, client) {
+      if (error) return callback(error);
+
+      singleton[ws_uri] = client
+      client.on('disconnect', function disconnect() {
+        delete singleton[ws_uri]
+      })
+    });
+
+  return promiseCallback(client, callback);
+}
+
 // Export KurentoClient
 
 module.exports = KurentoClient;
@@ -867,13 +887,14 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
     item = constructor.item;
     delete constructor.item;
 
-    if (host instanceof register.classes.MediaPipeline)
-      item.params.mediaPipeline = host;
-
-    item.constructorParams = checkParams(item.params,
-      constructor.constructorParams,
-      item.type);
+    var params = item.params || {};
     delete item.params;
+
+    if (host instanceof register.classes.MediaPipeline)
+      params.mediaPipeline = host;
+
+    item.constructorParams = checkParams(params, constructor.constructorParams,
+      item.type);
 
     if (!Object.keys(item.constructorParams).length)
       delete item.constructorParams;
@@ -912,8 +933,6 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
       callback = params;
       params = undefined;
     };
-
-    params = params || {};
 
     if (type instanceof Array)
       return createPromise(type, createMediaObject, callback)
