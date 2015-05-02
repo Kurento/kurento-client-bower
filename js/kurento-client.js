@@ -15571,10 +15571,12 @@ inherits(AlphaBlending, Hub);
  *
  * @alias module:elements.AlphaBlending.setMaster
  *
- * @param {module:core.HubPort} source
+ * @param   {module:core.HubPort} source
+
  *  The reference to the HubPort setting as master port
  *
- * @param {external:Integer} zOrder
+ * @param   {external:Integer} zOrder
+
  *  The order in z to draw the master image
  *
  * @param {module:elements.AlphaBlending~setMasterCallback} [callback]
@@ -15586,8 +15588,10 @@ AlphaBlending.prototype.setMaster = function(source, zOrder, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('int', 'zOrder', zOrder, {required: true});
+  checkType('HubPort', 'source', source, {required: true}
+);
+  checkType('int', 'zOrder', zOrder, {required: true}
+);
 
   var params = {
     source: source,
@@ -15606,24 +15610,30 @@ AlphaBlending.prototype.setMaster = function(source, zOrder, callback){
  *
  * @alias module:elements.AlphaBlending.setPortProperties
  *
- * @param {external:Number} relativeX
+ * @param   {external:Number} relativeX
+
  *  The x position relative to the master port. Values from 0 to 1 are accepted.
  *
- * @param {external:Number} relativeY
+ * @param   {external:Number} relativeY
+
  *  The y position relative to the master port. Values from 0 to 1 are accepted.
  *
- * @param {external:Integer} zOrder
+ * @param   {external:Integer} zOrder
+
  *  The order in z to draw the images. The greatest value of z is in the top.
  *
- * @param {external:Number} relativeWidth
+ * @param   {external:Number} relativeWidth
+
  *  The image width relative to the master port width. Values from 0 to 1 are 
  *  accepted.
  *
- * @param {external:Number} relativeHeight
+ * @param   {external:Number} relativeHeight
+
  *  The image height relative to the master port height. Values from 0 to 1 are 
  *  accepted.
  *
- * @param {module:core.HubPort} port
+ * @param   {module:core.HubPort} port
+
  *  The reference to the confingured port.
  *
  * @param {module:elements.AlphaBlending~setPortPropertiesCallback} [callback]
@@ -15635,12 +15645,18 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('float', 'relativeX', relativeX, {required: true});
-  checkType('float', 'relativeY', relativeY, {required: true});
-  checkType('int', 'zOrder', zOrder, {required: true});
-  checkType('float', 'relativeWidth', relativeWidth, {required: true});
-  checkType('float', 'relativeHeight', relativeHeight, {required: true});
-  checkType('HubPort', 'port', port, {required: true});
+  checkType('float', 'relativeX', relativeX, {required: true}
+);
+  checkType('float', 'relativeY', relativeY, {required: true}
+);
+  checkType('int', 'zOrder', zOrder, {required: true}
+);
+  checkType('float', 'relativeWidth', relativeWidth, {required: true}
+);
+  checkType('float', 'relativeHeight', relativeHeight, {required: true}
+);
+  checkType('HubPort', 'port', port, {required: true}
+);
 
   var params = {
     relativeX: relativeX,
@@ -15662,7 +15678,8 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
 /**
  * @alias module:elements.AlphaBlending.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
  *  belongs
  */
@@ -15750,7 +15767,8 @@ inherits(Composite, Hub);
 /**
  * @alias module:elements.Composite.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
  *  belongs
  */
@@ -15851,10 +15869,12 @@ inherits(Dispatcher, Hub);
  *
  * @alias module:elements.Dispatcher.connect
  *
- * @param {module:core.HubPort} source
+ * @param   {module:core.HubPort} source
+
  *  Source port to be connected
  *
- * @param {module:core.HubPort} sink
+ * @param   {module:core.HubPort} sink
+
  *  Sink port to be connected
  *
  * @param {module:elements.Dispatcher~connectCallback} [callback]
@@ -15866,8 +15886,10 @@ Dispatcher.prototype.connect = function(source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('HubPort', 'sink', sink, {required: true});
+  checkType('HubPort', 'source', source, {required: true}
+);
+  checkType('HubPort', 'sink', sink, {required: true}
+);
 
   var params = {
     source: source,
@@ -15889,7 +15911,8 @@ Dispatcher.prototype.connect = function(source, sink, callback){
 /**
  * @alias module:elements.Dispatcher.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
  *  belongs
  */
@@ -16013,7 +16036,8 @@ DispatcherOneToMany.prototype.removeSource = function(callback){
  *
  * @alias module:elements.DispatcherOneToMany.setSource
  *
- * @param {module:core.HubPort} source
+ * @param   {module:core.HubPort} source
+
  *  source to be broadcasted
  *
  * @param {module:elements.DispatcherOneToMany~setSourceCallback} [callback]
@@ -16025,7 +16049,8 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true});
+  checkType('HubPort', 'source', source, {required: true}
+);
 
   var params = {
     source: source,
@@ -16042,7 +16067,8 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
 /**
  * @alias module:elements.DispatcherOneToMany.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
  *  belongs
  */
@@ -16129,38 +16155,36 @@ inherits(HttpGetEndpoint, HttpEndpoint);
 /**
  * @alias module:elements.HttpGetEndpoint.constructorParams
  *
- * @property {external:Integer} [disconnectionTimeout]
+ * @property   {external:Integer} [disconnectionTimeout]
+
  *  disconnection timeout in seconds.
  *  This is the time that an http endpoint will wait for a reconnection, in case
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  *
- * @property {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
+ * @property   {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
+
  *  the {@link MediaProfileSpecType} (WEBM, MP4...) for the endpoint
  *
- * @property {external:Boolean} [terminateOnEOS]
+ * @property   {external:Boolean} [terminateOnEOS]
+
  *  raise a :rom:evnt:`MediaSessionTerminated` event when the associated player 
  *  raises a :rom:evnt:`EndOfStream`, and thus terminate the media session
  */
 HttpGetEndpoint.constructorParams = {
   disconnectionTimeout: {
-    type: 'int',
-  },
-
+    type: 'int'  },
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
   },
-
   mediaProfile: {
-    type: 'MediaProfileSpecType',
-  },
-
+    type: 'MediaProfileSpecType'  },
   terminateOnEOS: {
-    type: 'boolean',
-  },
+    type: 'boolean'  },
 };
 
 /**
@@ -16243,14 +16267,17 @@ inherits(HttpPostEndpoint, HttpEndpoint);
 /**
  * @alias module:elements.HttpPostEndpoint.constructorParams
  *
- * @property {external:Integer} [disconnectionTimeout]
+ * @property   {external:Integer} [disconnectionTimeout]
+
  *  This is the time that an http endpoint will wait for a reconnection, in case
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  *
- * @property {external:Boolean} [useEncodedMedia]
+ * @property   {external:Boolean} [useEncodedMedia]
+
  *  configures the endpoint to use encoded media instead of raw media. If the 
  *  parameter is not set then the element uses raw media. Changing this 
  *  parameter could affect in a severe way to stability because key frames lost 
@@ -16258,17 +16285,13 @@ inherits(HttpPostEndpoint, HttpEndpoint);
  */
 HttpPostEndpoint.constructorParams = {
   disconnectionTimeout: {
-    type: 'int',
-  },
-
+    type: 'int'  },
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
   },
-
   useEncodedMedia: {
-    type: 'boolean',
-  },
+    type: 'boolean'  },
 };
 
 /**
@@ -16360,13 +16383,16 @@ inherits(Mixer, Hub);
  *
  * @alias module:elements.Mixer.connect
  *
- * @param {external:MediaType} media
+ * @param   {external:MediaType} media
+
  *  The sort of media stream to be connected
  *
- * @param {module:core.HubPort} source
+ * @param   {module:core.HubPort} source
+
  *  Source port to be connected
  *
- * @param {module:core.HubPort} sink
+ * @param   {module:core.HubPort} sink
+
  *  Sink port to be connected
  *
  * @param {module:elements.Mixer~connectCallback} [callback]
@@ -16378,9 +16404,12 @@ Mixer.prototype.connect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('MediaType', 'media', media, {required: true});
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('HubPort', 'sink', sink, {required: true});
+  checkType('MediaType', 'media', media, {required: true}
+);
+  checkType('HubPort', 'source', source, {required: true}
+);
+  checkType('HubPort', 'sink', sink, {required: true}
+);
 
   var params = {
     media: media,
@@ -16404,13 +16433,16 @@ Mixer.prototype.connect = function(media, source, sink, callback){
  *
  * @alias module:elements.Mixer.disconnect
  *
- * @param {external:MediaType} media
+ * @param   {external:MediaType} media
+
  *  The sort of media stream to be disconnected
  *
- * @param {module:core.HubPort} source
+ * @param   {module:core.HubPort} source
+
  *  Audio source port to be disconnected
  *
- * @param {module:core.HubPort} sink
+ * @param   {module:core.HubPort} sink
+
  *  Audio sink port to be disconnected
  *
  * @param {module:elements.Mixer~disconnectCallback} [callback]
@@ -16422,9 +16454,12 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('MediaType', 'media', media, {required: true});
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('HubPort', 'sink', sink, {required: true});
+  checkType('MediaType', 'media', media, {required: true}
+);
+  checkType('HubPort', 'source', source, {required: true}
+);
+  checkType('HubPort', 'sink', sink, {required: true}
+);
 
   var params = {
     media: media,
@@ -16443,7 +16478,8 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
 /**
  * @alias module:elements.Mixer.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the Mixer 
  *  belongs
  */
@@ -16571,14 +16607,17 @@ PlayerEndpoint.prototype.play = function(callback){
 /**
  * @alias module:elements.PlayerEndpoint.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  The {@link module:core.MediaPipeline MediaPipeline} this PlayerEndpoint 
  *  belongs to.
  *
- * @property {external:String} uri
+ * @property   {external:String} uri
+
  *  URI that will be played
  *
- * @property {external:Boolean} [useEncodedMedia]
+ * @property   {external:Boolean} [useEncodedMedia]
+
  *  use encoded instead of raw media. If the parameter is false then the
  *  element uses raw media. Changing this parameter can affect stability
  *  severely, as lost key frames lost will not be regenerated. Changing the 
@@ -16593,15 +16632,12 @@ PlayerEndpoint.constructorParams = {
     type: 'MediaPipeline',
     required: true
   },
-
   uri: {
     type: 'String',
     required: true
   },
-
   useEncodedMedia: {
-    type: 'boolean',
-  },
+    type: 'boolean'  },
 };
 
 /**
@@ -16713,21 +16749,25 @@ RecorderEndpoint.prototype.record = function(callback){
 /**
  * @alias module:elements.RecorderEndpoint.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  *
- * @property {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
+ * @property   {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
+
  *  Choose either a {@link 
  *  module:elements.RecorderEndpoint#MediaProfileSpecType.WEBM} or a {@link 
  *  module:elements.RecorderEndpoint#MediaProfileSpecType.MP4} profile for 
  *  recording
  *
- * @property {external:Boolean} [stopOnEndOfStream]
+ * @property   {external:Boolean} [stopOnEndOfStream]
+
  *  Forces the recorder endpoint to finish processing data when an <a 
  *  href="http://www.kurento.org/docs/current/glossary.html#term-eos">EOS</a> is
  *
- * @property {external:String} uri
+ * @property   {external:String} uri
+
  *  URI where the recording will be stored
  */
 RecorderEndpoint.constructorParams = {
@@ -16735,15 +16775,10 @@ RecorderEndpoint.constructorParams = {
     type: 'MediaPipeline',
     required: true
   },
-
   mediaProfile: {
-    type: 'MediaProfileSpecType',
-  },
-
+    type: 'MediaProfileSpecType'  },
   stopOnEndOfStream: {
-    type: 'boolean',
-  },
-
+    type: 'boolean'  },
   uri: {
     type: 'String',
     required: true
@@ -16826,7 +16861,8 @@ inherits(RtpEndpoint, SdpEndpoint);
 /**
  * @alias module:elements.RtpEndpoint.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  */
@@ -16965,7 +17001,8 @@ WebRtcEndpoint.prototype.setStunServerAddress = function(stunServerAddress, call
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'stunServerAddress', stunServerAddress, {required: true});
+  checkType('String', 'stunServerAddress', stunServerAddress, {required: true}
+);
 
   var params = {
     stunServerAddress: stunServerAddress,
@@ -17019,7 +17056,8 @@ WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'stunServerPort', stunServerPort, {required: true});
+  checkType('int', 'stunServerPort', stunServerPort, {required: true}
+);
 
   var params = {
     stunServerPort: stunServerPort,
@@ -17079,7 +17117,8 @@ WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'turnUrl', turnUrl, {required: true});
+  checkType('String', 'turnUrl', turnUrl, {required: true}
+);
 
   var params = {
     turnUrl: turnUrl,
@@ -17103,7 +17142,8 @@ WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
  *
  * @alias module:elements.WebRtcEndpoint.addIceCandidate
  *
- * @param {module:elements/complexTypes.IceCandidate} candidate
+ * @param   {module:elements/complexTypes.IceCandidate} candidate
+
  *  Remote ICE candidate
  *
  * @param {module:elements.WebRtcEndpoint~addIceCandidateCallback} [callback]
@@ -17115,7 +17155,8 @@ WebRtcEndpoint.prototype.addIceCandidate = function(candidate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('IceCandidate', 'candidate', candidate, {required: true});
+  checkType('IceCandidate', 'candidate', candidate, {required: true}
+);
 
   var params = {
     candidate: candidate,
@@ -17157,7 +17198,8 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
 /**
  * @alias module:elements.WebRtcEndpoint.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  */
@@ -17280,7 +17322,8 @@ HttpEndpoint.prototype.getUrl = function(callback){
 /**
  * @alias module:elements/abstracts.HttpEndpoint.constructorParams
  */
-HttpEndpoint.constructorParams = {};
+HttpEndpoint.constructorParams = {
+};
 
 /**
  * @alias module:elements/abstracts.HttpEndpoint.events
@@ -17332,7 +17375,7 @@ HttpEndpoint.check = checkHttpEndpoint;
  *
  * @module elements/abstracts
  *
- * @copyright 2013-2014 Kurento (http://kurento.org/)
+ * @copyright 2013-2015 Kurento (http://kurento.org/)
  * @license LGPL
  */
 
@@ -17389,9 +17432,12 @@ function IceCandidate(iceCandidateDict){
     return new IceCandidate(iceCandidateDict)
 
   // Check iceCandidateDict has the required fields
-  checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, true);
-  checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, true);
-  checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, true);
+  checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true}
+);
+  checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true}
+);
+  checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, {required: true}
+);
 
   // Init parent class
   IceCandidate.super_.call(this, iceCandidateDict)
@@ -17573,7 +17619,7 @@ module.exports = checkMediaProfileSpecType;
  *
  * @module elements/complexTypes
  *
- * @copyright 2013-2014 Kurento (http://kurento.org/)
+ * @copyright 2013-2015 Kurento (http://kurento.org/)
  * @license LGPL
  */
 
@@ -21267,7 +21313,7 @@ exports.complexTypes = require('./complexTypes');
  *
  * @module elements
  *
- * @copyright 2013-2014 Kurento (http://kurento.org/)
+ * @copyright 2013-2015 Kurento (http://kurento.org/)
  * @license LGPL
  */
 
