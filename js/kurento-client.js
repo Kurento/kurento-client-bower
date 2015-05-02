@@ -9146,7 +9146,8 @@ inherits(HubPort, MediaElement);
 /**
  * @alias module:core.HubPort.constructorParams
  *
- * @property {module:core/abstracts.Hub} hub
+ * @property   {module:core/abstracts.Hub} hub
+
  *  {@link module:core/abstracts.Hub Hub} to which this port belongs
  */
 HubPort.constructorParams = {
@@ -9330,7 +9331,8 @@ inherits(MediaPipeline, MediaObject);
  *
  * @alias module:core.MediaPipeline.getGstreamerDot
  *
- * @param {module:core/complexTypes.GstreamerDotDetails} [details]
+ * @param   {module:core/complexTypes.GstreamerDotDetails} [details]
+
  *  Details of graph
  *
  * @param {module:core.MediaPipeline~getGstreamerDotCallback} [callback]
@@ -9380,7 +9382,8 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
 /**
  * @alias module:core.MediaPipeline.constructorParams
  */
-MediaPipeline.constructorParams = {};
+MediaPipeline.constructorParams = {
+};
 
 /**
  * @alias module:core.MediaPipeline.events
@@ -9456,7 +9459,8 @@ inherits(PassThrough, MediaElement);
 /**
  * @alias module:core.PassThrough.constructorParams
  *
- * @property {module:core.MediaPipeline} mediaPipeline
+ * @property   {module:core.MediaPipeline} mediaPipeline
+
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the element 
  *  belongs
  */
@@ -9597,7 +9601,8 @@ BaseRtpEndpoint.prototype.setMaxVideoSendBandwidth = function(maxVideoSendBandwi
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'maxVideoSendBandwidth', maxVideoSendBandwidth, {required: true});
+  checkType('int', 'maxVideoSendBandwidth', maxVideoSendBandwidth, {required: true}
+);
 
   var params = {
     maxVideoSendBandwidth: maxVideoSendBandwidth,
@@ -9683,7 +9688,8 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'minVideoSendBandwidth', minVideoSendBandwidth, {required: true});
+  checkType('int', 'minVideoSendBandwidth', minVideoSendBandwidth, {required: true}
+);
 
   var params = {
     minVideoSendBandwidth: minVideoSendBandwidth,
@@ -9733,7 +9739,8 @@ BaseRtpEndpoint.prototype.getStats = function(callback){
 /**
  * @alias module:core/abstracts.BaseRtpEndpoint.constructorParams
  */
-BaseRtpEndpoint.constructorParams = {};
+BaseRtpEndpoint.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.BaseRtpEndpoint.events
@@ -9816,7 +9823,8 @@ inherits(Endpoint, MediaElement);
 /**
  * @alias module:core/abstracts.Endpoint.constructorParams
  */
-Endpoint.constructorParams = {};
+Endpoint.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.Endpoint.events
@@ -9892,7 +9900,8 @@ inherits(Filter, MediaElement);
 /**
  * @alias module:core/abstracts.Filter.constructorParams
  */
-Filter.constructorParams = {};
+Filter.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.Filter.events
@@ -10015,7 +10024,8 @@ Hub.prototype.createHubPort = function(callback){
 /**
  * @alias module:core/abstracts.Hub.constructorParams
  */
-Hub.constructorParams = {};
+Hub.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.Hub.events
@@ -10112,17 +10122,21 @@ inherits(MediaElement, MediaObject);
  *
  * @alias module:core/abstracts.MediaElement.connect
  *
- * @param {module:core/abstracts.MediaElement} sink
+ * @param   {module:core/abstracts.MediaElement} sink
+
  *  the target {@link module:core/abstracts.MediaElement MediaElement} that will
  *
- * @param {module:core/complexTypes.MediaType} [mediaType]
+ * @param   {module:core/complexTypes.MediaType} [mediaType]
+
  *  the {@link MediaType} of the pads that will be connected
  *
- * @param {external:String} [sourceMediaDescription]
+ * @param   {external:String} [sourceMediaDescription]
+
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
- * @param {external:String} [sinkMediaDescription]
+ * @param   {external:String} [sinkMediaDescription]
+
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
@@ -10156,7 +10170,8 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
       throw error;
   }
 
-  checkType('MediaElement', 'sink', sink, {required: true});
+  checkType('MediaElement', 'sink', sink, {required: true}
+);
   checkType('MediaType', 'mediaType', mediaType);
   checkType('String', 'sourceMediaDescription', sourceMediaDescription);
   checkType('String', 'sinkMediaDescription', sinkMediaDescription);
@@ -10187,17 +10202,21 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
  *
  * @alias module:core/abstracts.MediaElement.disconnect
  *
- * @param {module:core/abstracts.MediaElement} sink
+ * @param   {module:core/abstracts.MediaElement} sink
+
  *  the target {@link module:core/abstracts.MediaElement MediaElement} that will
  *
- * @param {module:core/complexTypes.MediaType} [mediaType]
+ * @param   {module:core/complexTypes.MediaType} [mediaType]
+
  *  the {@link MediaType} of the pads that will be connected
  *
- * @param {external:String} [sourceMediaDescription]
+ * @param   {external:String} [sourceMediaDescription]
+
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
- * @param {external:String} [sinkMediaDescription]
+ * @param   {external:String} [sinkMediaDescription]
+
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
@@ -10231,7 +10250,8 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
       throw error;
   }
 
-  checkType('MediaElement', 'sink', sink, {required: true});
+  checkType('MediaElement', 'sink', sink, {required: true}
+);
   checkType('MediaType', 'mediaType', mediaType);
   checkType('String', 'sourceMediaDescription', sourceMediaDescription);
   checkType('String', 'sinkMediaDescription', sinkMediaDescription);
@@ -10256,7 +10276,8 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
  *
  * @alias module:core/abstracts.MediaElement.getGstreamerDot
  *
- * @param {module:core/complexTypes.GstreamerDotDetails} [details]
+ * @param   {module:core/complexTypes.GstreamerDotDetails} [details]
+
  *  Details of graph
  *
  * @param {module:core/abstracts.MediaElement~getGstreamerDotCallback} [callback]
@@ -10308,12 +10329,14 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
  *
  * @alias module:core/abstracts.MediaElement.getSinkConnections
  *
- * @param {module:core/complexTypes.MediaType} [mediaType]
+ * @param   {module:core/complexTypes.MediaType} [mediaType]
+
  *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link 
  *  module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link 
  *  module:core/abstracts.MediaElement#MediaType.DATA}
  *
- * @param {external:String} [description]
+ * @param   {external:String} [description]
+
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
@@ -10370,12 +10393,14 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
  *
  * @alias module:core/abstracts.MediaElement.getSourceConnections
  *
- * @param {module:core/complexTypes.MediaType} [mediaType]
+ * @param   {module:core/complexTypes.MediaType} [mediaType]
+
  *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link 
  *  module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link 
  *  module:core/abstracts.MediaElement#MediaType.DATA}
  *
- * @param {external:String} [description]
+ * @param   {external:String} [description]
+
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
@@ -10431,7 +10456,8 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
  *
  * @alias module:core/abstracts.MediaElement.setAudioFormat
  *
- * @param {module:core/complexTypes.AudioCaps} caps
+ * @param   {module:core/complexTypes.AudioCaps} caps
+
  *  The format for the stream of audio
  *
  * @param {module:core/abstracts.MediaElement~setAudioFormatCallback} [callback]
@@ -10443,7 +10469,8 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('AudioCaps', 'caps', caps, {required: true});
+  checkType('AudioCaps', 'caps', caps, {required: true}
+);
 
   var params = {
     caps: caps,
@@ -10463,7 +10490,8 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
  *
  * @alias module:core/abstracts.MediaElement.setOutputBitrate
  *
- * @param {external:Integer} bitrate
+ * @param   {external:Integer} bitrate
+
  *  Configure the enconding media bitrate in kbps
  *
  * @param {module:core/abstracts.MediaElement~setOutputBitrateCallback} [callback]
@@ -10475,7 +10503,8 @@ MediaElement.prototype.setOutputBitrate = function(bitrate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'bitrate', bitrate, {required: true});
+  checkType('int', 'bitrate', bitrate, {required: true}
+);
 
   var params = {
     bitrate: bitrate,
@@ -10493,7 +10522,8 @@ MediaElement.prototype.setOutputBitrate = function(bitrate, callback){
  *
  * @alias module:core/abstracts.MediaElement.setVideoFormat
  *
- * @param {module:core/complexTypes.VideoCaps} caps
+ * @param   {module:core/complexTypes.VideoCaps} caps
+
  *  The format for the stream of video
  *
  * @param {module:core/abstracts.MediaElement~setVideoFormatCallback} [callback]
@@ -10505,7 +10535,8 @@ MediaElement.prototype.setVideoFormat = function(caps, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('VideoCaps', 'caps', caps, {required: true});
+  checkType('VideoCaps', 'caps', caps, {required: true}
+);
 
   var params = {
     caps: caps,
@@ -10522,7 +10553,8 @@ MediaElement.prototype.setVideoFormat = function(caps, callback){
 /**
  * @alias module:core/abstracts.MediaElement.constructorParams
  */
-MediaElement.constructorParams = {};
+MediaElement.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.MediaElement.events
@@ -10840,7 +10872,8 @@ MediaObject.prototype.setName = function(name, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'name', name, {required: true});
+  checkType('String', 'name', name, {required: true}
+);
 
   var params = {
     name: name,
@@ -10930,7 +10963,8 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('boolean', 'sendTagsInEvents', sendTagsInEvents, {required: true});
+  checkType('boolean', 'sendTagsInEvents', sendTagsInEvents, {required: true}
+);
 
   var params = {
     sendTagsInEvents: sendTagsInEvents,
@@ -10955,10 +10989,12 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
  *
  * @alias module:core/abstracts.MediaObject.addTag
  *
- * @param {external:String} key
+ * @param   {external:String} key
+
  *  Key of the tag
  *
- * @param {external:String} value
+ * @param   {external:String} value
+
  *  Value of the tag
  *
  * @param {module:core/abstracts.MediaObject~addTagCallback} [callback]
@@ -10970,8 +11006,10 @@ MediaObject.prototype.addTag = function(key, value, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'key', key, {required: true});
-  checkType('String', 'value', value, {required: true});
+  checkType('String', 'key', key, {required: true}
+);
+  checkType('String', 'value', value, {required: true}
+);
 
   var params = {
     key: key,
@@ -10990,7 +11028,8 @@ MediaObject.prototype.addTag = function(key, value, callback){
  *
  * @alias module:core/abstracts.MediaObject.getTag
  *
- * @param {external:String} key
+ * @param   {external:String} key
+
  *  Tag key.
  *
  * @param {module:core/abstracts.MediaObject~getTagCallback} [callback]
@@ -11002,7 +11041,8 @@ MediaObject.prototype.getTag = function(key, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'key', key, {required: true});
+  checkType('String', 'key', key, {required: true}
+);
 
   var params = {
     key: key,
@@ -11047,7 +11087,8 @@ MediaObject.prototype.getTags = function(callback){
  *
  * @alias module:core/abstracts.MediaObject.removeTag
  *
- * @param {external:String} key
+ * @param   {external:String} key
+
  *  Key of the tag to remove
  *
  * @param {module:core/abstracts.MediaObject~removeTagCallback} [callback]
@@ -11059,7 +11100,8 @@ MediaObject.prototype.removeTag = function(key, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'key', key, {required: true});
+  checkType('String', 'key', key, {required: true}
+);
 
   var params = {
     key: key,
@@ -11312,7 +11354,8 @@ Object.defineProperty(MediaObject.prototype, 'commited',
 /**
  * @alias module:core/abstracts.MediaObject.constructorParams
  */
-MediaObject.constructorParams = {};
+MediaObject.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.MediaObject.events
@@ -11442,7 +11485,8 @@ SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth,
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'maxVideoRecvBandwidth', maxVideoRecvBandwidth, {required: true});
+  checkType('int', 'maxVideoRecvBandwidth', maxVideoRecvBandwidth, {required: true}
+);
 
   var params = {
     maxVideoRecvBandwidth: maxVideoRecvBandwidth,
@@ -11550,7 +11594,8 @@ SdpEndpoint.prototype.getRemoteSessionDescriptor = function(callback){
  *
  * @alias module:core/abstracts.SdpEndpoint.processAnswer
  *
- * @param {external:String} answer
+ * @param   {external:String} answer
+
  *  SessionSpec answer from the remote User Agent
  *
  * @param {module:core/abstracts.SdpEndpoint~processAnswerCallback} [callback]
@@ -11562,7 +11607,8 @@ SdpEndpoint.prototype.processAnswer = function(answer, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'answer', answer, {required: true});
+  checkType('String', 'answer', answer, {required: true}
+);
 
   var params = {
     answer: answer,
@@ -11583,7 +11629,8 @@ SdpEndpoint.prototype.processAnswer = function(answer, callback){
  *
  * @alias module:core/abstracts.SdpEndpoint.processOffer
  *
- * @param {external:String} offer
+ * @param   {external:String} offer
+
  *  SessionSpec offer from the remote User Agent
  *
  * @param {module:core/abstracts.SdpEndpoint~processOfferCallback} [callback]
@@ -11595,7 +11642,8 @@ SdpEndpoint.prototype.processOffer = function(offer, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'offer', offer, {required: true});
+  checkType('String', 'offer', offer, {required: true}
+);
 
   var params = {
     offer: offer,
@@ -11614,7 +11662,8 @@ SdpEndpoint.prototype.processOffer = function(offer, callback){
 /**
  * @alias module:core/abstracts.SdpEndpoint.constructorParams
  */
-SdpEndpoint.constructorParams = {};
+SdpEndpoint.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.SdpEndpoint.events
@@ -11812,7 +11861,8 @@ ServerManager.prototype.getSessions = function(callback){
 /**
  * @alias module:core/abstracts.ServerManager.constructorParams
  */
-ServerManager.constructorParams = {};
+ServerManager.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.ServerManager.events
@@ -11889,7 +11939,8 @@ inherits(SessionEndpoint, Endpoint);
 /**
  * @alias module:core/abstracts.SessionEndpoint.constructorParams
  */
-SessionEndpoint.constructorParams = {};
+SessionEndpoint.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.SessionEndpoint.events
@@ -12054,7 +12105,8 @@ UriEndpoint.prototype.stop = function(callback){
 /**
  * @alias module:core/abstracts.UriEndpoint.constructorParams
  */
-UriEndpoint.constructorParams = {};
+UriEndpoint.constructorParams = {
+};
 
 /**
  * @alias module:core/abstracts.UriEndpoint.events
@@ -12106,7 +12158,7 @@ UriEndpoint.check = checkUriEndpoint;
  *
  * @module core/abstracts
  *
- * @copyright 2013-2014 Kurento (http://kurento.org/)
+ * @copyright 2013-2015 Kurento (http://kurento.org/)
  * @license LGPL
  */
 
@@ -12176,8 +12228,10 @@ function AudioCaps(audioCapsDict){
     return new AudioCaps(audioCapsDict)
 
   // Check audioCapsDict has the required fields
-  checkType('AudioCodec', 'audioCapsDict.codec', audioCapsDict.codec, true);
-  checkType('int', 'audioCapsDict.bitrate', audioCapsDict.bitrate, true);
+  checkType('AudioCodec', 'audioCapsDict.codec', audioCapsDict.codec, {required: true}
+);
+  checkType('int', 'audioCapsDict.bitrate', audioCapsDict.bitrate, {required: true}
+);
 
   // Init parent class
   AudioCaps.super_.call(this, audioCapsDict)
@@ -12391,11 +12445,16 @@ function ElementConnectionData(elementConnectionDataDict){
     return new ElementConnectionData(elementConnectionDataDict)
 
   // Check elementConnectionDataDict has the required fields
-  checkType('MediaElement', 'elementConnectionDataDict.source', elementConnectionDataDict.source, true);
-  checkType('MediaElement', 'elementConnectionDataDict.sink', elementConnectionDataDict.sink, true);
-  checkType('MediaType', 'elementConnectionDataDict.type', elementConnectionDataDict.type, true);
-  checkType('String', 'elementConnectionDataDict.sourceDescription', elementConnectionDataDict.sourceDescription, true);
-  checkType('String', 'elementConnectionDataDict.sinkDescription', elementConnectionDataDict.sinkDescription, true);
+  checkType('MediaElement', 'elementConnectionDataDict.source', elementConnectionDataDict.source, {required: true}
+);
+  checkType('MediaElement', 'elementConnectionDataDict.sink', elementConnectionDataDict.sink, {required: true}
+);
+  checkType('MediaType', 'elementConnectionDataDict.type', elementConnectionDataDict.type, {required: true}
+);
+  checkType('String', 'elementConnectionDataDict.sourceDescription', elementConnectionDataDict.sourceDescription, {required: true}
+);
+  checkType('String', 'elementConnectionDataDict.sinkDescription', elementConnectionDataDict.sinkDescription, {required: true}
+);
 
   // Init parent class
   ElementConnectionData.super_.call(this, elementConnectionDataDict)
@@ -12558,8 +12617,10 @@ function Fraction(fractionDict){
     return new Fraction(fractionDict)
 
   // Check fractionDict has the required fields
-  checkType('int', 'fractionDict.numerator', fractionDict.numerator, true);
-  checkType('int', 'fractionDict.denominator', fractionDict.denominator, true);
+  checkType('int', 'fractionDict.numerator', fractionDict.numerator, {required: true}
+);
+  checkType('int', 'fractionDict.denominator', fractionDict.denominator, {required: true}
+);
 
   // Init parent class
   Fraction.super_.call(this, fractionDict)
@@ -12808,9 +12869,12 @@ function ModuleInfo(moduleInfoDict){
     return new ModuleInfo(moduleInfoDict)
 
   // Check moduleInfoDict has the required fields
-  checkType('String', 'moduleInfoDict.version', moduleInfoDict.version, true);
-  checkType('String', 'moduleInfoDict.name', moduleInfoDict.name, true);
-  checkType('String', 'moduleInfoDict.factories', moduleInfoDict.factories, true);
+  checkType('String', 'moduleInfoDict.version', moduleInfoDict.version, {required: true}
+);
+  checkType('String', 'moduleInfoDict.name', moduleInfoDict.name, {required: true}
+);
+  checkType('String', 'moduleInfoDict.factories', moduleInfoDict.factories, {isArray: true, required: true}
+);
 
   // Init parent class
   ModuleInfo.super_.call(this, moduleInfoDict)
@@ -12915,10 +12979,14 @@ function RTCCertificateStats(rTCCertificateStatsDict){
     return new RTCCertificateStats(rTCCertificateStatsDict)
 
   // Check rTCCertificateStatsDict has the required fields
-  checkType('String', 'rTCCertificateStatsDict.fingerprint', rTCCertificateStatsDict.fingerprint, true);
-  checkType('String', 'rTCCertificateStatsDict.fingerprintAlgorithm', rTCCertificateStatsDict.fingerprintAlgorithm, true);
-  checkType('String', 'rTCCertificateStatsDict.base64Certificate', rTCCertificateStatsDict.base64Certificate, true);
-  checkType('String', 'rTCCertificateStatsDict.issuerCertificateId', rTCCertificateStatsDict.issuerCertificateId, true);
+  checkType('String', 'rTCCertificateStatsDict.fingerprint', rTCCertificateStatsDict.fingerprint, {required: true}
+);
+  checkType('String', 'rTCCertificateStatsDict.fingerprintAlgorithm', rTCCertificateStatsDict.fingerprintAlgorithm, {required: true}
+);
+  checkType('String', 'rTCCertificateStatsDict.base64Certificate', rTCCertificateStatsDict.base64Certificate, {required: true}
+);
+  checkType('String', 'rTCCertificateStatsDict.issuerCertificateId', rTCCertificateStatsDict.issuerCertificateId, {required: true}
+);
 
   // Init parent class
   RTCCertificateStats.super_.call(this, rTCCertificateStatsDict)
@@ -13032,11 +13100,16 @@ function RTCCodec(rTCCodecDict){
     return new RTCCodec(rTCCodecDict)
 
   // Check rTCCodecDict has the required fields
-  checkType('int', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, true);
-  checkType('String', 'rTCCodecDict.codec', rTCCodecDict.codec, true);
-  checkType('int', 'rTCCodecDict.clockRate', rTCCodecDict.clockRate, true);
-  checkType('int', 'rTCCodecDict.channels', rTCCodecDict.channels, true);
-  checkType('String', 'rTCCodecDict.parameters', rTCCodecDict.parameters, true);
+  checkType('int', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, {required: true}
+);
+  checkType('String', 'rTCCodecDict.codec', rTCCodecDict.codec, {required: true}
+);
+  checkType('int', 'rTCCodecDict.clockRate', rTCCodecDict.clockRate, {required: true}
+);
+  checkType('int', 'rTCCodecDict.channels', rTCCodecDict.channels, {required: true}
+);
+  checkType('String', 'rTCCodecDict.parameters', rTCCodecDict.parameters, {required: true}
+);
 
   // Init parent class
   RTCCodec.super_.call(this, rTCCodecDict)
@@ -13213,14 +13286,22 @@ function RTCDataChannelStats(rTCDataChannelStatsDict){
     return new RTCDataChannelStats(rTCDataChannelStatsDict)
 
   // Check rTCDataChannelStatsDict has the required fields
-  checkType('String', 'rTCDataChannelStatsDict.label', rTCDataChannelStatsDict.label, true);
-  checkType('String', 'rTCDataChannelStatsDict.protocol', rTCDataChannelStatsDict.protocol, true);
-  checkType('int', 'rTCDataChannelStatsDict.datachannelid', rTCDataChannelStatsDict.datachannelid, true);
-  checkType('RTCDataChannelState', 'rTCDataChannelStatsDict.state', rTCDataChannelStatsDict.state, true);
-  checkType('int', 'rTCDataChannelStatsDict.messagesSent', rTCDataChannelStatsDict.messagesSent, true);
-  checkType('int', 'rTCDataChannelStatsDict.bytesSent', rTCDataChannelStatsDict.bytesSent, true);
-  checkType('int', 'rTCDataChannelStatsDict.messagesReceived', rTCDataChannelStatsDict.messagesReceived, true);
-  checkType('int', 'rTCDataChannelStatsDict.bytesReceived', rTCDataChannelStatsDict.bytesReceived, true);
+  checkType('String', 'rTCDataChannelStatsDict.label', rTCDataChannelStatsDict.label, {required: true}
+);
+  checkType('String', 'rTCDataChannelStatsDict.protocol', rTCDataChannelStatsDict.protocol, {required: true}
+);
+  checkType('int', 'rTCDataChannelStatsDict.datachannelid', rTCDataChannelStatsDict.datachannelid, {required: true}
+);
+  checkType('RTCDataChannelState', 'rTCDataChannelStatsDict.state', rTCDataChannelStatsDict.state, {required: true}
+);
+  checkType('int', 'rTCDataChannelStatsDict.messagesSent', rTCDataChannelStatsDict.messagesSent, {required: true}
+);
+  checkType('int', 'rTCDataChannelStatsDict.bytesSent', rTCDataChannelStatsDict.bytesSent, {required: true}
+);
+  checkType('int', 'rTCDataChannelStatsDict.messagesReceived', rTCDataChannelStatsDict.messagesReceived, {required: true}
+);
+  checkType('int', 'rTCDataChannelStatsDict.bytesReceived', rTCDataChannelStatsDict.bytesReceived, {required: true}
+);
 
   // Init parent class
   RTCDataChannelStats.super_.call(this, rTCDataChannelStatsDict)
@@ -13359,12 +13440,18 @@ function RTCIceCandidateAttributes(rTCIceCandidateAttributesDict){
     return new RTCIceCandidateAttributes(rTCIceCandidateAttributesDict)
 
   // Check rTCIceCandidateAttributesDict has the required fields
-  checkType('String', 'rTCIceCandidateAttributesDict.ipAddress', rTCIceCandidateAttributesDict.ipAddress, true);
-  checkType('int', 'rTCIceCandidateAttributesDict.portNumber', rTCIceCandidateAttributesDict.portNumber, true);
-  checkType('String', 'rTCIceCandidateAttributesDict.transport', rTCIceCandidateAttributesDict.transport, true);
-  checkType('RTCStatsIceCandidateType', 'rTCIceCandidateAttributesDict.candidateType', rTCIceCandidateAttributesDict.candidateType, true);
-  checkType('int', 'rTCIceCandidateAttributesDict.priority', rTCIceCandidateAttributesDict.priority, true);
-  checkType('String', 'rTCIceCandidateAttributesDict.addressSourceUrl', rTCIceCandidateAttributesDict.addressSourceUrl, true);
+  checkType('String', 'rTCIceCandidateAttributesDict.ipAddress', rTCIceCandidateAttributesDict.ipAddress, {required: true}
+);
+  checkType('int', 'rTCIceCandidateAttributesDict.portNumber', rTCIceCandidateAttributesDict.portNumber, {required: true}
+);
+  checkType('String', 'rTCIceCandidateAttributesDict.transport', rTCIceCandidateAttributesDict.transport, {required: true}
+);
+  checkType('RTCStatsIceCandidateType', 'rTCIceCandidateAttributesDict.candidateType', rTCIceCandidateAttributesDict.candidateType, {required: true}
+);
+  checkType('int', 'rTCIceCandidateAttributesDict.priority', rTCIceCandidateAttributesDict.priority, {required: true}
+);
+  checkType('String', 'rTCIceCandidateAttributesDict.addressSourceUrl', rTCIceCandidateAttributesDict.addressSourceUrl, {required: true}
+);
 
   // Init parent class
   RTCIceCandidateAttributes.super_.call(this, rTCIceCandidateAttributesDict)
@@ -13514,19 +13601,32 @@ function RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict){
     return new RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict)
 
   // Check rTCIceCandidatePairStatsDict has the required fields
-  checkType('String', 'rTCIceCandidatePairStatsDict.transportId', rTCIceCandidatePairStatsDict.transportId, true);
-  checkType('String', 'rTCIceCandidatePairStatsDict.localCandidateId', rTCIceCandidatePairStatsDict.localCandidateId, true);
-  checkType('String', 'rTCIceCandidatePairStatsDict.remoteCandidateId', rTCIceCandidatePairStatsDict.remoteCandidateId, true);
-  checkType('RTCStatsIceCandidatePairState', 'rTCIceCandidatePairStatsDict.state', rTCIceCandidatePairStatsDict.state, true);
-  checkType('int', 'rTCIceCandidatePairStatsDict.priority', rTCIceCandidatePairStatsDict.priority, true);
-  checkType('boolean', 'rTCIceCandidatePairStatsDict.nominated', rTCIceCandidatePairStatsDict.nominated, true);
-  checkType('boolean', 'rTCIceCandidatePairStatsDict.writable', rTCIceCandidatePairStatsDict.writable, true);
-  checkType('boolean', 'rTCIceCandidatePairStatsDict.readable', rTCIceCandidatePairStatsDict.readable, true);
-  checkType('int', 'rTCIceCandidatePairStatsDict.bytesSent', rTCIceCandidatePairStatsDict.bytesSent, true);
-  checkType('int', 'rTCIceCandidatePairStatsDict.bytesReceived', rTCIceCandidatePairStatsDict.bytesReceived, true);
-  checkType('float', 'rTCIceCandidatePairStatsDict.roundTripTime', rTCIceCandidatePairStatsDict.roundTripTime, true);
-  checkType('float', 'rTCIceCandidatePairStatsDict.availableOutgoingBitrate', rTCIceCandidatePairStatsDict.availableOutgoingBitrate, true);
-  checkType('float', 'rTCIceCandidatePairStatsDict.availableIncomingBitrate', rTCIceCandidatePairStatsDict.availableIncomingBitrate, true);
+  checkType('String', 'rTCIceCandidatePairStatsDict.transportId', rTCIceCandidatePairStatsDict.transportId, {required: true}
+);
+  checkType('String', 'rTCIceCandidatePairStatsDict.localCandidateId', rTCIceCandidatePairStatsDict.localCandidateId, {required: true}
+);
+  checkType('String', 'rTCIceCandidatePairStatsDict.remoteCandidateId', rTCIceCandidatePairStatsDict.remoteCandidateId, {required: true}
+);
+  checkType('RTCStatsIceCandidatePairState', 'rTCIceCandidatePairStatsDict.state', rTCIceCandidatePairStatsDict.state, {required: true}
+);
+  checkType('int', 'rTCIceCandidatePairStatsDict.priority', rTCIceCandidatePairStatsDict.priority, {required: true}
+);
+  checkType('boolean', 'rTCIceCandidatePairStatsDict.nominated', rTCIceCandidatePairStatsDict.nominated, {required: true}
+);
+  checkType('boolean', 'rTCIceCandidatePairStatsDict.writable', rTCIceCandidatePairStatsDict.writable, {required: true}
+);
+  checkType('boolean', 'rTCIceCandidatePairStatsDict.readable', rTCIceCandidatePairStatsDict.readable, {required: true}
+);
+  checkType('int', 'rTCIceCandidatePairStatsDict.bytesSent', rTCIceCandidatePairStatsDict.bytesSent, {required: true}
+);
+  checkType('int', 'rTCIceCandidatePairStatsDict.bytesReceived', rTCIceCandidatePairStatsDict.bytesReceived, {required: true}
+);
+  checkType('float', 'rTCIceCandidatePairStatsDict.roundTripTime', rTCIceCandidatePairStatsDict.roundTripTime, {required: true}
+);
+  checkType('float', 'rTCIceCandidatePairStatsDict.availableOutgoingBitrate', rTCIceCandidatePairStatsDict.availableOutgoingBitrate, {required: true}
+);
+  checkType('float', 'rTCIceCandidatePairStatsDict.availableIncomingBitrate', rTCIceCandidatePairStatsDict.availableIncomingBitrate, {required: true}
+);
 
   // Init parent class
   RTCIceCandidatePairStats.super_.call(this, rTCIceCandidatePairStatsDict)
@@ -13686,11 +13786,16 @@ function RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict){
     return new RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict)
 
   // Check rTCInboundRTPStreamStatsDict has the required fields
-  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, true);
-  checkType('int', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, true);
-  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsLost', rTCInboundRTPStreamStatsDict.packetsLost, true);
-  checkType('float', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, true);
-  checkType('float', 'rTCInboundRTPStreamStatsDict.fractionLost', rTCInboundRTPStreamStatsDict.fractionLost, true);
+  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, {required: true}
+);
+  checkType('int', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, {required: true}
+);
+  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsLost', rTCInboundRTPStreamStatsDict.packetsLost, {required: true}
+);
+  checkType('float', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, {required: true}
+);
+  checkType('float', 'rTCInboundRTPStreamStatsDict.fractionLost', rTCInboundRTPStreamStatsDict.fractionLost, {required: true}
+);
 
   // Init parent class
   RTCInboundRTPStreamStats.super_.call(this, rTCInboundRTPStreamStatsDict)
@@ -13803,8 +13908,10 @@ function RTCMediaStreamStats(rTCMediaStreamStatsDict){
     return new RTCMediaStreamStats(rTCMediaStreamStatsDict)
 
   // Check rTCMediaStreamStatsDict has the required fields
-  checkType('String', 'rTCMediaStreamStatsDict.streamIdentifier', rTCMediaStreamStatsDict.streamIdentifier, true);
-  checkType('String', 'rTCMediaStreamStatsDict.trackIds', rTCMediaStreamStatsDict.trackIds, true);
+  checkType('String', 'rTCMediaStreamStatsDict.streamIdentifier', rTCMediaStreamStatsDict.streamIdentifier, {required: true}
+);
+  checkType('String', 'rTCMediaStreamStatsDict.trackIds', rTCMediaStreamStatsDict.trackIds, {isArray: true, required: true}
+);
 
   // Init parent class
   RTCMediaStreamStats.super_.call(this, rTCMediaStreamStatsDict)
@@ -13934,20 +14041,34 @@ function RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict){
     return new RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict)
 
   // Check rTCMediaStreamTrackStatsDict has the required fields
-  checkType('String', 'rTCMediaStreamTrackStatsDict.trackIdentifier', rTCMediaStreamTrackStatsDict.trackIdentifier, true);
-  checkType('boolean', 'rTCMediaStreamTrackStatsDict.remoteSource', rTCMediaStreamTrackStatsDict.remoteSource, true);
-  checkType('String', 'rTCMediaStreamTrackStatsDict.ssrcIds', rTCMediaStreamTrackStatsDict.ssrcIds, true);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.frameWidth', rTCMediaStreamTrackStatsDict.frameWidth, true);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.frameHeight', rTCMediaStreamTrackStatsDict.frameHeight, true);
-  checkType('float', 'rTCMediaStreamTrackStatsDict.framesPerSecond', rTCMediaStreamTrackStatsDict.framesPerSecond, true);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesSent', rTCMediaStreamTrackStatsDict.framesSent, true);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesReceived', rTCMediaStreamTrackStatsDict.framesReceived, true);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDecoded', rTCMediaStreamTrackStatsDict.framesDecoded, true);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDropped', rTCMediaStreamTrackStatsDict.framesDropped, true);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesCorrupted', rTCMediaStreamTrackStatsDict.framesCorrupted, true);
-  checkType('float', 'rTCMediaStreamTrackStatsDict.audioLevel', rTCMediaStreamTrackStatsDict.audioLevel, true);
-  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLoss', rTCMediaStreamTrackStatsDict.echoReturnLoss, true);
-  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement', rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement, true);
+  checkType('String', 'rTCMediaStreamTrackStatsDict.trackIdentifier', rTCMediaStreamTrackStatsDict.trackIdentifier, {required: true}
+);
+  checkType('boolean', 'rTCMediaStreamTrackStatsDict.remoteSource', rTCMediaStreamTrackStatsDict.remoteSource, {required: true}
+);
+  checkType('String', 'rTCMediaStreamTrackStatsDict.ssrcIds', rTCMediaStreamTrackStatsDict.ssrcIds, {isArray: true, required: true}
+);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.frameWidth', rTCMediaStreamTrackStatsDict.frameWidth, {required: true}
+);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.frameHeight', rTCMediaStreamTrackStatsDict.frameHeight, {required: true}
+);
+  checkType('float', 'rTCMediaStreamTrackStatsDict.framesPerSecond', rTCMediaStreamTrackStatsDict.framesPerSecond, {required: true}
+);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesSent', rTCMediaStreamTrackStatsDict.framesSent, {required: true}
+);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesReceived', rTCMediaStreamTrackStatsDict.framesReceived, {required: true}
+);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDecoded', rTCMediaStreamTrackStatsDict.framesDecoded, {required: true}
+);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDropped', rTCMediaStreamTrackStatsDict.framesDropped, {required: true}
+);
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesCorrupted', rTCMediaStreamTrackStatsDict.framesCorrupted, {required: true}
+);
+  checkType('float', 'rTCMediaStreamTrackStatsDict.audioLevel', rTCMediaStreamTrackStatsDict.audioLevel, {required: true}
+);
+  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLoss', rTCMediaStreamTrackStatsDict.echoReturnLoss, {required: true}
+);
+  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement', rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement, {required: true}
+);
 
   // Init parent class
   RTCMediaStreamTrackStats.super_.call(this, rTCMediaStreamTrackStatsDict)
@@ -14111,10 +14232,14 @@ function RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict){
     return new RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict)
 
   // Check rTCOutboundRTPStreamStatsDict has the required fields
-  checkType('int', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, true);
-  checkType('int', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, true);
-  checkType('float', 'rTCOutboundRTPStreamStatsDict.targetBitrate', rTCOutboundRTPStreamStatsDict.targetBitrate, true);
-  checkType('float', 'rTCOutboundRTPStreamStatsDict.roundTripTime', rTCOutboundRTPStreamStatsDict.roundTripTime, true);
+  checkType('int', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, {required: true}
+);
+  checkType('int', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, {required: true}
+);
+  checkType('float', 'rTCOutboundRTPStreamStatsDict.targetBitrate', rTCOutboundRTPStreamStatsDict.targetBitrate, {required: true}
+);
+  checkType('float', 'rTCOutboundRTPStreamStatsDict.roundTripTime', rTCOutboundRTPStreamStatsDict.roundTripTime, {required: true}
+);
 
   // Init parent class
   RTCOutboundRTPStreamStats.super_.call(this, rTCOutboundRTPStreamStatsDict)
@@ -14222,8 +14347,10 @@ function RTCPeerConnectionStats(rTCPeerConnectionStatsDict){
     return new RTCPeerConnectionStats(rTCPeerConnectionStatsDict)
 
   // Check rTCPeerConnectionStatsDict has the required fields
-  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, true);
-  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsClosed', rTCPeerConnectionStatsDict.dataChannelsClosed, true);
+  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, {required: true}
+);
+  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsClosed', rTCPeerConnectionStatsDict.dataChannelsClosed, {required: true}
+);
 
   // Init parent class
   RTCPeerConnectionStats.super_.call(this, rTCPeerConnectionStatsDict)
@@ -14344,16 +14471,26 @@ function RTCRTPStreamStats(rTCRTPStreamStatsDict){
     return new RTCRTPStreamStats(rTCRTPStreamStatsDict)
 
   // Check rTCRTPStreamStatsDict has the required fields
-  checkType('String', 'rTCRTPStreamStatsDict.ssrc', rTCRTPStreamStatsDict.ssrc, true);
-  checkType('String', 'rTCRTPStreamStatsDict.associateStatsId', rTCRTPStreamStatsDict.associateStatsId, true);
-  checkType('boolean', 'rTCRTPStreamStatsDict.isRemote', rTCRTPStreamStatsDict.isRemote, true);
-  checkType('String', 'rTCRTPStreamStatsDict.mediaTrackId', rTCRTPStreamStatsDict.mediaTrackId, true);
-  checkType('String', 'rTCRTPStreamStatsDict.transportId', rTCRTPStreamStatsDict.transportId, true);
-  checkType('String', 'rTCRTPStreamStatsDict.codecId', rTCRTPStreamStatsDict.codecId, true);
-  checkType('int', 'rTCRTPStreamStatsDict.firCount', rTCRTPStreamStatsDict.firCount, true);
-  checkType('int', 'rTCRTPStreamStatsDict.pliCount', rTCRTPStreamStatsDict.pliCount, true);
-  checkType('int', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, true);
-  checkType('int', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, true);
+  checkType('String', 'rTCRTPStreamStatsDict.ssrc', rTCRTPStreamStatsDict.ssrc, {required: true}
+);
+  checkType('String', 'rTCRTPStreamStatsDict.associateStatsId', rTCRTPStreamStatsDict.associateStatsId, {required: true}
+);
+  checkType('boolean', 'rTCRTPStreamStatsDict.isRemote', rTCRTPStreamStatsDict.isRemote, {required: true}
+);
+  checkType('String', 'rTCRTPStreamStatsDict.mediaTrackId', rTCRTPStreamStatsDict.mediaTrackId, {required: true}
+);
+  checkType('String', 'rTCRTPStreamStatsDict.transportId', rTCRTPStreamStatsDict.transportId, {required: true}
+);
+  checkType('String', 'rTCRTPStreamStatsDict.codecId', rTCRTPStreamStatsDict.codecId, {required: true}
+);
+  checkType('int', 'rTCRTPStreamStatsDict.firCount', rTCRTPStreamStatsDict.firCount, {required: true}
+);
+  checkType('int', 'rTCRTPStreamStatsDict.pliCount', rTCRTPStreamStatsDict.pliCount, {required: true}
+);
+  checkType('int', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, {required: true}
+);
+  checkType('int', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, {required: true}
+);
 
   // Init parent class
   RTCRTPStreamStats.super_.call(this, rTCRTPStreamStatsDict)
@@ -14492,9 +14629,12 @@ function RTCStats(rTCStatsDict){
     return new RTCStats(rTCStatsDict)
 
   // Check rTCStatsDict has the required fields
-  checkType('String', 'rTCStatsDict.id', rTCStatsDict.id, true);
-  checkType('RTCStatsType', 'rTCStatsDict.type', rTCStatsDict.type, true);
-  checkType('double', 'rTCStatsDict.timestamp', rTCStatsDict.timestamp, true);
+  checkType('String', 'rTCStatsDict.id', rTCStatsDict.id, {required: true}
+);
+  checkType('RTCStatsType', 'rTCStatsDict.type', rTCStatsDict.type, {required: true}
+);
+  checkType('double', 'rTCStatsDict.timestamp', rTCStatsDict.timestamp, {required: true}
+);
 
   // Init parent class
   RTCStats.super_.call(this, rTCStatsDict)
@@ -14764,13 +14904,20 @@ function RTCTransportStats(rTCTransportStatsDict){
     return new RTCTransportStats(rTCTransportStatsDict)
 
   // Check rTCTransportStatsDict has the required fields
-  checkType('int', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, true);
-  checkType('int', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, true);
-  checkType('String', 'rTCTransportStatsDict.rtcpTransportStatsId', rTCTransportStatsDict.rtcpTransportStatsId, true);
-  checkType('boolean', 'rTCTransportStatsDict.activeConnection', rTCTransportStatsDict.activeConnection, true);
-  checkType('String', 'rTCTransportStatsDict.selectedCandidatePairId', rTCTransportStatsDict.selectedCandidatePairId, true);
-  checkType('String', 'rTCTransportStatsDict.localCertificateId', rTCTransportStatsDict.localCertificateId, true);
-  checkType('String', 'rTCTransportStatsDict.remoteCertificateId', rTCTransportStatsDict.remoteCertificateId, true);
+  checkType('int', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, {required: true}
+);
+  checkType('int', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, {required: true}
+);
+  checkType('String', 'rTCTransportStatsDict.rtcpTransportStatsId', rTCTransportStatsDict.rtcpTransportStatsId, {required: true}
+);
+  checkType('boolean', 'rTCTransportStatsDict.activeConnection', rTCTransportStatsDict.activeConnection, {required: true}
+);
+  checkType('String', 'rTCTransportStatsDict.selectedCandidatePairId', rTCTransportStatsDict.selectedCandidatePairId, {required: true}
+);
+  checkType('String', 'rTCTransportStatsDict.localCertificateId', rTCTransportStatsDict.localCertificateId, {required: true}
+);
+  checkType('String', 'rTCTransportStatsDict.remoteCertificateId', rTCTransportStatsDict.remoteCertificateId, {required: true}
+);
 
   // Init parent class
   RTCTransportStats.super_.call(this, rTCTransportStatsDict)
@@ -14895,10 +15042,14 @@ function ServerInfo(serverInfoDict){
     return new ServerInfo(serverInfoDict)
 
   // Check serverInfoDict has the required fields
-  checkType('String', 'serverInfoDict.version', serverInfoDict.version, true);
-  checkType('ModuleInfo', 'serverInfoDict.modules', serverInfoDict.modules, true);
-  checkType('ServerType', 'serverInfoDict.type', serverInfoDict.type, true);
-  checkType('String', 'serverInfoDict.capabilities', serverInfoDict.capabilities, true);
+  checkType('String', 'serverInfoDict.version', serverInfoDict.version, {required: true}
+);
+  checkType('ModuleInfo', 'serverInfoDict.modules', serverInfoDict.modules, {isArray: true, required: true}
+);
+  checkType('ServerType', 'serverInfoDict.type', serverInfoDict.type, {required: true}
+);
+  checkType('String', 'serverInfoDict.capabilities', serverInfoDict.capabilities, {isArray: true, required: true}
+);
 
   // Init parent class
   ServerInfo.super_.call(this, serverInfoDict)
@@ -15054,8 +15205,10 @@ function Tag(tagDict){
     return new Tag(tagDict)
 
   // Check tagDict has the required fields
-  checkType('String', 'tagDict.key', tagDict.key, true);
-  checkType('String', 'tagDict.value', tagDict.value, true);
+  checkType('String', 'tagDict.key', tagDict.key, {required: true}
+);
+  checkType('String', 'tagDict.value', tagDict.value, {required: true}
+);
 
   // Init parent class
   Tag.super_.call(this, tagDict)
@@ -15151,8 +15304,10 @@ function VideoCaps(videoCapsDict){
     return new VideoCaps(videoCapsDict)
 
   // Check videoCapsDict has the required fields
-  checkType('VideoCodec', 'videoCapsDict.codec', videoCapsDict.codec, true);
-  checkType('Fraction', 'videoCapsDict.framerate', videoCapsDict.framerate, true);
+  checkType('VideoCodec', 'videoCapsDict.codec', videoCapsDict.codec, {required: true}
+);
+  checkType('Fraction', 'videoCapsDict.framerate', videoCapsDict.framerate, {required: true}
+);
 
   // Init parent class
   VideoCaps.super_.call(this, videoCapsDict)
@@ -15278,7 +15433,7 @@ module.exports = checkVideoCodec;
  *
  * @module core/complexTypes
  *
- * @copyright 2013-2014 Kurento (http://kurento.org/)
+ * @copyright 2013-2015 Kurento (http://kurento.org/)
  * @license LGPL
  */
 
@@ -21069,7 +21224,7 @@ if (typeof Object.create === 'function') {
  *
  * @module core
  *
- * @copyright 2013-2014 Kurento (http://kurento.org/)
+ * @copyright 2013-2015 Kurento (http://kurento.org/)
  * @license LGPL
  */
 
