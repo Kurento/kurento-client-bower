@@ -18067,7 +18067,7 @@ inherits(ImageOverlayFilter, Filter);
  * @param   {external:Number} offsetXPercent
 
  *  Percentage relative to the image width to calculate the X coordinate of the 
- *  position [0..1]
+ *  position (left upper corner) [0..1]
  *
  * @param   {external:Number} offsetYPercent
 
@@ -18082,11 +18082,20 @@ inherits(ImageOverlayFilter, Filter);
  *  Proportional height of the overlaid image, relative to the height of the 
  *  video [0..1].
  *
+ * @param   {external:Boolean} keepAspectRatio
+
+ *  Keep the aspect ratio of the original image.
+ *
+ * @param   {external:Boolean} center
+
+ *  If the image doesn't fit in the dimensions, the image will be center into 
+ *  the region defined by height and width.
+ *
  * @param {module:filters.ImageOverlayFilter~addImageCallback} [callback]
  *
  * @return {external:Promise}
  */
-ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offsetYPercent, widthPercent, heightPercent, callback){
+ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offsetYPercent, widthPercent, heightPercent, keepAspectRatio, center, callback){
   var transaction = (arguments[0] instanceof Transaction)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
@@ -18103,6 +18112,10 @@ ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offset
 );
   checkType('float', 'heightPercent', heightPercent, {required: true}
 );
+  checkType('boolean', 'keepAspectRatio', keepAspectRatio, {required: true}
+);
+  checkType('boolean', 'center', center, {required: true}
+);
 
   var params = {
     id: id,
@@ -18111,6 +18124,8 @@ ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offset
     offsetYPercent: offsetYPercent,
     widthPercent: widthPercent,
     heightPercent: heightPercent,
+    keepAspectRatio: keepAspectRatio,
+    center: center,
   };
 
   return this._invoke(transaction, 'addImage', params, callback);
