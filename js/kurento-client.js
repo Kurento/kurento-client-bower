@@ -10129,6 +10129,9 @@ function noop(error) {
  * @extends module:core/abstracts.MediaObject
  *
  * @constructor module:core/abstracts.MediaElement
+ *
+ * @fires {@link module:core#event:ElementConnected ElementConnected}
+ * @fires {@link module:core#event:ElementDisconnected ElementDisconnected}
  */
 function MediaElement(){
   MediaElement.super_.call(this);
@@ -10588,7 +10591,7 @@ MediaElement.constructorParams = {
  *
  * @extends module:core/abstracts.MediaObject.events
  */
-MediaElement.events = MediaObject.events;
+MediaElement.events = MediaObject.events.concat(['ElementConnected', 'ElementDisconnected']);
 
 
 /**
