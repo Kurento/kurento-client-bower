@@ -11744,7 +11744,8 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
-var ChecktypeError = kurentoClient.checkType.ChecktypeError;
+var checkType      = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -11885,6 +11886,46 @@ ServerManager.prototype.getSessions = function(callback){
  * @callback module:core/abstracts.ServerManager~getSessionsCallback
  * @param {external:Error} error
  * @param {external:String} result
+ */
+
+
+//
+// Public methods
+//
+
+
+/**
+ * Returns the kmd associated to a module
+ *
+ * @alias module:core/abstracts.ServerManager.getKmd
+ *
+ * @param   {external:String} moduleName
+
+ *  Name of the module to get its kmd file
+ *
+ * @param {module:core/abstracts.ServerManager~getKmdCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+ServerManager.prototype.getKmd = function(moduleName, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('String', 'moduleName', moduleName, {required: true}
+);
+
+  var params = {
+    moduleName: moduleName,
+  };
+
+  return this._invoke(transaction, 'getKmd', params, callback);
+};
+/**
+ * @callback module:core/abstracts.ServerManager~getKmdCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ *  The kmd file
  */
 
 
