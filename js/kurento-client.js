@@ -14592,6 +14592,8 @@ var RTCStats = require('./RTCStats');
  * @property {external:Integer} sliCount
  *  Count the total number of Slice Loss Indication (SLI) packets received by 
  *  the sender. This metric is only valid for video and is sent by receiver.
+ * @property {external:Integer} remb
+ *  The Receiver Estimated Maximum Bitrate (REMB). This metric is only valid for
 
  * @extends module:core.RTCStats
  */
@@ -14619,6 +14621,8 @@ function RTCRTPStreamStats(rTCRTPStreamStatsDict){
   checkType('int', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, {required: true}
 );
   checkType('int', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, {required: true}
+);
+  checkType('int', 'rTCRTPStreamStatsDict.remb', rTCRTPStreamStatsDict.remb, {required: true}
 );
 
   // Init parent class
@@ -14675,6 +14679,11 @@ function RTCRTPStreamStats(rTCRTPStreamStatsDict){
       writable: true,
       enumerable: true,
       value: rTCRTPStreamStatsDict.sliCount
+    },
+    remb: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.remb
     }
   })
 }
