@@ -1352,9 +1352,6 @@ register.modules = modules;
     };
 
     var _each = function (arr, iterator) {
-        if (arr.forEach) {
-            return arr.forEach(iterator);
-        }
         for (var i = 0; i < arr.length; i += 1) {
             iterator(arr[i], i, arr);
         }
@@ -2131,23 +2128,26 @@ register.modules = modules;
             pause: function () {
                 if (q.paused === true) { return; }
                 q.paused = true;
-                q.process();
             },
             resume: function () {
                 if (q.paused === false) { return; }
                 q.paused = false;
-                q.process();
+                // Need to call q.process once per concurrent
+                // worker to preserve full concurrency after pause
+                for (var w = 1; w <= q.concurrency; w++) {
+                    async.setImmediate(q.process);
+                }
             }
         };
         return q;
     };
-    
+
     async.priorityQueue = function (worker, concurrency) {
-        
+
         function _compareTasks(a, b){
           return a.priority - b.priority;
         };
-        
+
         function _binarySearch(sequence, item, compare) {
           var beg = -1,
               end = sequence.length - 1;
@@ -2161,7 +2161,7 @@ register.modules = modules;
           }
           return beg;
         }
-        
+
         function _insert(q, data, priority, callback) {
           if (!q.started){
             q.started = true;
@@ -2183,7 +2183,7 @@ register.modules = modules;
                   priority: priority,
                   callback: typeof callback === 'function' ? callback : null
               };
-              
+
               q.tasks.splice(_binarySearch(q.tasks, item, _compareTasks) + 1, 0, item);
 
               if (q.saturated && q.tasks.length === q.concurrency) {
@@ -2192,15 +2192,15 @@ register.modules = modules;
               async.setImmediate(q.process);
           });
         }
-        
+
         // Start with a normal queue
         var q = async.queue(worker, concurrency);
-        
+
         // Override push to accept second parameter representing priority
         q.push = function (data, priority, callback) {
           _insert(q, data, priority, callback);
         };
-        
+
         // Remove unshift function
         delete q.unshift;
 
@@ -19655,7 +19655,11 @@ function (createConnection) {
 
       function onError (err) {
         con.removeListener('error', onError)
-        emitter.emit('error', err)
+        try
+        {
+          emitter.emit('error', err)
+        }
+        catch(e){}
         onDisconnect(err)
       }
 
@@ -19673,7 +19677,7 @@ function (createConnection) {
         emitter.emit('disconnect', err)
 
         if(!emitter.reconnect) return
-        try { backoffMethod.backoff() } catch (_) { }
+        try { backoffMethod.backoff(err) } catch (_) { }
       }
 
       con
@@ -19681,10 +19685,16 @@ function (createConnection) {
         .on('close', onDisconnect)
         .on('end'  , onDisconnect)
 
+        function emitConnect()
+        {
+          emitter.connected = true
+          emitter.emit('connection', con)
+          emitter.emit('connect', con)
+        }
+
       if(opts.immediate || con.constructor.name == 'Request') {
-        emitter.connected = true
-        emitter.emit('connect', con)
-        emitter.emit('connection', con)
+        emitConnect()
+
         con.once('data', function () {
           //this is the only way to know for sure that data is coming...
           backoffMethod.reset()
@@ -19693,12 +19703,11 @@ function (createConnection) {
         con
           .once('connect', function () {
             backoffMethod.reset()
-            emitter.connected = true
+
             if(onConnect)
               con.removeListener('connect', onConnect)
-            emitter.emit('connect', con)
-            //also support net style 'connection' method.
-            emitter.emit('connection', con)
+
+            emitConnect()
           })
       }
     }
