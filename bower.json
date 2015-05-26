@@ -1,0 +1,15 @@
+{
+  "authors": [
+    "Kurento <info@kurento.com> (http://kurento.org)"
+  ],
+  "name": "kurento-client",
+  "version": "6.0.0-dev",
+  "description": "Media API for the Kurento Web SDK",
+  "license": "LGPL",
+  "homepage": "http://www.kurento.org",
+  "keywords": [
+    "API",
+    "Kurento",
+    "WebRTC"
+  ]
+}
