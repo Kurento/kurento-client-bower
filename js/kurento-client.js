@@ -764,7 +764,7 @@ KurentoClient.getSingleton = function (ws_uri, callback) {
 
 module.exports = KurentoClient;
 
-},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./createPromise":5,"async":7,"checktype":8,"es6-promise":"es6-promise","events":17,"extend":10,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":113,"promisecallback":"promisecallback","reconnect-ws":118,"url":37}],2:[function(require,module,exports){
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./createPromise":5,"async":7,"checktype":37,"es6-promise":"es6-promise","events":14,"extend":39,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":113,"promisecallback":"promisecallback","reconnect-ws":118,"url":34}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -929,7 +929,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
 module.exports = MediaObjectCreator;
 
-},{"./TransactionsManager":3,"./createPromise":5,"./register":6,"checktype":8,"kurento-client-core":"kurento-client-core"}],3:[function(require,module,exports){
+},{"./TransactionsManager":3,"./createPromise":5,"./register":6,"checktype":37,"kurento-client-core":"kurento-client-core"}],3:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -1146,7 +1146,7 @@ TransactionsManager.TransactionNotCommitedException =
   TransactionNotCommitedException;
 TransactionsManager.TransactionRollbackException = TransactionRollbackException;
 
-},{"domain":16,"es6-promise":"es6-promise","events":17,"inherits":"inherits","promisecallback":"promisecallback"}],4:[function(require,module,exports){
+},{"domain":13,"es6-promise":"es6-promise","events":14,"inherits":"inherits","promisecallback":"promisecallback"}],4:[function(require,module,exports){
 /**
  * Loader for the kurento-client package on the browser
  */
@@ -1306,7 +1306,7 @@ register.classes = classes;
 register.complexTypes = complexTypes;
 register.modules = modules;
 
-},{"checktype":8}],7:[function(require,module,exports){
+},{"checktype":37}],7:[function(require,module,exports){
 (function (process,global){
 /*!
  * async
@@ -2501,282 +2501,9 @@ register.modules = modules;
 }());
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":19}],8:[function(require,module,exports){
-/*
- * (C) Copyright 2014 Kurento (http://kurento.org/)
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- */
-
-
-/**
- * Number.isInteger() polyfill
- * @function external:Number#isInteger
- * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger Number.isInteger}
- */
-if (!Number.isInteger) {
-  Number.isInteger = function isInteger (nVal) {
-    return typeof nVal === "number" && isFinite(nVal)
-        && nVal > -9007199254740992 && nVal < 9007199254740992
-        && Math.floor(nVal) === nVal;
-  };
-}
-
-
-function ChecktypeError(key, type, value)
-{
-  return SyntaxError(key + ' param should be a ' + (type.name || type)
-                    + ', not ' + value.constructor.name);
-}
-
-
-//
-// Basic types
-//
-
-function checkArray(type, key, value)
-{
-  if(!(value instanceof Array))
-    throw ChecktypeError(key, 'Array of '+type, value);
-
-  for(var i=0, item; item=value[i]; i++)
-    checkType(type, key+'['+i+']', item);
-};
-
-function checkBoolean(key, value)
-{
-  if(typeof value != 'boolean')
-    throw ChecktypeError(key, Boolean, value);
-};
-
-function checkNumber(key, value)
-{
-  if(typeof value != 'number')
-    throw ChecktypeError(key, Number, value);
-};
-
-function checkInteger(key, value)
-{
-  if(!Number.isInteger(value))
-    throw ChecktypeError(key, 'Integer', value);
-};
-
-function checkObject(key, value)
-{
-  if(typeof value != 'object')
-    throw ChecktypeError(key, Object, value);
-};
-
-function checkString(key, value)
-{
-  if(typeof value != 'string')
-    throw ChecktypeError(key, String, value);
-};
-
-
-// Checker functions
-
-function checkType(type, key, value, options)
-{
-  options = options || {};
-
-  if(value != undefined)
-  {
-    if(options.isArray)
-      return checkArray(type, key, value);
-
-    var checker = checkType[type];
-    if(checker) return checker(key, value);
-
-    console.warn("Could not check "+key+", unknown type "+type);
-//    throw TypeError("Could not check "+key+", unknown type "+type);
-  }
-
-  else if(options.required)
-    throw SyntaxError(key+" param is required");
-
-};
-
-function checkParams(params, scheme, class_name)
-{
-  var result = {};
-
-  // check MediaObject params
-  for(var key in scheme)
-  {
-    var value = params[key];
-
-    var s = scheme[key];
-
-    checkType(s.type, key, value, s);
-
-    if(value == undefined) continue;
-
-    result[key] = value;
-    delete params[key];
-  };
-
-  if(Object.keys(params).length)
-    console.warn('Unused params for '+class_name+':', params);
-
-  return result;
-};
-
-function checkMethodParams(callparams, method_params)
-{
-  var result = {};
-
-  var index=0, param;
-  for(; param=method_params[index]; index++)
-  {
-    var key = param.name;
-    var value = callparams[index];
-
-    checkType(param.type, key, value, param);
-
-    result[key] = value;
-  }
-
-  var params = callparams.slice(index);
-  if(params.length)
-    console.warning('Unused params:', params);
-
-  return result;
-};
-
-
-module.exports = checkType;
-
-checkType.checkParams    = checkParams;
-checkType.ChecktypeError = ChecktypeError;
-
-
-// Basic types
-
-checkType.boolean = checkBoolean;
-checkType.double  = checkNumber;
-checkType.float   = checkNumber;
-checkType.int     = checkInteger;
-checkType.Object  = checkObject;
-checkType.String  = checkString;
+},{"_process":16}],8:[function(require,module,exports){
 
 },{}],9:[function(require,module,exports){
-Object.defineProperty(Error.prototype, 'toJSON', {
-    value: function () {
-        var alt = {};
-
-        Object.getOwnPropertyNames(this).forEach(function (key) {
-            alt[key] = this[key];
-        }, this);
-
-        return alt;
-    },
-    configurable: true
-});
-
-},{}],10:[function(require,module,exports){
-var hasOwn = Object.prototype.hasOwnProperty;
-var toStr = Object.prototype.toString;
-var undefined;
-
-var isArray = function isArray(arr) {
-	if (typeof Array.isArray === 'function') {
-		return Array.isArray(arr);
-	}
-
-	return toStr.call(arr) === '[object Array]';
-};
-
-var isPlainObject = function isPlainObject(obj) {
-	'use strict';
-	if (!obj || toStr.call(obj) !== '[object Object]') {
-		return false;
-	}
-
-	var has_own_constructor = hasOwn.call(obj, 'constructor');
-	var has_is_property_of_method = obj.constructor && obj.constructor.prototype && hasOwn.call(obj.constructor.prototype, 'isPrototypeOf');
-	// Not own constructor property must be Object
-	if (obj.constructor && !has_own_constructor && !has_is_property_of_method) {
-		return false;
-	}
-
-	// Own properties are enumerated firstly, so to speed up,
-	// if last one is own, then all properties are own.
-	var key;
-	for (key in obj) {}
-
-	return key === undefined || hasOwn.call(obj, key);
-};
-
-module.exports = function extend() {
-	'use strict';
-	var options, name, src, copy, copyIsArray, clone,
-		target = arguments[0],
-		i = 1,
-		length = arguments.length,
-		deep = false;
-
-	// Handle a deep copy situation
-	if (typeof target === 'boolean') {
-		deep = target;
-		target = arguments[1] || {};
-		// skip the boolean and the target
-		i = 2;
-	} else if ((typeof target !== 'object' && typeof target !== 'function') || target == null) {
-		target = {};
-	}
-
-	for (; i < length; ++i) {
-		options = arguments[i];
-		// Only deal with non-null/undefined values
-		if (options != null) {
-			// Extend the base object
-			for (name in options) {
-				src = target[name];
-				copy = options[name];
-
-				// Prevent never-ending loop
-				if (target === copy) {
-					continue;
-				}
-
-				// Recurse if we're merging plain objects or arrays
-				if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
-					if (copyIsArray) {
-						copyIsArray = false;
-						clone = src && isArray(src) ? src : [];
-					} else {
-						clone = src && isPlainObject(src) ? src : {};
-					}
-
-					// Never move original objects, clone them
-					target[name] = extend(deep, clone, copy);
-
-				// Don't bring in undefined values
-				} else if (copy !== undefined) {
-					target[name] = copy;
-				}
-			}
-		}
-	}
-
-	// Return the modified object
-	return target;
-};
-
-
-},{}],11:[function(require,module,exports){
-
-},{}],12:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -4192,7 +3919,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":13,"ieee754":14,"is-array":15}],13:[function(require,module,exports){
+},{"base64-js":10,"ieee754":11,"is-array":12}],10:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -4318,7 +4045,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],14:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -4404,7 +4131,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],15:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 
 /**
  * isArray
@@ -4439,7 +4166,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],16:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /*global define:false require:false */
 module.exports = (function(){
 	// Import Events
@@ -4507,7 +4234,7 @@ module.exports = (function(){
 	};
 	return domain
 }).call(this)
-},{"events":17}],17:[function(require,module,exports){
+},{"events":14}],14:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4810,12 +4537,12 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],18:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],19:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -4907,7 +4634,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],20:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 (function (global){
 /*! https://mths.be/punycode v1.3.2 by @mathias */
 ;(function(root) {
@@ -5441,7 +5168,7 @@ process.umask = function() { return 0; };
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],21:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5527,7 +5254,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],22:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5614,16 +5341,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],23:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":21,"./encode":22}],24:[function(require,module,exports){
+},{"./decode":18,"./encode":19}],21:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":25}],25:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":22}],22:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -5716,7 +5443,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_readable":27,"./_stream_writable":29,"_process":19,"core-util-is":30,"inherits":"inherits"}],26:[function(require,module,exports){
+},{"./_stream_readable":24,"./_stream_writable":26,"_process":16,"core-util-is":27,"inherits":"inherits"}],23:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5764,7 +5491,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":28,"core-util-is":30,"inherits":"inherits"}],27:[function(require,module,exports){
+},{"./_stream_transform":25,"core-util-is":27,"inherits":"inherits"}],24:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6719,7 +6446,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":25,"_process":19,"buffer":12,"core-util-is":30,"events":17,"inherits":"inherits","isarray":18,"stream":35,"string_decoder/":36,"util":11}],28:[function(require,module,exports){
+},{"./_stream_duplex":22,"_process":16,"buffer":9,"core-util-is":27,"events":14,"inherits":"inherits","isarray":15,"stream":32,"string_decoder/":33,"util":8}],25:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6930,7 +6657,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":25,"core-util-is":30,"inherits":"inherits"}],29:[function(require,module,exports){
+},{"./_stream_duplex":22,"core-util-is":27,"inherits":"inherits"}],26:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7411,7 +7138,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":25,"_process":19,"buffer":12,"core-util-is":30,"inherits":"inherits","stream":35}],30:[function(require,module,exports){
+},{"./_stream_duplex":22,"_process":16,"buffer":9,"core-util-is":27,"inherits":"inherits","stream":32}],27:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7521,10 +7248,10 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":12}],31:[function(require,module,exports){
+},{"buffer":9}],28:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":26}],32:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":23}],29:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = require('stream');
 exports.Readable = exports;
@@ -7533,13 +7260,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":25,"./lib/_stream_passthrough.js":26,"./lib/_stream_readable.js":27,"./lib/_stream_transform.js":28,"./lib/_stream_writable.js":29,"stream":35}],33:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":22,"./lib/_stream_passthrough.js":23,"./lib/_stream_readable.js":24,"./lib/_stream_transform.js":25,"./lib/_stream_writable.js":26,"stream":32}],30:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":28}],34:[function(require,module,exports){
+},{"./lib/_stream_transform.js":25}],31:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":29}],35:[function(require,module,exports){
+},{"./lib/_stream_writable.js":26}],32:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7668,7 +7395,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":17,"inherits":"inherits","readable-stream/duplex.js":24,"readable-stream/passthrough.js":31,"readable-stream/readable.js":32,"readable-stream/transform.js":33,"readable-stream/writable.js":34}],36:[function(require,module,exports){
+},{"events":14,"inherits":"inherits","readable-stream/duplex.js":21,"readable-stream/passthrough.js":28,"readable-stream/readable.js":29,"readable-stream/transform.js":30,"readable-stream/writable.js":31}],33:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7891,7 +7618,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":12}],37:[function(require,module,exports){
+},{"buffer":9}],34:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8600,14 +8327,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":20,"querystring":23}],38:[function(require,module,exports){
+},{"punycode":17,"querystring":20}],35:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],39:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -9197,7 +8924,280 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":38,"_process":19,"inherits":"inherits"}],40:[function(require,module,exports){
+},{"./support/isBuffer":35,"_process":16,"inherits":"inherits"}],37:[function(require,module,exports){
+/*
+ * (C) Copyright 2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
+
+/**
+ * Number.isInteger() polyfill
+ * @function external:Number#isInteger
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger Number.isInteger}
+ */
+if (!Number.isInteger) {
+  Number.isInteger = function isInteger (nVal) {
+    return typeof nVal === "number" && isFinite(nVal)
+        && nVal > -9007199254740992 && nVal < 9007199254740992
+        && Math.floor(nVal) === nVal;
+  };
+}
+
+
+function ChecktypeError(key, type, value)
+{
+  return SyntaxError(key + ' param should be a ' + (type.name || type)
+                    + ', not ' + value.constructor.name);
+}
+
+
+//
+// Basic types
+//
+
+function checkArray(type, key, value)
+{
+  if(!(value instanceof Array))
+    throw ChecktypeError(key, 'Array of '+type, value);
+
+  for(var i=0, item; item=value[i]; i++)
+    checkType(type, key+'['+i+']', item);
+};
+
+function checkBoolean(key, value)
+{
+  if(typeof value != 'boolean')
+    throw ChecktypeError(key, Boolean, value);
+};
+
+function checkNumber(key, value)
+{
+  if(typeof value != 'number')
+    throw ChecktypeError(key, Number, value);
+};
+
+function checkInteger(key, value)
+{
+  if(!Number.isInteger(value))
+    throw ChecktypeError(key, 'Integer', value);
+};
+
+function checkObject(key, value)
+{
+  if(typeof value != 'object')
+    throw ChecktypeError(key, Object, value);
+};
+
+function checkString(key, value)
+{
+  if(typeof value != 'string')
+    throw ChecktypeError(key, String, value);
+};
+
+
+// Checker functions
+
+function checkType(type, key, value, options)
+{
+  options = options || {};
+
+  if(value != undefined)
+  {
+    if(options.isArray)
+      return checkArray(type, key, value);
+
+    var checker = checkType[type];
+    if(checker) return checker(key, value);
+
+    console.warn("Could not check "+key+", unknown type "+type);
+//    throw TypeError("Could not check "+key+", unknown type "+type);
+  }
+
+  else if(options.required)
+    throw SyntaxError(key+" param is required");
+
+};
+
+function checkParams(params, scheme, class_name)
+{
+  var result = {};
+
+  // check MediaObject params
+  for(var key in scheme)
+  {
+    var value = params[key];
+
+    var s = scheme[key];
+
+    checkType(s.type, key, value, s);
+
+    if(value == undefined) continue;
+
+    result[key] = value;
+    delete params[key];
+  };
+
+  if(Object.keys(params).length)
+    console.warn('Unused params for '+class_name+':', params);
+
+  return result;
+};
+
+function checkMethodParams(callparams, method_params)
+{
+  var result = {};
+
+  var index=0, param;
+  for(; param=method_params[index]; index++)
+  {
+    var key = param.name;
+    var value = callparams[index];
+
+    checkType(param.type, key, value, param);
+
+    result[key] = value;
+  }
+
+  var params = callparams.slice(index);
+  if(params.length)
+    console.warning('Unused params:', params);
+
+  return result;
+};
+
+
+module.exports = checkType;
+
+checkType.checkParams    = checkParams;
+checkType.ChecktypeError = ChecktypeError;
+
+
+// Basic types
+
+checkType.boolean = checkBoolean;
+checkType.double  = checkNumber;
+checkType.float   = checkNumber;
+checkType.int     = checkInteger;
+checkType.Object  = checkObject;
+checkType.String  = checkString;
+
+},{}],38:[function(require,module,exports){
+Object.defineProperty(Error.prototype, 'toJSON', {
+    value: function () {
+        var alt = {};
+
+        Object.getOwnPropertyNames(this).forEach(function (key) {
+            alt[key] = this[key];
+        }, this);
+
+        return alt;
+    },
+    configurable: true
+});
+
+},{}],39:[function(require,module,exports){
+var hasOwn = Object.prototype.hasOwnProperty;
+var toStr = Object.prototype.toString;
+var undefined;
+
+var isArray = function isArray(arr) {
+	if (typeof Array.isArray === 'function') {
+		return Array.isArray(arr);
+	}
+
+	return toStr.call(arr) === '[object Array]';
+};
+
+var isPlainObject = function isPlainObject(obj) {
+	'use strict';
+	if (!obj || toStr.call(obj) !== '[object Object]') {
+		return false;
+	}
+
+	var has_own_constructor = hasOwn.call(obj, 'constructor');
+	var has_is_property_of_method = obj.constructor && obj.constructor.prototype && hasOwn.call(obj.constructor.prototype, 'isPrototypeOf');
+	// Not own constructor property must be Object
+	if (obj.constructor && !has_own_constructor && !has_is_property_of_method) {
+		return false;
+	}
+
+	// Own properties are enumerated firstly, so to speed up,
+	// if last one is own, then all properties are own.
+	var key;
+	for (key in obj) {}
+
+	return key === undefined || hasOwn.call(obj, key);
+};
+
+module.exports = function extend() {
+	'use strict';
+	var options, name, src, copy, copyIsArray, clone,
+		target = arguments[0],
+		i = 1,
+		length = arguments.length,
+		deep = false;
+
+	// Handle a deep copy situation
+	if (typeof target === 'boolean') {
+		deep = target;
+		target = arguments[1] || {};
+		// skip the boolean and the target
+		i = 2;
+	} else if ((typeof target !== 'object' && typeof target !== 'function') || target == null) {
+		target = {};
+	}
+
+	for (; i < length; ++i) {
+		options = arguments[i];
+		// Only deal with non-null/undefined values
+		if (options != null) {
+			// Extend the base object
+			for (name in options) {
+				src = target[name];
+				copy = options[name];
+
+				// Prevent never-ending loop
+				if (target === copy) {
+					continue;
+				}
+
+				// Recurse if we're merging plain objects or arrays
+				if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
+					if (copyIsArray) {
+						copyIsArray = false;
+						clone = src && isArray(src) ? src : [];
+					} else {
+						clone = src && isPlainObject(src) ? src : {};
+					}
+
+					// Never move original objects, clone them
+					target[name] = extend(deep, clone, copy);
+
+				// Don't bring in undefined values
+				} else if (copy !== undefined) {
+					target[name] = copy;
+				}
+			}
+		}
+	}
+
+	// Return the modified object
+	return target;
+};
+
+
+},{}],40:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11484,7 +11484,7 @@ module.exports = MediaObject;
 
 MediaObject.check = checkMediaObject;
 
-},{"es6-promise":"es6-promise","events":17,"inherits":"inherits","kurento-client":"kurento-client","promisecallback":"promisecallback"}],49:[function(require,module,exports){
+},{"es6-promise":"es6-promise","events":14,"inherits":"inherits","kurento-client":"kurento-client","promisecallback":"promisecallback"}],49:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19380,7 +19380,7 @@ var clients = require('./clients');
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":110,"./clients":111,"./packers":116,"events":17,"inherits":"inherits"}],114:[function(require,module,exports){
+},{"./Mapper":110,"./clients":111,"./packers":116,"events":14,"inherits":"inherits"}],114:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -19699,7 +19699,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":120,"events":17}],120:[function(require,module,exports){
+},{"backoff":120,"events":14}],120:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -19836,7 +19836,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":17,"util":39}],122:[function(require,module,exports){
+},{"events":14,"util":36}],122:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20065,7 +20065,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":121,"./strategy/fibonacci":124,"events":17,"util":39}],123:[function(require,module,exports){
+},{"./backoff":121,"./strategy/fibonacci":124,"events":14,"util":36}],123:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20101,7 +20101,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":125,"util":39}],124:[function(require,module,exports){
+},{"./strategy":125,"util":36}],124:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20138,7 +20138,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":125,"util":39}],125:[function(require,module,exports){
+},{"./strategy":125,"util":36}],125:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20238,7 +20238,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":17,"util":39}],126:[function(require,module,exports){
+},{"events":14,"util":36}],126:[function(require,module,exports){
 (function (process){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -20334,7 +20334,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,require('_process'))
-},{"_process":19,"isbuffer":127,"through":128,"ws":129}],127:[function(require,module,exports){
+},{"_process":16,"isbuffer":127,"through":128,"ws":129}],127:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -20344,7 +20344,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":12}],128:[function(require,module,exports){
+},{"buffer":9}],128:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -20456,7 +20456,7 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":19,"stream":35}],129:[function(require,module,exports){
+},{"_process":16,"stream":32}],129:[function(require,module,exports){
 arguments[4][117][0].apply(exports,arguments)
 },{"dup":117}],"es6-promise":[function(require,module,exports){
 (function (process,global){
@@ -21430,7 +21430,7 @@ arguments[4][117][0].apply(exports,arguments)
 
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":19}],"inherits":[function(require,module,exports){
+},{"_process":16}],"inherits":[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -21648,7 +21648,7 @@ register('kurento-client-core')
 register('kurento-client-elements')
 register('kurento-client-filters')
 
-},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./register":6,"checktype":8,"error-tojson":9}],"promisecallback":[function(require,module,exports){
+},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./register":6,"checktype":37,"error-tojson":38}],"promisecallback":[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
