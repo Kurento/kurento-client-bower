@@ -49,6 +49,10 @@ var transactionOperation = TransactionsManager.transactionOperation;
 
 var MediaObject = require('kurento-client-core').abstracts.MediaObject;
 
+const MEDIA_OBJECT_TYPE_NOT_FOUND = 40100
+const MEDIA_OBJECT_NOT_FOUND = 40101
+const MEDIA_OBJECT_METHOD_NOT_FOUND = 40105
+
 const BASE_TIMEOUT = 20000;
 
 function findIndex(list, predicate) {
@@ -220,95 +224,6 @@ function KurentoClient(ws_uri, options, callback) {
     console.error('Invalid request instance', request);
   });
 
-  function connect(callback) {
-    //
-    // Reconnect websockets
-    //
-
-    var closed = false;
-    var re = reconnect({
-        failAfter: failAfter
-      }, function (ws_stream) {
-        if (closed)
-          ws_stream.writable = false;
-
-        rpc.transport = ws_stream;
-      })
-      .connect(ws_uri);
-
-    Object.defineProperty(this, '_re', {
-      configurable: true,
-      get: function () {
-        return re
-      }
-    })
-
-    this.close = function () {
-      closed = true;
-
-      prevRpc_result.then(re.disconnect.bind(re));
-    };
-
-    re.on('fail', this.emit.bind(this, 'disconnect'));
-
-    //
-    // Promise interface ("thenable")
-    //
-
-    this.then = function (onFulfilled, onRejected) {
-      return new Promise(function (resolve, reject) {
-        function success() {
-          re.removeListener('fail', failure);
-
-          var result;
-
-          if (onFulfilled)
-            try {
-              result = onFulfilled.call(self, self);
-            } catch (exception) {
-              if (!onRejected)
-                console.trace('Uncaugh exception', exception)
-
-              return reject(exception);
-            }
-
-          resolve(result);
-        };
-
-        function failure() {
-          re.removeListener('connection', success);
-
-          var result = new Error('Connection error');
-
-          if (onRejected)
-            try {
-              result = onRejected.call(self, result);
-            } catch (exception) {
-              return reject(exception);
-            } else
-              console.trace('Uncaugh exception', result)
-
-          reject(result);
-        };
-
-        if (re.connected)
-          success()
-        else if (!re.reconnect)
-          failure()
-        else {
-          re.once('connection', success);
-          re.once('fail', failure);
-        }
-      });
-    };
-
-    this.catch = this.then.bind(this, null);
-
-    if (callback)
-      this.then(callback.bind(undefined, null), callback);
-  };
-  connect.call(self, callback);
-
   // Select what transactions mechanism to use
   var encodeTransaction = options.enableTransactions ? commitTransactional :
     commitSerial;
@@ -340,7 +255,22 @@ function KurentoClient(ws_uri, options, callback) {
         // [ToDo] Use stacktrace of caller, not from response
         rpc.encode(method, params, function (error, result) {
           if (error) {
-            error = extend(new Error(error.message || error), error);
+            var constructor = Error
+            switch (error.code) {
+            case MEDIA_OBJECT_TYPE_NOT_FOUND:
+              constructor = TypeError
+              break
+
+            case MEDIA_OBJECT_NOT_FOUND:
+              constructor = ReferenceError
+              break
+
+            case MEDIA_OBJECT_METHOD_NOT_FOUND:
+              constructor = SyntaxError
+              break
+            }
+
+            error = extend(new constructor(error.message || error), error);
             error.requestTime = requestTime
           }
 
@@ -451,7 +381,7 @@ function KurentoClient(ws_uri, options, callback) {
     for (var i = 0, operation; operation = operations[i]; i++) {
       var object = operation.params.object;
       if (object instanceof MediaObject && object.id === null) {
-        var error = new Error('MediaObject not found in server');
+        var error = new ReferenceError('MediaObject not found in server');
         error.code = 40101;
         error.object = object;
 
@@ -663,6 +593,130 @@ function KurentoClient(ws_uri, options, callback) {
    * @param {module:core/abstract~MediaElement} result
    *  The created MediaElement
    */
+
+  function connect(callback) {
+    //
+    // Reconnect websockets
+    //
+
+    var closed = false;
+    var re = reconnect({
+        failAfter: failAfter
+      }, function (ws_stream) {
+        if (closed)
+          ws_stream.writable = false;
+
+        rpc.transport = ws_stream;
+      })
+      .connect(ws_uri);
+
+    // Object.defineProperty(this, '_re', {
+    //   configurable: true,
+    //   get: function () {
+    //     return re
+    //   }
+    // })
+
+    this.close = function () {
+      closed = true;
+
+      prevRpc_result.then(re.disconnect.bind(re));
+    };
+
+    re.on('fail', this.emit.bind(this, 'disconnect'));
+
+    //
+    // Promise interface ("thenable")
+    //
+
+    this.then = function (onFulfilled, onRejected) {
+      return new Promise(function (resolve, reject) {
+        function success() {
+          re.removeListener('fail', failure);
+
+          var result;
+
+          if (onFulfilled)
+            try {
+              result = onFulfilled.call(self, self);
+            } catch (exception) {
+              if (!onRejected)
+                console.trace('Uncaugh exception', exception)
+
+              return reject(exception);
+            }
+
+          resolve(result);
+        };
+
+        function failure() {
+          re.removeListener('connection', success);
+
+          var result = new Error('Connection error');
+
+          if (onRejected)
+            try {
+              result = onRejected.call(self, result);
+            } catch (exception) {
+              return reject(exception);
+            } else
+              console.trace('Uncaugh exception', result)
+
+          reject(result);
+        };
+
+        if (re.connected)
+          success()
+        else if (!re.reconnect)
+          failure()
+        else {
+          re.once('connection', success);
+          re.once('fail', failure);
+        }
+      });
+    };
+
+    this.catch = this.then.bind(this, null);
+
+    // Check for available modules in the Kurento Media Server
+
+    var promise = this.getServerManager()
+      .then(function (serverManager) {
+        return serverManager.getInfo()
+      })
+      .then(function (info) {
+        var serverModules = info.modules.map(function (module) {
+          return module.name
+        })
+
+        var notInstalled = KurentoClient.register.modules.filter(
+          function (module) {
+            return serverModules.indexOf(module) < 0
+          })
+
+        var length = notInstalled.length
+        if (length) {
+          if (length === 1)
+            var message = "Module '" + notInstalled[0] +
+              "' is not installed in the Kurento Media Server"
+          else
+            var message = "Modules '" + notInstalled.slice(0, -1).join(
+                "', '") + "' and '" + notInstalled[length - 1] +
+              "' are not installed in the Kurento Media Server"
+
+          var error = new SyntaxError(message)
+          error.modules = notInstalled
+
+          return Promise.reject(error)
+        }
+
+        return Promise.resolve(self)
+      })
+
+    if (callback)
+      promise.then(callback.bind(undefined, null), callback);
+  };
+  connect.call(self, callback);
 };
 inherits(KurentoClient, EventEmitter);
 /**
@@ -709,14 +763,17 @@ KurentoClient.prototype.connect = function (media, callback) {
 
     // Connect the media elements
     var src = media[0];
+    var sink = media[media.length - 1]
 
     async.each(media.slice(1), function (sink, callback) {
-      src.connect(sink, callback);
-      src = sink;
+      src = src.connect(sink, callback);
     }, callback);
   });
 
-  return promiseCallback(promise, callback);
+  promise = promiseCallback(promise, callback);
+  promise.connect = sink.connect.bind(sink);
+
+  return promise
 };
 /**
  * @callback KurentoClientApi~connectCallback
@@ -1270,7 +1327,7 @@ function register(name, constructor) {
     if (!name) name = constructor.name
 
     if (name == undefined)
-      throw new Error("Can't register an anonymous module");
+      throw new SyntaxError("Can't register an anonymous module");
 
     return registerClass(name, constructor)
   }
