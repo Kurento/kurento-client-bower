@@ -15924,16 +15924,15 @@ exports.VideoCodec = VideoCodec;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -15977,18 +15976,15 @@ inherits(AlphaBlending, Hub);
 // Public methods
 //
 
-
 /**
  * Sets the source port that will be the master entry to the mixer
  *
  * @alias module:elements.AlphaBlending.setMaster
  *
- * @param   {module:core.HubPort} source
-
+ * @param {module:core.HubPort} source
  *  The reference to the HubPort setting as master port
  *
- * @param   {external:Integer} zOrder
-
+ * @param {external:Integer} zOrder
  *  The order in z to draw the master image
  *
  * @param {module:elements.AlphaBlending~setMasterCallback} [callback]
@@ -16000,15 +15996,15 @@ AlphaBlending.prototype.setMaster = function(source, zOrder, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true}
-);
-  checkType('int', 'zOrder', zOrder, {required: true}
-);
+  checkType('HubPort', 'source', source, {required: true});
+  checkType('int', 'zOrder', zOrder, {required: true});
 
   var params = {
     source: source,
-    zOrder: zOrder,
+    zOrder: zOrder
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setMaster', params, callback);
 };
@@ -16022,30 +16018,24 @@ AlphaBlending.prototype.setMaster = function(source, zOrder, callback){
  *
  * @alias module:elements.AlphaBlending.setPortProperties
  *
- * @param   {external:Number} relativeX
-
+ * @param {external:Number} relativeX
  *  The x position relative to the master port. Values from 0 to 1 are accepted.
  *
- * @param   {external:Number} relativeY
-
+ * @param {external:Number} relativeY
  *  The y position relative to the master port. Values from 0 to 1 are accepted.
  *
- * @param   {external:Integer} zOrder
-
+ * @param {external:Integer} zOrder
  *  The order in z to draw the images. The greatest value of z is in the top.
  *
- * @param   {external:Number} relativeWidth
-
+ * @param {external:Number} relativeWidth
  *  The image width relative to the master port width. Values from 0 to 1 are 
  *  accepted.
  *
- * @param   {external:Number} relativeHeight
-
+ * @param {external:Number} relativeHeight
  *  The image height relative to the master port height. Values from 0 to 1 are 
  *  accepted.
  *
- * @param   {module:core.HubPort} port
-
+ * @param {module:core.HubPort} port
  *  The reference to the confingured port.
  *
  * @param {module:elements.AlphaBlending~setPortPropertiesCallback} [callback]
@@ -16057,18 +16047,12 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('float', 'relativeX', relativeX, {required: true}
-);
-  checkType('float', 'relativeY', relativeY, {required: true}
-);
-  checkType('int', 'zOrder', zOrder, {required: true}
-);
-  checkType('float', 'relativeWidth', relativeWidth, {required: true}
-);
-  checkType('float', 'relativeHeight', relativeHeight, {required: true}
-);
-  checkType('HubPort', 'port', port, {required: true}
-);
+  checkType('float', 'relativeX', relativeX, {required: true});
+  checkType('float', 'relativeY', relativeY, {required: true});
+  checkType('int', 'zOrder', zOrder, {required: true});
+  checkType('float', 'relativeWidth', relativeWidth, {required: true});
+  checkType('float', 'relativeHeight', relativeHeight, {required: true});
+  checkType('HubPort', 'port', port, {required: true});
 
   var params = {
     relativeX: relativeX,
@@ -16076,8 +16060,10 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
     zOrder: zOrder,
     relativeWidth: relativeWidth,
     relativeHeight: relativeHeight,
-    port: port,
+    port: port
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setPortProperties', params, callback);
 };
@@ -16090,8 +16076,7 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
 /**
  * @alias module:elements.AlphaBlending.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
  *  belongs
  */
@@ -16099,7 +16084,7 @@ AlphaBlending.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -16135,16 +16120,15 @@ AlphaBlending.check = checkAlphaBlending;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -16179,8 +16163,7 @@ inherits(Composite, Hub);
 /**
  * @alias module:elements.Composite.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
  *  belongs
  */
@@ -16188,7 +16171,7 @@ Composite.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -16224,16 +16207,15 @@ Composite.check = checkComposite;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -16274,19 +16256,16 @@ inherits(Dispatcher, Hub);
 // Public methods
 //
 
-
 /**
  * Connects each corresponding {@link MediaType} of the given source port with 
  * the sink port.
  *
  * @alias module:elements.Dispatcher.connect
  *
- * @param   {module:core.HubPort} source
-
+ * @param {module:core.HubPort} source
  *  Source port to be connected
  *
- * @param   {module:core.HubPort} sink
-
+ * @param {module:core.HubPort} sink
  *  Sink port to be connected
  *
  * @param {module:elements.Dispatcher~connectCallback} [callback]
@@ -16298,21 +16277,17 @@ Dispatcher.prototype.connect = function(source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true}
-);
-  checkType('HubPort', 'sink', sink, {required: true}
-);
+  checkType('HubPort', 'source', source, {required: true});
+  checkType('HubPort', 'sink', sink, {required: true});
 
   var params = {
     source: source,
-    sink: sink,
+    sink: sink
   };
 
-  var promise = this._invoke(transaction, 'connect', params, callback);
+  callback = (callback || noop).bind(this)
 
-  promise.connect = sink.connect.bind(sink);
-
-  return promise;
+  return this._invoke(transaction, 'connect', params, callback);
 };
 /**
  * @callback module:elements.Dispatcher~connectCallback
@@ -16323,8 +16298,7 @@ Dispatcher.prototype.connect = function(source, sink, callback){
 /**
  * @alias module:elements.Dispatcher.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
  *  belongs
  */
@@ -16332,7 +16306,7 @@ Dispatcher.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -16368,16 +16342,15 @@ Dispatcher.check = checkDispatcher;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -16418,7 +16391,6 @@ inherits(DispatcherOneToMany, Hub);
 // Public methods
 //
 
-
 /**
  * Remove the source port and stop the media pipeline.
  *
@@ -16435,6 +16407,8 @@ DispatcherOneToMany.prototype.removeSource = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'removeSource', callback);
 };
 /**
@@ -16448,8 +16422,7 @@ DispatcherOneToMany.prototype.removeSource = function(callback){
  *
  * @alias module:elements.DispatcherOneToMany.setSource
  *
- * @param   {module:core.HubPort} source
-
+ * @param {module:core.HubPort} source
  *  source to be broadcasted
  *
  * @param {module:elements.DispatcherOneToMany~setSourceCallback} [callback]
@@ -16461,12 +16434,13 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true}
-);
+  checkType('HubPort', 'source', source, {required: true});
 
   var params = {
-    source: source,
+    source: source
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setSource', params, callback);
 };
@@ -16479,8 +16453,7 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
 /**
  * @alias module:elements.DispatcherOneToMany.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
  *  belongs
  */
@@ -16488,7 +16461,7 @@ DispatcherOneToMany.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -16524,16 +16497,15 @@ DispatcherOneToMany.check = checkDispatcherOneToMany;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -16571,17 +16543,14 @@ inherits(HttpPostEndpoint, HttpEndpoint);
 /**
  * @alias module:elements.HttpPostEndpoint.constructorParams
  *
- * @property   {external:Integer} [disconnectionTimeout]
-
+ * @property {external:Integer} [disconnectionTimeout]
  *  This is the time that an http endpoint will wait for a reconnection, in case
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  *
- * @property   {external:Boolean} [useEncodedMedia]
-
+ * @property {external:Boolean} [useEncodedMedia]
  *  configures the endpoint to use encoded media instead of raw media. If the 
  *  parameter is not set then the element uses raw media. Changing this 
  *  parameter could affect in a severe way to stability because key frames lost 
@@ -16595,7 +16564,7 @@ HttpPostEndpoint.constructorParams = {
     required: true
   },
   useEncodedMedia: {
-    type: 'boolean'  },
+    type: 'boolean'  }
 };
 
 /**
@@ -16631,16 +16600,15 @@ HttpPostEndpoint.check = checkHttpPostEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -16680,23 +16648,19 @@ inherits(Mixer, Hub);
 // Public methods
 //
 
-
 /**
  * Connects each corresponding {@link MediaType} of the given source port with 
  * the sink port.
  *
  * @alias module:elements.Mixer.connect
  *
- * @param   {external:MediaType} media
-
+ * @param {external:MediaType} media
  *  The sort of media stream to be connected
  *
- * @param   {module:core.HubPort} source
-
+ * @param {module:core.HubPort} source
  *  Source port to be connected
  *
- * @param   {module:core.HubPort} sink
-
+ * @param {module:core.HubPort} sink
  *  Sink port to be connected
  *
  * @param {module:elements.Mixer~connectCallback} [callback]
@@ -16708,24 +16672,19 @@ Mixer.prototype.connect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('MediaType', 'media', media, {required: true}
-);
-  checkType('HubPort', 'source', source, {required: true}
-);
-  checkType('HubPort', 'sink', sink, {required: true}
-);
+  checkType('MediaType', 'media', media, {required: true});
+  checkType('HubPort', 'source', source, {required: true});
+  checkType('HubPort', 'sink', sink, {required: true});
 
   var params = {
     media: media,
     source: source,
-    sink: sink,
+    sink: sink
   };
 
-  var promise = this._invoke(transaction, 'connect', params, callback);
+  callback = (callback || noop).bind(this)
 
-  promise.connect = sink.connect.bind(sink);
-
-  return promise;
+  return this._invoke(transaction, 'connect', params, callback);
 };
 /**
  * @callback module:elements.Mixer~connectCallback
@@ -16737,16 +16696,13 @@ Mixer.prototype.connect = function(media, source, sink, callback){
  *
  * @alias module:elements.Mixer.disconnect
  *
- * @param   {external:MediaType} media
-
+ * @param {external:MediaType} media
  *  The sort of media stream to be disconnected
  *
- * @param   {module:core.HubPort} source
-
+ * @param {module:core.HubPort} source
  *  Audio source port to be disconnected
  *
- * @param   {module:core.HubPort} sink
-
+ * @param {module:core.HubPort} sink
  *  Audio sink port to be disconnected
  *
  * @param {module:elements.Mixer~disconnectCallback} [callback]
@@ -16758,18 +16714,17 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('MediaType', 'media', media, {required: true}
-);
-  checkType('HubPort', 'source', source, {required: true}
-);
-  checkType('HubPort', 'sink', sink, {required: true}
-);
+  checkType('MediaType', 'media', media, {required: true});
+  checkType('HubPort', 'source', source, {required: true});
+  checkType('HubPort', 'sink', sink, {required: true});
 
   var params = {
     media: media,
     source: source,
-    sink: sink,
+    sink: sink
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'disconnect', params, callback);
 };
@@ -16782,8 +16737,7 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
 /**
  * @alias module:elements.Mixer.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the Mixer 
  *  belongs
  */
@@ -16791,7 +16745,7 @@ Mixer.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -16827,16 +16781,15 @@ Mixer.check = checkMixer;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -16883,7 +16836,6 @@ inherits(PlayerEndpoint, UriEndpoint);
 // Public methods
 //
 
-
 /**
  * Starts to send data to the endpoint :rom:cls:`MediaSource`
  *
@@ -16900,6 +16852,8 @@ PlayerEndpoint.prototype.play = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'play', callback);
 };
 /**
@@ -16911,17 +16865,14 @@ PlayerEndpoint.prototype.play = function(callback){
 /**
  * @alias module:elements.PlayerEndpoint.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  The {@link module:core.MediaPipeline MediaPipeline} this PlayerEndpoint 
  *  belongs to.
  *
- * @property   {external:String} uri
-
+ * @property {external:String} uri
  *  URI that will be played
  *
- * @property   {external:Boolean} [useEncodedMedia]
-
+ * @property {external:Boolean} [useEncodedMedia]
  *  use encoded instead of raw media. If the parameter is false then the
  *  element uses raw media. Changing this parameter can affect stability
  *  severely, as lost key frames lost will not be regenerated. Changing the 
@@ -16941,7 +16892,7 @@ PlayerEndpoint.constructorParams = {
     required: true
   },
   useEncodedMedia: {
-    type: 'boolean'  },
+    type: 'boolean'  }
 };
 
 /**
@@ -16977,16 +16928,15 @@ PlayerEndpoint.check = checkPlayerEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -17025,7 +16975,6 @@ inherits(RecorderEndpoint, UriEndpoint);
 // Public methods
 //
 
-
 /**
  * Starts storing media received through the :rom:cls:`MediaSink` pad
  *
@@ -17042,6 +16991,8 @@ RecorderEndpoint.prototype.record = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'record', callback);
 };
 /**
@@ -17053,25 +17004,21 @@ RecorderEndpoint.prototype.record = function(callback){
 /**
  * @alias module:elements.RecorderEndpoint.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  *
- * @property   {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
-
+ * @property {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
  *  Choose either a {@link 
  *  module:elements.RecorderEndpoint#MediaProfileSpecType.WEBM} or a {@link 
  *  module:elements.RecorderEndpoint#MediaProfileSpecType.MP4} profile for 
  *  recording
  *
- * @property   {external:Boolean} [stopOnEndOfStream]
-
+ * @property {external:Boolean} [stopOnEndOfStream]
  *  Forces the recorder endpoint to finish processing data when an <a 
  *  href="http://www.kurento.org/docs/current/glossary.html#term-eos">EOS</a> is
  *
- * @property   {external:String} uri
-
+ * @property {external:String} uri
  *  URI where the recording will be stored
  */
 RecorderEndpoint.constructorParams = {
@@ -17086,7 +17033,7 @@ RecorderEndpoint.constructorParams = {
   uri: {
     type: 'String',
     required: true
-  },
+  }
 };
 
 /**
@@ -17122,16 +17069,15 @@ RecorderEndpoint.check = checkRecorderEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -17165,8 +17111,7 @@ inherits(RtpEndpoint, SdpEndpoint);
 /**
  * @alias module:elements.RtpEndpoint.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  */
@@ -17174,7 +17119,7 @@ RtpEndpoint.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -17210,16 +17155,15 @@ RtpEndpoint.check = checkRtpEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -17305,12 +17249,13 @@ WebRtcEndpoint.prototype.setStunServerAddress = function(stunServerAddress, call
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'stunServerAddress', stunServerAddress, {required: true}
-);
+  checkType('String', 'stunServerAddress', stunServerAddress, {required: true});
 
   var params = {
-    stunServerAddress: stunServerAddress,
+    stunServerAddress: stunServerAddress
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setStunServerAddress', params, callback);
 };
@@ -17360,12 +17305,13 @@ WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'stunServerPort', stunServerPort, {required: true}
-);
+  checkType('int', 'stunServerPort', stunServerPort, {required: true});
 
   var params = {
-    stunServerPort: stunServerPort,
+    stunServerPort: stunServerPort
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setStunServerPort', params, callback);
 };
@@ -17421,12 +17367,13 @@ WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'turnUrl', turnUrl, {required: true}
-);
+  checkType('String', 'turnUrl', turnUrl, {required: true});
 
   var params = {
-    turnUrl: turnUrl,
+    turnUrl: turnUrl
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setTurnUrl', params, callback);
 };
@@ -17440,14 +17387,12 @@ WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
 // Public methods
 //
 
-
 /**
  * Provide a remote ICE candidate
  *
  * @alias module:elements.WebRtcEndpoint.addIceCandidate
  *
- * @param   {module:elements/complexTypes.IceCandidate} candidate
-
+ * @param {module:elements/complexTypes.IceCandidate} candidate
  *  Remote ICE candidate
  *
  * @param {module:elements.WebRtcEndpoint~addIceCandidateCallback} [callback]
@@ -17459,12 +17404,13 @@ WebRtcEndpoint.prototype.addIceCandidate = function(candidate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('IceCandidate', 'candidate', candidate, {required: true}
-);
+  checkType('IceCandidate', 'candidate', candidate, {required: true});
 
   var params = {
-    candidate: candidate,
+    candidate: candidate
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'addIceCandidate', params, callback);
 };
@@ -17491,6 +17437,8 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'gatherCandidates', callback);
 };
 /**
@@ -17502,8 +17450,7 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
 /**
  * @alias module:elements.WebRtcEndpoint.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  */
@@ -17511,7 +17458,7 @@ WebRtcEndpoint.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -17547,16 +17494,15 @@ WebRtcEndpoint.check = checkWebRtcEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -17596,7 +17542,6 @@ inherits(HttpEndpoint, SessionEndpoint);
 // Public methods
 //
 
-
 /**
  * Obtains the URL associated to this endpoint
  *
@@ -17612,6 +17557,8 @@ HttpEndpoint.prototype.getUrl = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getUrl', callback);
 };
@@ -17662,16 +17609,15 @@ HttpEndpoint.check = checkHttpEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 /**
@@ -17694,16 +17640,15 @@ exports.HttpEndpoint = HttpEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -17736,12 +17681,9 @@ function IceCandidate(iceCandidateDict){
     return new IceCandidate(iceCandidateDict)
 
   // Check iceCandidateDict has the required fields
-  checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true}
-);
-  checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true}
-);
-  checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, {required: true}
-);
+  checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true});
+  checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true});
+  checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, {required: true});
 
   // Init parent class
   IceCandidate.super_.call(this, iceCandidateDict)
@@ -17805,16 +17747,15 @@ IceCandidate.check = checkIceCandidate;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -17855,16 +17796,15 @@ module.exports = checkIceComponentState;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -17906,16 +17846,15 @@ module.exports = checkMediaProfileSpecType;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 /**
@@ -20624,7 +20563,7 @@ arguments[4][118][0].apply(exports,arguments)
  * @copyright Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors (Conversion to ES6 API by Jake Archibald)
  * @license   Licensed under MIT license
  *            See https://raw.githubusercontent.com/jakearchibald/es6-promise/master/LICENSE
- * @version   2.2.0
+ * @version   2.3.0
  */
 
 (function() {
@@ -20656,7 +20595,7 @@ arguments[4][118][0].apply(exports,arguments)
     var lib$es6$promise$asap$$vertxNext;
     var lib$es6$promise$asap$$customSchedulerFn;
 
-    function lib$es6$promise$asap$$asap(callback, arg) {
+    var lib$es6$promise$asap$$asap = function asap(callback, arg) {
       lib$es6$promise$asap$$queue[lib$es6$promise$asap$$len] = callback;
       lib$es6$promise$asap$$queue[lib$es6$promise$asap$$len + 1] = arg;
       lib$es6$promise$asap$$len += 2;
@@ -20672,9 +20611,12 @@ arguments[4][118][0].apply(exports,arguments)
       }
     }
 
-    var lib$es6$promise$asap$$default = lib$es6$promise$asap$$asap;
     function lib$es6$promise$asap$$setScheduler(scheduleFn) {
       lib$es6$promise$asap$$customSchedulerFn = scheduleFn;
+    }
+
+    function lib$es6$promise$asap$$setAsap(asapFn) {
+      lib$es6$promise$asap$$asap = asapFn;
     }
 
     var lib$es6$promise$asap$$browserWindow = (typeof window !== 'undefined') ? window : undefined;
@@ -20808,7 +20750,7 @@ arguments[4][118][0].apply(exports,arguments)
     }
 
     function lib$es6$promise$$internal$$handleForeignThenable(promise, thenable, then) {
-       lib$es6$promise$asap$$default(function(promise) {
+       lib$es6$promise$asap$$asap(function(promise) {
         var sealed = false;
         var error = lib$es6$promise$$internal$$tryThen(then, thenable, function(value) {
           if (sealed) { return; }
@@ -20889,7 +20831,7 @@ arguments[4][118][0].apply(exports,arguments)
       promise._state = lib$es6$promise$$internal$$FULFILLED;
 
       if (promise._subscribers.length !== 0) {
-        lib$es6$promise$asap$$default(lib$es6$promise$$internal$$publish, promise);
+        lib$es6$promise$asap$$asap(lib$es6$promise$$internal$$publish, promise);
       }
     }
 
@@ -20898,7 +20840,7 @@ arguments[4][118][0].apply(exports,arguments)
       promise._state = lib$es6$promise$$internal$$REJECTED;
       promise._result = reason;
 
-      lib$es6$promise$asap$$default(lib$es6$promise$$internal$$publishRejection, promise);
+      lib$es6$promise$asap$$asap(lib$es6$promise$$internal$$publishRejection, promise);
     }
 
     function lib$es6$promise$$internal$$subscribe(parent, child, onFulfillment, onRejection) {
@@ -20912,7 +20854,7 @@ arguments[4][118][0].apply(exports,arguments)
       subscribers[length + lib$es6$promise$$internal$$REJECTED]  = onRejection;
 
       if (length === 0 && parent._state) {
-        lib$es6$promise$asap$$default(lib$es6$promise$$internal$$publish, parent);
+        lib$es6$promise$asap$$asap(lib$es6$promise$$internal$$publish, parent);
       }
     }
 
@@ -21293,7 +21235,8 @@ arguments[4][118][0].apply(exports,arguments)
     lib$es6$promise$promise$$Promise.resolve = lib$es6$promise$promise$resolve$$default;
     lib$es6$promise$promise$$Promise.reject = lib$es6$promise$promise$reject$$default;
     lib$es6$promise$promise$$Promise._setScheduler = lib$es6$promise$asap$$setScheduler;
-    lib$es6$promise$promise$$Promise._asap = lib$es6$promise$asap$$default;
+    lib$es6$promise$promise$$Promise._setAsap = lib$es6$promise$asap$$setAsap;
+    lib$es6$promise$promise$$Promise._asap = lib$es6$promise$asap$$asap;
 
     lib$es6$promise$promise$$Promise.prototype = {
       constructor: lib$es6$promise$promise$$Promise,
@@ -21504,7 +21447,7 @@ arguments[4][118][0].apply(exports,arguments)
 
         if (state) {
           var callback = arguments[state - 1];
-          lib$es6$promise$asap$$default(function(){
+          lib$es6$promise$asap$$asap(function(){
             lib$es6$promise$$internal$$invokeCallback(state, child, callback, result);
           });
         } else {
@@ -21663,16 +21606,15 @@ exports.complexTypes = require('./complexTypes');
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 /**
