@@ -17881,16 +17881,15 @@ exports.MediaProfileSpecType = MediaProfileSpecType;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -17931,18 +17930,15 @@ inherits(FaceOverlayFilter, Filter);
 // Public methods
 //
 
-
 /**
  * Sets the image to use as overlay on the detected faces.
  *
  * @alias module:filters.FaceOverlayFilter.setOverlayedImage
  *
- * @param   {external:String} uri
-
+ * @param {external:String} uri
  *  URI where the image is located
  *
- * @param   {external:Number} offsetXPercent
-
+ * @param {external:Number} offsetXPercent
  *  the offset applied to the image, from the X coordinate of the detected face 
  *  upper right corner. A positive value indicates right displacement, while a 
  *  negative value moves the overlaid image to the left. This offset is 
@@ -17954,8 +17950,7 @@ inherits(FaceOverlayFilter, Filter);
  *  <hr/><b>Note</b>
  *      The parameter name is misleading, the value is not a percent but a ratio
  *
- * @param   {external:Number} offsetYPercent
-
+ * @param {external:Number} offsetYPercent
  *  the offset applied to the image, from the Y coordinate of the detected face 
  *  upper right corner. A positive value indicates up displacement, while a 
  *  negative value moves the overlaid image down. This offset is specified as a 
@@ -17967,8 +17962,7 @@ inherits(FaceOverlayFilter, Filter);
  *  <hr/><b>Note</b>
  *      The parameter name is misleading, the value is not a percent but a ratio
  *
- * @param   {external:Number} widthPercent
-
+ * @param {external:Number} widthPercent
  *  proportional width of the overlaid image, relative to the width of the 
  *  detected face. A value of 1.0 implies that the overlaid image will have the 
  *  same width as the detected face. Values greater than 1.0 are allowed, while 
@@ -17976,8 +17970,7 @@ inherits(FaceOverlayFilter, Filter);
  *  <hr/><b>Note</b>
  *      The parameter name is misleading, the value is not a percent but a ratio
  *
- * @param   {external:Number} heightPercent
-
+ * @param {external:Number} heightPercent
  *  proportional height of the overlaid image, relative to the height of the 
  *  detected face. A value of 1.0 implies that the overlaid image will have the 
  *  same height as the detected face. Values greater than 1.0 are allowed, while
@@ -17993,24 +17986,21 @@ FaceOverlayFilter.prototype.setOverlayedImage = function(uri, offsetXPercent, of
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'uri', uri, {required: true}
-);
-  checkType('float', 'offsetXPercent', offsetXPercent, {required: true}
-);
-  checkType('float', 'offsetYPercent', offsetYPercent, {required: true}
-);
-  checkType('float', 'widthPercent', widthPercent, {required: true}
-);
-  checkType('float', 'heightPercent', heightPercent, {required: true}
-);
+  checkType('String', 'uri', uri, {required: true});
+  checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
+  checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
+  checkType('float', 'widthPercent', widthPercent, {required: true});
+  checkType('float', 'heightPercent', heightPercent, {required: true});
 
   var params = {
     uri: uri,
     offsetXPercent: offsetXPercent,
     offsetYPercent: offsetYPercent,
     widthPercent: widthPercent,
-    heightPercent: heightPercent,
+    heightPercent: heightPercent
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setOverlayedImage', params, callback);
 };
@@ -18036,6 +18026,8 @@ FaceOverlayFilter.prototype.unsetOverlayedImage = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'unsetOverlayedImage', callback);
 };
 /**
@@ -18047,15 +18039,14 @@ FaceOverlayFilter.prototype.unsetOverlayedImage = function(callback){
 /**
  * @alias module:filters.FaceOverlayFilter.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  pipeline to which this {@link module:core/abstracts.Filter Filter} belons
  */
 FaceOverlayFilter.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -18091,16 +18082,15 @@ FaceOverlayFilter.check = checkFaceOverlayFilter;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -18132,17 +18122,14 @@ inherits(GStreamerFilter, Filter);
 /**
  * @alias module:filters.GStreamerFilter.constructorParams
  *
- * @property   {external:String} command
-
+ * @property {external:String} command
  *  command that would be used to instantiate the filter, as in `gst-launch 
  *  <http://rpm.pbone.net/index.php3/stat/45/idpl/19531544/numer/1/nazwa/gst-launch-1.0>`__
  *
- * @property   {external:FilterType} [filterType]
-
+ * @property {external:FilterType} [filterType]
  *  Filter type that define if the filter is set as audio, video or autodetect
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter 
  *  belongs
  */
@@ -18156,7 +18143,7 @@ GStreamerFilter.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -18192,16 +18179,15 @@ GStreamerFilter.check = checkGStreamerFilter;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -18244,44 +18230,35 @@ inherits(ImageOverlayFilter, Filter);
 // Public methods
 //
 
-
 /**
  * Add an image to be used as overlay.
  *
  * @alias module:filters.ImageOverlayFilter.addImage
  *
- * @param   {external:String} id
-
+ * @param {external:String} id
  *  image ID
  *
- * @param   {external:String} uri
-
+ * @param {external:String} uri
  *  URI where the image is located
  *
- * @param   {external:Number} offsetXPercent
-
+ * @param {external:Number} offsetXPercent
  *  Percentage relative to the image width to calculate the X coordinate of the 
  *  position (left upper corner) [0..1]
  *
- * @param   {external:Number} offsetYPercent
-
+ * @param {external:Number} offsetYPercent
  *  Percentage relative to the image height to calculate the Y coordinate of the
  *
- * @param   {external:Number} widthPercent
-
+ * @param {external:Number} widthPercent
  *  Proportional width of the overlaid image, relative to the width of the video
  *
- * @param   {external:Number} heightPercent
-
+ * @param {external:Number} heightPercent
  *  Proportional height of the overlaid image, relative to the height of the 
  *  video [0..1].
  *
- * @param   {external:Boolean} keepAspectRatio
-
+ * @param {external:Boolean} keepAspectRatio
  *  Keep the aspect ratio of the original image.
  *
- * @param   {external:Boolean} center
-
+ * @param {external:Boolean} center
  *  If the image doesn't fit in the dimensions, the image will be center into 
  *  the region defined by height and width.
  *
@@ -18294,22 +18271,14 @@ ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offset
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'id', id, {required: true}
-);
-  checkType('String', 'uri', uri, {required: true}
-);
-  checkType('float', 'offsetXPercent', offsetXPercent, {required: true}
-);
-  checkType('float', 'offsetYPercent', offsetYPercent, {required: true}
-);
-  checkType('float', 'widthPercent', widthPercent, {required: true}
-);
-  checkType('float', 'heightPercent', heightPercent, {required: true}
-);
-  checkType('boolean', 'keepAspectRatio', keepAspectRatio, {required: true}
-);
-  checkType('boolean', 'center', center, {required: true}
-);
+  checkType('String', 'id', id, {required: true});
+  checkType('String', 'uri', uri, {required: true});
+  checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
+  checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
+  checkType('float', 'widthPercent', widthPercent, {required: true});
+  checkType('float', 'heightPercent', heightPercent, {required: true});
+  checkType('boolean', 'keepAspectRatio', keepAspectRatio, {required: true});
+  checkType('boolean', 'center', center, {required: true});
 
   var params = {
     id: id,
@@ -18319,8 +18288,10 @@ ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offset
     widthPercent: widthPercent,
     heightPercent: heightPercent,
     keepAspectRatio: keepAspectRatio,
-    center: center,
+    center: center
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'addImage', params, callback);
 };
@@ -18334,8 +18305,7 @@ ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offset
  *
  * @alias module:filters.ImageOverlayFilter.removeImage
  *
- * @param   {external:String} id
-
+ * @param {external:String} id
  *  Image ID to be removed
  *
  * @param {module:filters.ImageOverlayFilter~removeImageCallback} [callback]
@@ -18347,12 +18317,13 @@ ImageOverlayFilter.prototype.removeImage = function(id, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'id', id, {required: true}
-);
+  checkType('String', 'id', id, {required: true});
 
   var params = {
-    id: id,
+    id: id
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'removeImage', params, callback);
 };
@@ -18365,15 +18336,14 @@ ImageOverlayFilter.prototype.removeImage = function(id, callback){
 /**
  * @alias module:filters.ImageOverlayFilter.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  pipeline to which this {@link module:core/abstracts.Filter Filter} belons
  */
 ImageOverlayFilter.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -18409,16 +18379,15 @@ ImageOverlayFilter.check = checkImageOverlayFilter;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -18454,8 +18423,7 @@ inherits(ZBarFilter, Filter);
 /**
  * @alias module:filters.ZBarFilter.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter 
  *  belongs
  */
@@ -18463,7 +18431,7 @@ ZBarFilter.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -18499,16 +18467,15 @@ ZBarFilter.check = checkZBarFilter;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -18574,16 +18541,15 @@ OpenCVFilter.check = checkOpenCVFilter;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 /**
@@ -21662,16 +21628,15 @@ exports.complexTypes = require('./complexTypes');
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 /**
