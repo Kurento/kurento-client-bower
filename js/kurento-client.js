@@ -9361,16 +9361,15 @@ module.exports = function extend() {
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -9403,15 +9402,14 @@ inherits(HubPort, MediaElement);
 /**
  * @alias module:core.HubPort.constructorParams
  *
- * @property   {module:core/abstracts.Hub} hub
-
+ * @property {module:core/abstracts.Hub} hub
  *  {@link module:core/abstracts.Hub Hub} to which this port belongs
  */
 HubPort.constructorParams = {
   hub: {
     type: 'Hub',
     required: true
-  },
+  }
 };
 
 /**
@@ -9447,16 +9445,15 @@ HubPort.check = checkHubPort;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -9494,7 +9491,7 @@ function noop(error) {
  *
  * @constructor module:core.MediaPipeline
  */
-function MediaPipeline(){
+function MediaPipeline(strict){
   MediaPipeline.super_.call(this);
 
 
@@ -9553,7 +9550,8 @@ function MediaPipeline(){
 
   // Creation of objects
 
-  var mediaObjectCreator = new MediaObjectCreator(this, encodeCreate, encodeRpc, encodeTransaction, describe);
+  var mediaObjectCreator = new MediaObjectCreator(this, encodeCreate, encodeRpc,
+    encodeTransaction, describe, strict);
 
   /**
    * Create a new instance of a {module:core/abstract.MediaObject} attached to
@@ -9581,15 +9579,13 @@ inherits(MediaPipeline, MediaObject);
 // Public methods
 //
 
-
 /**
  * Returns a string in dot (graphviz) format that represents the gstreamer 
  * elements inside the pipeline
  *
  * @alias module:core.MediaPipeline.getGstreamerDot
  *
- * @param   {module:core/complexTypes.GstreamerDotDetails} [details]
-
+ * @param {module:core/complexTypes.GstreamerDotDetails} [details]
  *  Details of graph
  *
  * @param {module:core.MediaPipeline~getGstreamerDotCallback} [callback]
@@ -9605,14 +9601,12 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
            ? Array.prototype.pop.call(arguments)
            : undefined;
 
-  callback = (callback || noop).bind(this)
-
   switch(arguments.length){
     case 0: details = undefined;
     break;
 
     default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range ['+0+'-'+1+']');
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
           error.length = arguments.length;
           error.min = 0;
           error.max = 1;
@@ -9623,8 +9617,10 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
   checkType('GstreamerDotDetails', 'details', details);
 
   var params = {
-    details: details,
+    details: details
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getGstreamerDot', params, callback);
 };
@@ -9633,6 +9629,66 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
  * @param {external:Error} error
  * @param {external:String} result
  *  The dot graph
+ */
+
+
+var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
+
+/**
+ * Connect the source of a media to the sink of the next one
+ *
+ * @param {...module:core/abstract~MediaObject} media - A media to be connected
+ * @callback {module:MediaPipeline~connectCallback} [callback]
+ *
+ * @return {external:Promise}
+ *
+ * @throws {SyntaxError}
+ */
+MediaPipeline.prototype.connect = function(media, callback){
+  // Fix lenght-variable arguments
+  if(!(media instanceof Array))
+  {
+    media = Array.prototype.slice.call(arguments, 0);
+    callback = (typeof media[media.length - 1] === 'function')
+             ? media.pop()
+             : undefined;
+  }
+
+  callback = (callback || noop).bind(this)
+
+  // Check if we have enought media components
+  if(media.length < 2)
+    throw new SyntaxError('Need at least two media elements to connect');
+
+  // Check MediaElements are of the correct type
+  media.forEach(checkMediaElement);
+
+  // Connect the media elements
+  var src = media[0];
+  var sink = media[media.length-1]
+
+  // Generate promise
+  var promise = new Promise(function(resolve, reject)
+  {
+    function callback(error, result)
+    {
+      if(error) return reject(error);
+
+      resolve(result);
+    };
+
+    async.each(media.slice(1), function(sink, callback)
+    {
+      src = src.connect(sink, callback);
+    },
+    callback);
+  });
+
+  return disguise(promiseCallback(promise, callback), sink)
+};
+/**
+ * @callback MediaPipeline~connectCallback
+ * @param {external:Error} error
  */
 
 
@@ -9675,16 +9731,15 @@ MediaPipeline.check = checkMediaPipeline;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -9716,8 +9771,7 @@ inherits(PassThrough, MediaElement);
 /**
  * @alias module:core.PassThrough.constructorParams
  *
- * @property   {module:core.MediaPipeline} mediaPipeline
-
+ * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the element 
  *  belongs
  */
@@ -9725,7 +9779,7 @@ PassThrough.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  },
+  }
 };
 
 /**
@@ -9761,16 +9815,15 @@ PassThrough.check = checkPassThrough;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -9858,12 +9911,13 @@ BaseRtpEndpoint.prototype.setMaxVideoSendBandwidth = function(maxVideoSendBandwi
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'maxVideoSendBandwidth', maxVideoSendBandwidth, {required: true}
-);
+  checkType('int', 'maxVideoSendBandwidth', maxVideoSendBandwidth, {required: true});
 
   var params = {
-    maxVideoSendBandwidth: maxVideoSendBandwidth,
+    maxVideoSendBandwidth: maxVideoSendBandwidth
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setMaxVideoSendBandwidth', params, callback);
 };
@@ -9896,6 +9950,68 @@ BaseRtpEndpoint.prototype.getMediaState = function(callback){
  * @callback module:core/abstracts.BaseRtpEndpoint~getMediaStateCallback
  * @param {external:Error} error
  * @param {module:core/complexTypes.MediaState} result
+ */
+
+/**
+ * Minimum video bandwidth for receiving.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 100
+ *
+ * @alias module:core/abstracts.BaseRtpEndpoint#getMinVideoRecvBandwidth
+ *
+ * @param {module:core/abstracts.BaseRtpEndpoint~getMinVideoRecvBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+BaseRtpEndpoint.prototype.getMinVideoRecvBandwidth = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return this._invoke(transaction, 'getMinVideoRecvBandwidth', callback);
+};
+/**
+ * @callback module:core/abstracts.BaseRtpEndpoint~getMinVideoRecvBandwidthCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Minimum video bandwidth for receiving.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 100
+ *
+ * @alias module:core/abstracts.BaseRtpEndpoint#setMinVideoRecvBandwidth
+ *
+ * @param {external:Integer} minVideoRecvBandwidth
+ * @param {module:core/abstracts.BaseRtpEndpoint~setMinVideoRecvBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+BaseRtpEndpoint.prototype.setMinVideoRecvBandwidth = function(minVideoRecvBandwidth, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'minVideoRecvBandwidth', minVideoRecvBandwidth, {required: true});
+
+  var params = {
+    minVideoRecvBandwidth: minVideoRecvBandwidth
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return this._invoke(transaction, 'setMinVideoRecvBandwidth', params, callback);
+};
+/**
+ * @callback module:core/abstracts.BaseRtpEndpoint~setMinVideoRecvBandwidthCallback
+ * @param {external:Error} error
  */
 
 /**
@@ -9945,12 +10061,13 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'minVideoSendBandwidth', minVideoSendBandwidth, {required: true}
-);
+  checkType('int', 'minVideoSendBandwidth', minVideoSendBandwidth, {required: true});
 
   var params = {
-    minVideoSendBandwidth: minVideoSendBandwidth,
+    minVideoSendBandwidth: minVideoSendBandwidth
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setMinVideoSendBandwidth', params, callback);
 };
@@ -9963,7 +10080,6 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
 //
 // Public methods
 //
-
 
 /**
  * Provides statistics collected for this endpoint
@@ -9980,6 +10096,8 @@ BaseRtpEndpoint.prototype.getStats = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getStats', callback);
 };
@@ -10032,16 +10150,15 @@ BaseRtpEndpoint.check = checkBaseRtpEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -10116,16 +10233,15 @@ Endpoint.check = checkEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -10193,16 +10309,15 @@ Filter.check = checkFilter;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -10317,16 +10432,15 @@ Hub.check = checkHub;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -10373,7 +10487,6 @@ inherits(MediaElement, MediaObject);
 // Public methods
 //
 
-
 /**
  * Connects two elements, with the given restrictions, current {@link 
  * module:core/abstracts.MediaElement MediaElement} will start emmit media to 
@@ -10382,21 +10495,17 @@ inherits(MediaElement, MediaObject);
  *
  * @alias module:core/abstracts.MediaElement.connect
  *
- * @param   {module:core/abstracts.MediaElement} sink
-
+ * @param {module:core/abstracts.MediaElement} sink
  *  the target {@link module:core/abstracts.MediaElement MediaElement} that will
  *
- * @param   {module:core/complexTypes.MediaType} [mediaType]
-
+ * @param {module:core/complexTypes.MediaType} [mediaType]
  *  the {@link MediaType} of the pads that will be connected
  *
- * @param   {external:String} [sourceMediaDescription]
-
+ * @param {external:String} [sourceMediaDescription]
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
- * @param   {external:String} [sinkMediaDescription]
-
+ * @param {external:String} [sinkMediaDescription]
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
@@ -10413,8 +10522,6 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
            ? Array.prototype.pop.call(arguments)
            : undefined;
 
-  callback = (callback || noop).bind(this)
-
   switch(arguments.length){
     case 1: mediaType = undefined;
     case 2: sourceMediaDescription = undefined;
@@ -10422,7 +10529,7 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
     break;
 
     default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range ['+1+'-'+4+']');
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [1-4]');
           error.length = arguments.length;
           error.min = 1;
           error.max = 4;
@@ -10430,8 +10537,7 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
       throw error;
   }
 
-  checkType('MediaElement', 'sink', sink, {required: true}
-);
+  checkType('MediaElement', 'sink', sink, {required: true});
   checkType('MediaType', 'mediaType', mediaType);
   checkType('String', 'sourceMediaDescription', sourceMediaDescription);
   checkType('String', 'sinkMediaDescription', sinkMediaDescription);
@@ -10440,14 +10546,47 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
     sink: sink,
     mediaType: mediaType,
     sourceMediaDescription: sourceMediaDescription,
-    sinkMediaDescription: sinkMediaDescription,
+    sinkMediaDescription: sinkMediaDescription
   };
 
-  var promise = this._invoke(transaction, 'connect', params, callback);
+  callback = (callback || noop).bind(this)
 
-  promise.connect = sink.connect.bind(sink);
+  if(sink instanceof Array)
+  {
+    var media = sink
 
-  return promise;
+    // Check if we have enought media components
+    if(!media.length)
+      throw new SyntaxError('Need at least one media element to connect');
+
+    // Check MediaElements are of the correct type
+    media.forEach(checkMediaElement);
+
+    // Connect the media elements
+    var src = this;
+    var sink = media[media.length-1]
+
+    // Generate promise
+    var promise = new Promise(function(resolve, reject)
+    {
+      function callback(error, result)
+      {
+        if(error) return reject(error);
+
+        resolve(result);
+      };
+
+      async.each(media, function(sink, callback)
+      {
+        src = src.connect(sink, callback);
+      },
+      callback);
+    });
+
+    return disguise(promiseCallback(promise, callback), sink)
+  }
+
+  return this._invoke(transaction, 'connect', params, callback);
 };
 /**
  * @callback module:core/abstracts.MediaElement~connectCallback
@@ -10462,21 +10601,17 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
  *
  * @alias module:core/abstracts.MediaElement.disconnect
  *
- * @param   {module:core/abstracts.MediaElement} sink
-
+ * @param {module:core/abstracts.MediaElement} sink
  *  the target {@link module:core/abstracts.MediaElement MediaElement} that will
  *
- * @param   {module:core/complexTypes.MediaType} [mediaType]
-
+ * @param {module:core/complexTypes.MediaType} [mediaType]
  *  the {@link MediaType} of the pads that will be connected
  *
- * @param   {external:String} [sourceMediaDescription]
-
+ * @param {external:String} [sourceMediaDescription]
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
- * @param   {external:String} [sinkMediaDescription]
-
+ * @param {external:String} [sinkMediaDescription]
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
@@ -10493,8 +10628,6 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
            ? Array.prototype.pop.call(arguments)
            : undefined;
 
-  callback = (callback || noop).bind(this)
-
   switch(arguments.length){
     case 1: mediaType = undefined;
     case 2: sourceMediaDescription = undefined;
@@ -10502,7 +10635,7 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
     break;
 
     default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range ['+1+'-'+4+']');
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [1-4]');
           error.length = arguments.length;
           error.min = 1;
           error.max = 4;
@@ -10510,8 +10643,7 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
       throw error;
   }
 
-  checkType('MediaElement', 'sink', sink, {required: true}
-);
+  checkType('MediaElement', 'sink', sink, {required: true});
   checkType('MediaType', 'mediaType', mediaType);
   checkType('String', 'sourceMediaDescription', sourceMediaDescription);
   checkType('String', 'sinkMediaDescription', sinkMediaDescription);
@@ -10520,8 +10652,10 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
     sink: sink,
     mediaType: mediaType,
     sourceMediaDescription: sourceMediaDescription,
-    sinkMediaDescription: sinkMediaDescription,
+    sinkMediaDescription: sinkMediaDescription
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'disconnect', params, callback);
 };
@@ -10536,8 +10670,7 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
  *
  * @alias module:core/abstracts.MediaElement.getGstreamerDot
  *
- * @param   {module:core/complexTypes.GstreamerDotDetails} [details]
-
+ * @param {module:core/complexTypes.GstreamerDotDetails} [details]
  *  Details of graph
  *
  * @param {module:core/abstracts.MediaElement~getGstreamerDotCallback} [callback]
@@ -10553,14 +10686,12 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
            ? Array.prototype.pop.call(arguments)
            : undefined;
 
-  callback = (callback || noop).bind(this)
-
   switch(arguments.length){
     case 0: details = undefined;
     break;
 
     default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range ['+0+'-'+1+']');
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
           error.length = arguments.length;
           error.min = 0;
           error.max = 1;
@@ -10571,8 +10702,10 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
   checkType('GstreamerDotDetails', 'details', details);
 
   var params = {
-    details: details,
+    details: details
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getGstreamerDot', params, callback);
 };
@@ -10589,14 +10722,12 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
  *
  * @alias module:core/abstracts.MediaElement.getSinkConnections
  *
- * @param   {module:core/complexTypes.MediaType} [mediaType]
-
+ * @param {module:core/complexTypes.MediaType} [mediaType]
  *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link 
  *  module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link 
  *  module:core/abstracts.MediaElement#MediaType.DATA}
  *
- * @param   {external:String} [description]
-
+ * @param {external:String} [description]
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
@@ -10613,15 +10744,13 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
            ? Array.prototype.pop.call(arguments)
            : undefined;
 
-  callback = (callback || noop).bind(this)
-
   switch(arguments.length){
     case 0: mediaType = undefined;
     case 1: description = undefined;
     break;
 
     default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range ['+0+'-'+2+']');
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-2]');
           error.length = arguments.length;
           error.min = 0;
           error.max = 2;
@@ -10634,8 +10763,10 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
 
   var params = {
     mediaType: mediaType,
-    description: description,
+    description: description
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getSinkConnections', params, callback);
 };
@@ -10653,14 +10784,12 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
  *
  * @alias module:core/abstracts.MediaElement.getSourceConnections
  *
- * @param   {module:core/complexTypes.MediaType} [mediaType]
-
+ * @param {module:core/complexTypes.MediaType} [mediaType]
  *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link 
  *  module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link 
  *  module:core/abstracts.MediaElement#MediaType.DATA}
  *
- * @param   {external:String} [description]
-
+ * @param {external:String} [description]
  *  A textual description of the media source. Currently not used, aimed mainly 
  *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
  *
@@ -10677,15 +10806,13 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
            ? Array.prototype.pop.call(arguments)
            : undefined;
 
-  callback = (callback || noop).bind(this)
-
   switch(arguments.length){
     case 0: mediaType = undefined;
     case 1: description = undefined;
     break;
 
     default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range ['+0+'-'+2+']');
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-2]');
           error.length = arguments.length;
           error.min = 0;
           error.max = 2;
@@ -10698,8 +10825,10 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
 
   var params = {
     mediaType: mediaType,
-    description: description,
+    description: description
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getSourceConnections', params, callback);
 };
@@ -10716,8 +10845,7 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
  *
  * @alias module:core/abstracts.MediaElement.setAudioFormat
  *
- * @param   {module:core/complexTypes.AudioCaps} caps
-
+ * @param {module:core/complexTypes.AudioCaps} caps
  *  The format for the stream of audio
  *
  * @param {module:core/abstracts.MediaElement~setAudioFormatCallback} [callback]
@@ -10729,12 +10857,13 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('AudioCaps', 'caps', caps, {required: true}
-);
+  checkType('AudioCaps', 'caps', caps, {required: true});
 
   var params = {
-    caps: caps,
+    caps: caps
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setAudioFormat', params, callback);
 };
@@ -10750,8 +10879,7 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
  *
  * @alias module:core/abstracts.MediaElement.setOutputBitrate
  *
- * @param   {external:Integer} bitrate
-
+ * @param {external:Integer} bitrate
  *  Configure the enconding media bitrate in kbps
  *
  * @param {module:core/abstracts.MediaElement~setOutputBitrateCallback} [callback]
@@ -10763,12 +10891,13 @@ MediaElement.prototype.setOutputBitrate = function(bitrate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'bitrate', bitrate, {required: true}
-);
+  checkType('int', 'bitrate', bitrate, {required: true});
 
   var params = {
-    bitrate: bitrate,
+    bitrate: bitrate
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setOutputBitrate', params, callback);
 };
@@ -10782,8 +10911,7 @@ MediaElement.prototype.setOutputBitrate = function(bitrate, callback){
  *
  * @alias module:core/abstracts.MediaElement.setVideoFormat
  *
- * @param   {module:core/complexTypes.VideoCaps} caps
-
+ * @param {module:core/complexTypes.VideoCaps} caps
  *  The format for the stream of video
  *
  * @param {module:core/abstracts.MediaElement~setVideoFormatCallback} [callback]
@@ -10795,12 +10923,13 @@ MediaElement.prototype.setVideoFormat = function(caps, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('VideoCaps', 'caps', caps, {required: true}
-);
+  checkType('VideoCaps', 'caps', caps, {required: true});
 
   var params = {
-    caps: caps,
+    caps: caps
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setVideoFormat', params, callback);
 };
@@ -10849,16 +10978,15 @@ MediaElement.check = checkMediaElement;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -10873,6 +11001,8 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var Promise = require('es6-promise').Promise;
 
 var promiseCallback = require('promisecallback');
+
+var disguise = kurentoClient.disguise;
 
 var EventEmitter = require('events').EventEmitter;
 
@@ -10914,11 +11044,11 @@ function MediaObject(){
   this.once('_id', function(error, id)
   {
     if(error)
-    {
-      this._createError = error;
-
-      return Object.defineProperty(this, 'id', {value: null});
-    }
+      return Object.defineProperties(this,
+      {
+        '_createError': {value: error},
+        'id': {value: null, enumerable: true}
+      });
 
     Object.defineProperty(this, 'id',
     {
@@ -11132,12 +11262,13 @@ MediaObject.prototype.setName = function(name, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'name', name, {required: true}
-);
+  checkType('String', 'name', name, {required: true});
 
   var params = {
-    name: name,
+    name: name
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setName', params, callback);
 };
@@ -11223,12 +11354,13 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('boolean', 'sendTagsInEvents', sendTagsInEvents, {required: true}
-);
+  checkType('boolean', 'sendTagsInEvents', sendTagsInEvents, {required: true});
 
   var params = {
-    sendTagsInEvents: sendTagsInEvents,
+    sendTagsInEvents: sendTagsInEvents
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setSendTagsInEvents', params, callback);
 };
@@ -11242,19 +11374,16 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
 // Public methods
 //
 
-
 /**
  * Request a SessionSpec offer.
  *    This can be used to initiate a connection.
  *
  * @alias module:core/abstracts.MediaObject.addTag
  *
- * @param   {external:String} key
-
+ * @param {external:String} key
  *  Key of the tag
  *
- * @param   {external:String} value
-
+ * @param {external:String} value
  *  Value of the tag
  *
  * @param {module:core/abstracts.MediaObject~addTagCallback} [callback]
@@ -11266,15 +11395,15 @@ MediaObject.prototype.addTag = function(key, value, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'key', key, {required: true}
-);
-  checkType('String', 'value', value, {required: true}
-);
+  checkType('String', 'key', key, {required: true});
+  checkType('String', 'value', value, {required: true});
 
   var params = {
     key: key,
-    value: value,
+    value: value
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'addTag', params, callback);
 };
@@ -11288,8 +11417,7 @@ MediaObject.prototype.addTag = function(key, value, callback){
  *
  * @alias module:core/abstracts.MediaObject.getTag
  *
- * @param   {external:String} key
-
+ * @param {external:String} key
  *  Tag key.
  *
  * @param {module:core/abstracts.MediaObject~getTagCallback} [callback]
@@ -11301,12 +11429,13 @@ MediaObject.prototype.getTag = function(key, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'key', key, {required: true}
-);
+  checkType('String', 'key', key, {required: true});
 
   var params = {
-    key: key,
+    key: key
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getTag', params, callback);
 };
@@ -11333,6 +11462,8 @@ MediaObject.prototype.getTags = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'getTags', callback);
 };
 /**
@@ -11347,8 +11478,7 @@ MediaObject.prototype.getTags = function(callback){
  *
  * @alias module:core/abstracts.MediaObject.removeTag
  *
- * @param   {external:String} key
-
+ * @param {external:String} key
  *  Key of the tag to remove
  *
  * @param {module:core/abstracts.MediaObject~removeTagCallback} [callback]
@@ -11360,12 +11490,13 @@ MediaObject.prototype.removeTag = function(key, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'key', key, {required: true}
-);
+  checkType('String', 'key', key, {required: true});
 
   var params = {
-    key: key,
+    key: key
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'removeTag', params, callback);
 };
@@ -11377,7 +11508,7 @@ MediaObject.prototype.removeTag = function(key, callback){
 
 function throwRpcNotReady()
 {
-  throw new Error('RPC result is not ready, use .then() method instead');
+  throw new SyntaxError('RPC result is not ready, use .then() method instead');
 };
 
 /**
@@ -11389,87 +11520,88 @@ function throwRpcNotReady()
  *
  * @return {external:Promise}
  */
-MediaObject.prototype._invoke = function(transaction, method, params, callback){
-  var self = this;
+Object.defineProperty(MediaObject.prototype, '_invoke',
+{
+  value: function(transaction, method, params, callback){
+    var self = this;
 
-  // Fix optional parameters
-  if(params instanceof Function)
-  {
-    if(callback)
-      throw new SyntaxError("Nothing can be defined after the callback");
-
-    callback = params;
-    params = undefined;
-  };
-
-  var promise;
-  var error = this._createError;
-  if(error)
-  {
-    promise = Promise.reject(error)
-
-    Object.defineProperty(promise, 'value', {get: function(){throw error}});
-  }
-  else
-  {
-    promise = new Promise(function(resolve, reject)
+    // Fix optional parameters
+    if(params instanceof Function)
     {
-      // Generate request parameters
-      var params2 =
+      if(callback)
+        throw new SyntaxError("Nothing can be defined after the callback");
+
+      callback = params;
+      params = undefined;
+    };
+
+    var promise;
+    var error = this._createError;
+    if(error)
+    {
+      promise = Promise.reject(error)
+
+      Object.defineProperty(promise, 'value', {get: function(){throw error}});
+    }
+    else
+    {
+      promise = new Promise(function(resolve, reject)
       {
-        object: self,
-        operation: method
-      };
-
-      if(params)
-        params2.operationParams = params;
-
-      function callback(error, result)
-      {
-        delete promise.value;
-
-        if(error)
+        // Generate request parameters
+        var params2 =
         {
-          Object.defineProperty(promise, 'value', {get: function(){throw error}});
+          object: self,
+          operation: method
+        };
 
-          return reject(error);
+        if(params)
+          params2.operationParams = params;
+
+        function callback(error, result)
+        {
+          delete promise.value;
+
+          if(error)
+          {
+            Object.defineProperty(promise, 'value', {get: function(){throw error}});
+
+            return reject(error);
+          }
+
+          var value = result.value;
+          if(value === undefined)
+            value = self
+          else
+            Object.defineProperty(promise, 'value', {value: value});
+
+          resolve(value);
         }
 
-        var value = result.value;
-        if(value === undefined)
-          value = self
-        else
-          Object.defineProperty(promise, 'value', {value: value});
+        // Do request
+        self.emit('_rpc', transaction, 'invoke', params2, callback);
+      });
 
-        resolve(value);
-      }
+      Object.defineProperty(promise, 'value',
+      {
+        configurable: true,
+        get: throwRpcNotReady
+      });
+    }
 
-      // Do request
-      self.emit('_rpc', transaction, 'invoke', params2, callback);
-    });
-
-    Object.defineProperty(promise, 'value',
+    var then = promise.then
+    promise.then = function(onFulfilled, onRejected)
     {
-      configurable: true,
-      get: throwRpcNotReady
-    });
+      if(onFulfilled instanceof Function) onFulfilled = onFulfilled.bind(self)
+      if(onRejected  instanceof Function) onRejected  = onRejected.bind(self)
+
+      then.call(this, onFulfilled, onRejected)
+
+      return this
+    }
+
+    return disguise(promiseCallback(promise, callback, this), this)
   }
-
-  var then = promise.then
-  promise.then = function(onFulfilled, onRejected)
-  {
-    if(onFulfilled instanceof Function) onFulfilled = onFulfilled.bind(self)
-    if(onRejected  instanceof Function) onRejected  = onRejected.bind(self)
-
-    then.call(this, onFulfilled, onRejected)
-
-    return this
-  }
-
-  promise = promiseCallback(promise, callback, this);
-
-  return promise
-};
+})
 /**
  * @callback core/abstract.MediaObject~invokeCallback
  * @param {external:Error} error
@@ -11534,7 +11666,7 @@ MediaObject.prototype.release = function(callback){
       self.emit('_rpc', transaction, 'release', params, callback);
     });
 
-  return promiseCallback(promise, callback);
+  return disguise(promiseCallback(promise, callback), this)
 };
 /**
  * @callback core/abstract.MediaObject~releaseCallback
@@ -11547,7 +11679,7 @@ MediaObject.prototype.release = function(callback){
 MediaObject.prototype.then = function(onFulfilled, onRejected){
   var self = this;
 
-  return new Promise(function(resolve, reject)
+  var promise = new Promise(function(resolve, reject)
   {
     function success(id)
     {
@@ -11587,7 +11719,7 @@ MediaObject.prototype.then = function(onFulfilled, onRejected){
 
     if(self.id === null)
     {
-      var error = new Error('MediaObject not found in server');
+      var error = new ReferenceError('MediaObject not found in server');
           error.code = 40101;
           error.object = self;
 
@@ -11603,6 +11735,8 @@ MediaObject.prototype.then = function(onFulfilled, onRejected){
         success(self);
       })
   })
+
+  return disguise(promise, this)
 }
 
 Object.defineProperty(MediaObject.prototype, 'commited',
@@ -11648,16 +11782,15 @@ MediaObject.check = checkMediaObject;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -11745,12 +11878,13 @@ SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth,
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'maxVideoRecvBandwidth', maxVideoRecvBandwidth, {required: true}
-);
+  checkType('int', 'maxVideoRecvBandwidth', maxVideoRecvBandwidth, {required: true});
 
   var params = {
-    maxVideoRecvBandwidth: maxVideoRecvBandwidth,
+    maxVideoRecvBandwidth: maxVideoRecvBandwidth
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'setMaxVideoRecvBandwidth', params, callback);
 };
@@ -11763,7 +11897,6 @@ SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth,
 //
 // Public methods
 //
-
 
 /**
  * Request a SessionSpec offer.
@@ -11781,6 +11914,8 @@ SdpEndpoint.prototype.generateOffer = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'generateOffer', callback);
 };
@@ -11811,6 +11946,8 @@ SdpEndpoint.prototype.getLocalSessionDescriptor = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'getLocalSessionDescriptor', callback);
 };
 /**
@@ -11839,6 +11976,8 @@ SdpEndpoint.prototype.getRemoteSessionDescriptor = function(callback){
 
   if(!arguments.length) callback = undefined;
 
+  callback = (callback || noop).bind(this)
+
   return this._invoke(transaction, 'getRemoteSessionDescriptor', callback);
 };
 /**
@@ -11854,8 +11993,7 @@ SdpEndpoint.prototype.getRemoteSessionDescriptor = function(callback){
  *
  * @alias module:core/abstracts.SdpEndpoint.processAnswer
  *
- * @param   {external:String} answer
-
+ * @param {external:String} answer
  *  SessionSpec answer from the remote User Agent
  *
  * @param {module:core/abstracts.SdpEndpoint~processAnswerCallback} [callback]
@@ -11867,12 +12005,13 @@ SdpEndpoint.prototype.processAnswer = function(answer, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'answer', answer, {required: true}
-);
+  checkType('String', 'answer', answer, {required: true});
 
   var params = {
-    answer: answer,
+    answer: answer
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'processAnswer', params, callback);
 };
@@ -11889,8 +12028,7 @@ SdpEndpoint.prototype.processAnswer = function(answer, callback){
  *
  * @alias module:core/abstracts.SdpEndpoint.processOffer
  *
- * @param   {external:String} offer
-
+ * @param {external:String} offer
  *  SessionSpec offer from the remote User Agent
  *
  * @param {module:core/abstracts.SdpEndpoint~processOfferCallback} [callback]
@@ -11902,12 +12040,13 @@ SdpEndpoint.prototype.processOffer = function(offer, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'offer', offer, {required: true}
-);
+  checkType('String', 'offer', offer, {required: true});
 
   var params = {
-    offer: offer,
+    offer: offer
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'processOffer', params, callback);
 };
@@ -11958,16 +12097,15 @@ SdpEndpoint.check = checkSdpEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -12123,14 +12261,12 @@ ServerManager.prototype.getSessions = function(callback){
 // Public methods
 //
 
-
 /**
  * Returns the kmd associated to a module
  *
  * @alias module:core/abstracts.ServerManager.getKmd
  *
- * @param   {external:String} moduleName
-
+ * @param {external:String} moduleName
  *  Name of the module to get its kmd file
  *
  * @param {module:core/abstracts.ServerManager~getKmdCallback} [callback]
@@ -12142,12 +12278,13 @@ ServerManager.prototype.getKmd = function(moduleName, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'moduleName', moduleName, {required: true}
-);
+  checkType('String', 'moduleName', moduleName, {required: true});
 
   var params = {
-    moduleName: moduleName,
+    moduleName: moduleName
   };
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'getKmd', params, callback);
 };
@@ -12198,16 +12335,15 @@ ServerManager.check = checkServerManager;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -12276,16 +12412,15 @@ SessionEndpoint.check = checkSessionEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -12355,7 +12490,6 @@ UriEndpoint.prototype.getUri = function(callback){
 // Public methods
 //
 
-
 /**
  * Pauses the feed
  *
@@ -12371,6 +12505,8 @@ UriEndpoint.prototype.pause = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'pause', callback);
 };
@@ -12394,6 +12530,8 @@ UriEndpoint.prototype.stop = function(callback){
                   : undefined;
 
   if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
 
   return this._invoke(transaction, 'stop', callback);
 };
@@ -12442,16 +12580,15 @@ UriEndpoint.check = checkUriEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 /**
@@ -12492,16 +12629,15 @@ exports.UriEndpoint = UriEndpoint;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -12529,10 +12665,8 @@ function AudioCaps(audioCapsDict){
     return new AudioCaps(audioCapsDict)
 
   // Check audioCapsDict has the required fields
-  checkType('AudioCodec', 'audioCapsDict.codec', audioCapsDict.codec, {required: true}
-);
-  checkType('int', 'audioCapsDict.bitrate', audioCapsDict.bitrate, {required: true}
-);
+  checkType('AudioCodec', 'audioCapsDict.codec', audioCapsDict.codec, {required: true});
+  checkType('int', 'audioCapsDict.bitrate', audioCapsDict.bitrate, {required: true});
 
   // Init parent class
   AudioCaps.super_.call(this, audioCapsDict)
@@ -12591,16 +12725,15 @@ AudioCaps.check = checkAudioCaps;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -12641,16 +12774,15 @@ module.exports = checkAudioCodec;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -12679,8 +12811,7 @@ function CodecConfiguration(codecConfigurationDict){
     return new CodecConfiguration(codecConfigurationDict)
 
   // Check codecConfigurationDict has the required fields
-  checkType('String', 'codecConfigurationDict.name', codecConfigurationDict.name, {required: true}
-);
+  checkType('String', 'codecConfigurationDict.name', codecConfigurationDict.name, {required: true});
   checkType('String', 'codecConfigurationDict.properties', codecConfigurationDict.properties);
 
   // Init parent class
@@ -12740,16 +12871,15 @@ CodecConfiguration.check = checkCodecConfiguration;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var ChecktypeError = require('kurento-client').checkType.ChecktypeError;
@@ -12804,16 +12934,15 @@ ComplexType.check = checkComplexType;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -12845,16 +12974,11 @@ function ElementConnectionData(elementConnectionDataDict){
     return new ElementConnectionData(elementConnectionDataDict)
 
   // Check elementConnectionDataDict has the required fields
-  checkType('MediaElement', 'elementConnectionDataDict.source', elementConnectionDataDict.source, {required: true}
-);
-  checkType('MediaElement', 'elementConnectionDataDict.sink', elementConnectionDataDict.sink, {required: true}
-);
-  checkType('MediaType', 'elementConnectionDataDict.type', elementConnectionDataDict.type, {required: true}
-);
-  checkType('String', 'elementConnectionDataDict.sourceDescription', elementConnectionDataDict.sourceDescription, {required: true}
-);
-  checkType('String', 'elementConnectionDataDict.sinkDescription', elementConnectionDataDict.sinkDescription, {required: true}
-);
+  checkType('MediaElement', 'elementConnectionDataDict.source', elementConnectionDataDict.source, {required: true});
+  checkType('MediaElement', 'elementConnectionDataDict.sink', elementConnectionDataDict.sink, {required: true});
+  checkType('MediaType', 'elementConnectionDataDict.type', elementConnectionDataDict.type, {required: true});
+  checkType('String', 'elementConnectionDataDict.sourceDescription', elementConnectionDataDict.sourceDescription, {required: true});
+  checkType('String', 'elementConnectionDataDict.sinkDescription', elementConnectionDataDict.sinkDescription, {required: true});
 
   // Init parent class
   ElementConnectionData.super_.call(this, elementConnectionDataDict)
@@ -12928,16 +13052,15 @@ ElementConnectionData.check = checkElementConnectionData;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -12979,16 +13102,15 @@ module.exports = checkFilterType;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -13017,10 +13139,8 @@ function Fraction(fractionDict){
     return new Fraction(fractionDict)
 
   // Check fractionDict has the required fields
-  checkType('int', 'fractionDict.numerator', fractionDict.numerator, {required: true}
-);
-  checkType('int', 'fractionDict.denominator', fractionDict.denominator, {required: true}
-);
+  checkType('int', 'fractionDict.numerator', fractionDict.numerator, {required: true});
+  checkType('int', 'fractionDict.denominator', fractionDict.denominator, {required: true});
 
   // Init parent class
   Fraction.super_.call(this, fractionDict)
@@ -13079,16 +13199,15 @@ Fraction.check = checkFraction;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -13129,16 +13248,15 @@ module.exports = checkGstreamerDotDetails;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -13179,16 +13297,15 @@ module.exports = checkMediaState;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -13230,16 +13347,15 @@ module.exports = checkMediaType;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -13269,12 +13385,9 @@ function ModuleInfo(moduleInfoDict){
     return new ModuleInfo(moduleInfoDict)
 
   // Check moduleInfoDict has the required fields
-  checkType('String', 'moduleInfoDict.version', moduleInfoDict.version, {required: true}
-);
-  checkType('String', 'moduleInfoDict.name', moduleInfoDict.name, {required: true}
-);
-  checkType('String', 'moduleInfoDict.factories', moduleInfoDict.factories, {isArray: true, required: true}
-);
+  checkType('String', 'moduleInfoDict.version', moduleInfoDict.version, {required: true});
+  checkType('String', 'moduleInfoDict.name', moduleInfoDict.name, {required: true});
+  checkType('String', 'moduleInfoDict.factories', moduleInfoDict.factories, {isArray: true, required: true});
 
   // Init parent class
   ModuleInfo.super_.call(this, moduleInfoDict)
@@ -13338,16 +13451,15 @@ ModuleInfo.check = checkModuleInfo;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -13379,14 +13491,10 @@ function RTCCertificateStats(rTCCertificateStatsDict){
     return new RTCCertificateStats(rTCCertificateStatsDict)
 
   // Check rTCCertificateStatsDict has the required fields
-  checkType('String', 'rTCCertificateStatsDict.fingerprint', rTCCertificateStatsDict.fingerprint, {required: true}
-);
-  checkType('String', 'rTCCertificateStatsDict.fingerprintAlgorithm', rTCCertificateStatsDict.fingerprintAlgorithm, {required: true}
-);
-  checkType('String', 'rTCCertificateStatsDict.base64Certificate', rTCCertificateStatsDict.base64Certificate, {required: true}
-);
-  checkType('String', 'rTCCertificateStatsDict.issuerCertificateId', rTCCertificateStatsDict.issuerCertificateId, {required: true}
-);
+  checkType('String', 'rTCCertificateStatsDict.fingerprint', rTCCertificateStatsDict.fingerprint, {required: true});
+  checkType('String', 'rTCCertificateStatsDict.fingerprintAlgorithm', rTCCertificateStatsDict.fingerprintAlgorithm, {required: true});
+  checkType('String', 'rTCCertificateStatsDict.base64Certificate', rTCCertificateStatsDict.base64Certificate, {required: true});
+  checkType('String', 'rTCCertificateStatsDict.issuerCertificateId', rTCCertificateStatsDict.issuerCertificateId, {required: true});
 
   // Init parent class
   RTCCertificateStats.super_.call(this, rTCCertificateStatsDict)
@@ -13455,16 +13563,15 @@ RTCCertificateStats.check = checkRTCCertificateStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -13500,16 +13607,11 @@ function RTCCodec(rTCCodecDict){
     return new RTCCodec(rTCCodecDict)
 
   // Check rTCCodecDict has the required fields
-  checkType('int', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, {required: true}
-);
-  checkType('String', 'rTCCodecDict.codec', rTCCodecDict.codec, {required: true}
-);
-  checkType('int', 'rTCCodecDict.clockRate', rTCCodecDict.clockRate, {required: true}
-);
-  checkType('int', 'rTCCodecDict.channels', rTCCodecDict.channels, {required: true}
-);
-  checkType('String', 'rTCCodecDict.parameters', rTCCodecDict.parameters, {required: true}
-);
+  checkType('int', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, {required: true});
+  checkType('String', 'rTCCodecDict.codec', rTCCodecDict.codec, {required: true});
+  checkType('int', 'rTCCodecDict.clockRate', rTCCodecDict.clockRate, {required: true});
+  checkType('int', 'rTCCodecDict.channels', rTCCodecDict.channels, {required: true});
+  checkType('String', 'rTCCodecDict.parameters', rTCCodecDict.parameters, {required: true});
 
   // Init parent class
   RTCCodec.super_.call(this, rTCCodecDict)
@@ -13583,16 +13685,15 @@ RTCCodec.check = checkRTCCodec;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -13633,16 +13734,15 @@ module.exports = checkRTCDataChannelState;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -13686,22 +13786,14 @@ function RTCDataChannelStats(rTCDataChannelStatsDict){
     return new RTCDataChannelStats(rTCDataChannelStatsDict)
 
   // Check rTCDataChannelStatsDict has the required fields
-  checkType('String', 'rTCDataChannelStatsDict.label', rTCDataChannelStatsDict.label, {required: true}
-);
-  checkType('String', 'rTCDataChannelStatsDict.protocol', rTCDataChannelStatsDict.protocol, {required: true}
-);
-  checkType('int', 'rTCDataChannelStatsDict.datachannelid', rTCDataChannelStatsDict.datachannelid, {required: true}
-);
-  checkType('RTCDataChannelState', 'rTCDataChannelStatsDict.state', rTCDataChannelStatsDict.state, {required: true}
-);
-  checkType('int', 'rTCDataChannelStatsDict.messagesSent', rTCDataChannelStatsDict.messagesSent, {required: true}
-);
-  checkType('int', 'rTCDataChannelStatsDict.bytesSent', rTCDataChannelStatsDict.bytesSent, {required: true}
-);
-  checkType('int', 'rTCDataChannelStatsDict.messagesReceived', rTCDataChannelStatsDict.messagesReceived, {required: true}
-);
-  checkType('int', 'rTCDataChannelStatsDict.bytesReceived', rTCDataChannelStatsDict.bytesReceived, {required: true}
-);
+  checkType('String', 'rTCDataChannelStatsDict.label', rTCDataChannelStatsDict.label, {required: true});
+  checkType('String', 'rTCDataChannelStatsDict.protocol', rTCDataChannelStatsDict.protocol, {required: true});
+  checkType('int', 'rTCDataChannelStatsDict.datachannelid', rTCDataChannelStatsDict.datachannelid, {required: true});
+  checkType('RTCDataChannelState', 'rTCDataChannelStatsDict.state', rTCDataChannelStatsDict.state, {required: true});
+  checkType('int', 'rTCDataChannelStatsDict.messagesSent', rTCDataChannelStatsDict.messagesSent, {required: true});
+  checkType('int', 'rTCDataChannelStatsDict.bytesSent', rTCDataChannelStatsDict.bytesSent, {required: true});
+  checkType('int', 'rTCDataChannelStatsDict.messagesReceived', rTCDataChannelStatsDict.messagesReceived, {required: true});
+  checkType('int', 'rTCDataChannelStatsDict.bytesReceived', rTCDataChannelStatsDict.bytesReceived, {required: true});
 
   // Init parent class
   RTCDataChannelStats.super_.call(this, rTCDataChannelStatsDict)
@@ -13790,16 +13882,15 @@ RTCDataChannelStats.check = checkRTCDataChannelStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -13840,18 +13931,12 @@ function RTCIceCandidateAttributes(rTCIceCandidateAttributesDict){
     return new RTCIceCandidateAttributes(rTCIceCandidateAttributesDict)
 
   // Check rTCIceCandidateAttributesDict has the required fields
-  checkType('String', 'rTCIceCandidateAttributesDict.ipAddress', rTCIceCandidateAttributesDict.ipAddress, {required: true}
-);
-  checkType('int', 'rTCIceCandidateAttributesDict.portNumber', rTCIceCandidateAttributesDict.portNumber, {required: true}
-);
-  checkType('String', 'rTCIceCandidateAttributesDict.transport', rTCIceCandidateAttributesDict.transport, {required: true}
-);
-  checkType('RTCStatsIceCandidateType', 'rTCIceCandidateAttributesDict.candidateType', rTCIceCandidateAttributesDict.candidateType, {required: true}
-);
-  checkType('int', 'rTCIceCandidateAttributesDict.priority', rTCIceCandidateAttributesDict.priority, {required: true}
-);
-  checkType('String', 'rTCIceCandidateAttributesDict.addressSourceUrl', rTCIceCandidateAttributesDict.addressSourceUrl, {required: true}
-);
+  checkType('String', 'rTCIceCandidateAttributesDict.ipAddress', rTCIceCandidateAttributesDict.ipAddress, {required: true});
+  checkType('int', 'rTCIceCandidateAttributesDict.portNumber', rTCIceCandidateAttributesDict.portNumber, {required: true});
+  checkType('String', 'rTCIceCandidateAttributesDict.transport', rTCIceCandidateAttributesDict.transport, {required: true});
+  checkType('RTCStatsIceCandidateType', 'rTCIceCandidateAttributesDict.candidateType', rTCIceCandidateAttributesDict.candidateType, {required: true});
+  checkType('int', 'rTCIceCandidateAttributesDict.priority', rTCIceCandidateAttributesDict.priority, {required: true});
+  checkType('String', 'rTCIceCandidateAttributesDict.addressSourceUrl', rTCIceCandidateAttributesDict.addressSourceUrl, {required: true});
 
   // Init parent class
   RTCIceCandidateAttributes.super_.call(this, rTCIceCandidateAttributesDict)
@@ -13930,16 +14015,15 @@ RTCIceCandidateAttributes.check = checkRTCIceCandidateAttributes;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -14001,32 +14085,19 @@ function RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict){
     return new RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict)
 
   // Check rTCIceCandidatePairStatsDict has the required fields
-  checkType('String', 'rTCIceCandidatePairStatsDict.transportId', rTCIceCandidatePairStatsDict.transportId, {required: true}
-);
-  checkType('String', 'rTCIceCandidatePairStatsDict.localCandidateId', rTCIceCandidatePairStatsDict.localCandidateId, {required: true}
-);
-  checkType('String', 'rTCIceCandidatePairStatsDict.remoteCandidateId', rTCIceCandidatePairStatsDict.remoteCandidateId, {required: true}
-);
-  checkType('RTCStatsIceCandidatePairState', 'rTCIceCandidatePairStatsDict.state', rTCIceCandidatePairStatsDict.state, {required: true}
-);
-  checkType('int', 'rTCIceCandidatePairStatsDict.priority', rTCIceCandidatePairStatsDict.priority, {required: true}
-);
-  checkType('boolean', 'rTCIceCandidatePairStatsDict.nominated', rTCIceCandidatePairStatsDict.nominated, {required: true}
-);
-  checkType('boolean', 'rTCIceCandidatePairStatsDict.writable', rTCIceCandidatePairStatsDict.writable, {required: true}
-);
-  checkType('boolean', 'rTCIceCandidatePairStatsDict.readable', rTCIceCandidatePairStatsDict.readable, {required: true}
-);
-  checkType('int', 'rTCIceCandidatePairStatsDict.bytesSent', rTCIceCandidatePairStatsDict.bytesSent, {required: true}
-);
-  checkType('int', 'rTCIceCandidatePairStatsDict.bytesReceived', rTCIceCandidatePairStatsDict.bytesReceived, {required: true}
-);
-  checkType('float', 'rTCIceCandidatePairStatsDict.roundTripTime', rTCIceCandidatePairStatsDict.roundTripTime, {required: true}
-);
-  checkType('float', 'rTCIceCandidatePairStatsDict.availableOutgoingBitrate', rTCIceCandidatePairStatsDict.availableOutgoingBitrate, {required: true}
-);
-  checkType('float', 'rTCIceCandidatePairStatsDict.availableIncomingBitrate', rTCIceCandidatePairStatsDict.availableIncomingBitrate, {required: true}
-);
+  checkType('String', 'rTCIceCandidatePairStatsDict.transportId', rTCIceCandidatePairStatsDict.transportId, {required: true});
+  checkType('String', 'rTCIceCandidatePairStatsDict.localCandidateId', rTCIceCandidatePairStatsDict.localCandidateId, {required: true});
+  checkType('String', 'rTCIceCandidatePairStatsDict.remoteCandidateId', rTCIceCandidatePairStatsDict.remoteCandidateId, {required: true});
+  checkType('RTCStatsIceCandidatePairState', 'rTCIceCandidatePairStatsDict.state', rTCIceCandidatePairStatsDict.state, {required: true});
+  checkType('int', 'rTCIceCandidatePairStatsDict.priority', rTCIceCandidatePairStatsDict.priority, {required: true});
+  checkType('boolean', 'rTCIceCandidatePairStatsDict.nominated', rTCIceCandidatePairStatsDict.nominated, {required: true});
+  checkType('boolean', 'rTCIceCandidatePairStatsDict.writable', rTCIceCandidatePairStatsDict.writable, {required: true});
+  checkType('boolean', 'rTCIceCandidatePairStatsDict.readable', rTCIceCandidatePairStatsDict.readable, {required: true});
+  checkType('int', 'rTCIceCandidatePairStatsDict.bytesSent', rTCIceCandidatePairStatsDict.bytesSent, {required: true});
+  checkType('int', 'rTCIceCandidatePairStatsDict.bytesReceived', rTCIceCandidatePairStatsDict.bytesReceived, {required: true});
+  checkType('float', 'rTCIceCandidatePairStatsDict.roundTripTime', rTCIceCandidatePairStatsDict.roundTripTime, {required: true});
+  checkType('float', 'rTCIceCandidatePairStatsDict.availableOutgoingBitrate', rTCIceCandidatePairStatsDict.availableOutgoingBitrate, {required: true});
+  checkType('float', 'rTCIceCandidatePairStatsDict.availableIncomingBitrate', rTCIceCandidatePairStatsDict.availableIncomingBitrate, {required: true});
 
   // Init parent class
   RTCIceCandidatePairStats.super_.call(this, rTCIceCandidatePairStatsDict)
@@ -14140,16 +14211,15 @@ RTCIceCandidatePairStats.check = checkRTCIceCandidatePairStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -14186,16 +14256,11 @@ function RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict){
     return new RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict)
 
   // Check rTCInboundRTPStreamStatsDict has the required fields
-  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, {required: true}
-);
-  checkType('int', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, {required: true}
-);
-  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsLost', rTCInboundRTPStreamStatsDict.packetsLost, {required: true}
-);
-  checkType('float', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, {required: true}
-);
-  checkType('float', 'rTCInboundRTPStreamStatsDict.fractionLost', rTCInboundRTPStreamStatsDict.fractionLost, {required: true}
-);
+  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, {required: true});
+  checkType('int', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, {required: true});
+  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsLost', rTCInboundRTPStreamStatsDict.packetsLost, {required: true});
+  checkType('float', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, {required: true});
+  checkType('float', 'rTCInboundRTPStreamStatsDict.fractionLost', rTCInboundRTPStreamStatsDict.fractionLost, {required: true});
 
   // Init parent class
   RTCInboundRTPStreamStats.super_.call(this, rTCInboundRTPStreamStatsDict)
@@ -14269,16 +14334,15 @@ RTCInboundRTPStreamStats.check = checkRTCInboundRTPStreamStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -14308,10 +14372,8 @@ function RTCMediaStreamStats(rTCMediaStreamStatsDict){
     return new RTCMediaStreamStats(rTCMediaStreamStatsDict)
 
   // Check rTCMediaStreamStatsDict has the required fields
-  checkType('String', 'rTCMediaStreamStatsDict.streamIdentifier', rTCMediaStreamStatsDict.streamIdentifier, {required: true}
-);
-  checkType('String', 'rTCMediaStreamStatsDict.trackIds', rTCMediaStreamStatsDict.trackIds, {isArray: true, required: true}
-);
+  checkType('String', 'rTCMediaStreamStatsDict.streamIdentifier', rTCMediaStreamStatsDict.streamIdentifier, {required: true});
+  checkType('String', 'rTCMediaStreamStatsDict.trackIds', rTCMediaStreamStatsDict.trackIds, {isArray: true, required: true});
 
   // Init parent class
   RTCMediaStreamStats.super_.call(this, rTCMediaStreamStatsDict)
@@ -14370,16 +14432,15 @@ RTCMediaStreamStats.check = checkRTCMediaStreamStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -14441,34 +14502,20 @@ function RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict){
     return new RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict)
 
   // Check rTCMediaStreamTrackStatsDict has the required fields
-  checkType('String', 'rTCMediaStreamTrackStatsDict.trackIdentifier', rTCMediaStreamTrackStatsDict.trackIdentifier, {required: true}
-);
-  checkType('boolean', 'rTCMediaStreamTrackStatsDict.remoteSource', rTCMediaStreamTrackStatsDict.remoteSource, {required: true}
-);
-  checkType('String', 'rTCMediaStreamTrackStatsDict.ssrcIds', rTCMediaStreamTrackStatsDict.ssrcIds, {isArray: true, required: true}
-);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.frameWidth', rTCMediaStreamTrackStatsDict.frameWidth, {required: true}
-);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.frameHeight', rTCMediaStreamTrackStatsDict.frameHeight, {required: true}
-);
-  checkType('float', 'rTCMediaStreamTrackStatsDict.framesPerSecond', rTCMediaStreamTrackStatsDict.framesPerSecond, {required: true}
-);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesSent', rTCMediaStreamTrackStatsDict.framesSent, {required: true}
-);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesReceived', rTCMediaStreamTrackStatsDict.framesReceived, {required: true}
-);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDecoded', rTCMediaStreamTrackStatsDict.framesDecoded, {required: true}
-);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDropped', rTCMediaStreamTrackStatsDict.framesDropped, {required: true}
-);
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesCorrupted', rTCMediaStreamTrackStatsDict.framesCorrupted, {required: true}
-);
-  checkType('float', 'rTCMediaStreamTrackStatsDict.audioLevel', rTCMediaStreamTrackStatsDict.audioLevel, {required: true}
-);
-  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLoss', rTCMediaStreamTrackStatsDict.echoReturnLoss, {required: true}
-);
-  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement', rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement, {required: true}
-);
+  checkType('String', 'rTCMediaStreamTrackStatsDict.trackIdentifier', rTCMediaStreamTrackStatsDict.trackIdentifier, {required: true});
+  checkType('boolean', 'rTCMediaStreamTrackStatsDict.remoteSource', rTCMediaStreamTrackStatsDict.remoteSource, {required: true});
+  checkType('String', 'rTCMediaStreamTrackStatsDict.ssrcIds', rTCMediaStreamTrackStatsDict.ssrcIds, {isArray: true, required: true});
+  checkType('int', 'rTCMediaStreamTrackStatsDict.frameWidth', rTCMediaStreamTrackStatsDict.frameWidth, {required: true});
+  checkType('int', 'rTCMediaStreamTrackStatsDict.frameHeight', rTCMediaStreamTrackStatsDict.frameHeight, {required: true});
+  checkType('float', 'rTCMediaStreamTrackStatsDict.framesPerSecond', rTCMediaStreamTrackStatsDict.framesPerSecond, {required: true});
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesSent', rTCMediaStreamTrackStatsDict.framesSent, {required: true});
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesReceived', rTCMediaStreamTrackStatsDict.framesReceived, {required: true});
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDecoded', rTCMediaStreamTrackStatsDict.framesDecoded, {required: true});
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDropped', rTCMediaStreamTrackStatsDict.framesDropped, {required: true});
+  checkType('int', 'rTCMediaStreamTrackStatsDict.framesCorrupted', rTCMediaStreamTrackStatsDict.framesCorrupted, {required: true});
+  checkType('float', 'rTCMediaStreamTrackStatsDict.audioLevel', rTCMediaStreamTrackStatsDict.audioLevel, {required: true});
+  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLoss', rTCMediaStreamTrackStatsDict.echoReturnLoss, {required: true});
+  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement', rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement, {required: true});
 
   // Init parent class
   RTCMediaStreamTrackStats.super_.call(this, rTCMediaStreamTrackStatsDict)
@@ -14587,16 +14634,15 @@ RTCMediaStreamTrackStats.check = checkRTCMediaStreamTrackStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -14632,14 +14678,10 @@ function RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict){
     return new RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict)
 
   // Check rTCOutboundRTPStreamStatsDict has the required fields
-  checkType('int', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, {required: true}
-);
-  checkType('int', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, {required: true}
-);
-  checkType('float', 'rTCOutboundRTPStreamStatsDict.targetBitrate', rTCOutboundRTPStreamStatsDict.targetBitrate, {required: true}
-);
-  checkType('float', 'rTCOutboundRTPStreamStatsDict.roundTripTime', rTCOutboundRTPStreamStatsDict.roundTripTime, {required: true}
-);
+  checkType('int', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, {required: true});
+  checkType('int', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, {required: true});
+  checkType('float', 'rTCOutboundRTPStreamStatsDict.targetBitrate', rTCOutboundRTPStreamStatsDict.targetBitrate, {required: true});
+  checkType('float', 'rTCOutboundRTPStreamStatsDict.roundTripTime', rTCOutboundRTPStreamStatsDict.roundTripTime, {required: true});
 
   // Init parent class
   RTCOutboundRTPStreamStats.super_.call(this, rTCOutboundRTPStreamStatsDict)
@@ -14708,16 +14750,15 @@ RTCOutboundRTPStreamStats.check = checkRTCOutboundRTPStreamStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -14747,10 +14788,8 @@ function RTCPeerConnectionStats(rTCPeerConnectionStatsDict){
     return new RTCPeerConnectionStats(rTCPeerConnectionStatsDict)
 
   // Check rTCPeerConnectionStatsDict has the required fields
-  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, {required: true}
-);
-  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsClosed', rTCPeerConnectionStatsDict.dataChannelsClosed, {required: true}
-);
+  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, {required: true});
+  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsClosed', rTCPeerConnectionStatsDict.dataChannelsClosed, {required: true});
 
   // Init parent class
   RTCPeerConnectionStats.super_.call(this, rTCPeerConnectionStatsDict)
@@ -14809,16 +14848,15 @@ RTCPeerConnectionStats.check = checkRTCPeerConnectionStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -14873,28 +14911,17 @@ function RTCRTPStreamStats(rTCRTPStreamStatsDict){
     return new RTCRTPStreamStats(rTCRTPStreamStatsDict)
 
   // Check rTCRTPStreamStatsDict has the required fields
-  checkType('String', 'rTCRTPStreamStatsDict.ssrc', rTCRTPStreamStatsDict.ssrc, {required: true}
-);
-  checkType('String', 'rTCRTPStreamStatsDict.associateStatsId', rTCRTPStreamStatsDict.associateStatsId, {required: true}
-);
-  checkType('boolean', 'rTCRTPStreamStatsDict.isRemote', rTCRTPStreamStatsDict.isRemote, {required: true}
-);
-  checkType('String', 'rTCRTPStreamStatsDict.mediaTrackId', rTCRTPStreamStatsDict.mediaTrackId, {required: true}
-);
-  checkType('String', 'rTCRTPStreamStatsDict.transportId', rTCRTPStreamStatsDict.transportId, {required: true}
-);
-  checkType('String', 'rTCRTPStreamStatsDict.codecId', rTCRTPStreamStatsDict.codecId, {required: true}
-);
-  checkType('int', 'rTCRTPStreamStatsDict.firCount', rTCRTPStreamStatsDict.firCount, {required: true}
-);
-  checkType('int', 'rTCRTPStreamStatsDict.pliCount', rTCRTPStreamStatsDict.pliCount, {required: true}
-);
-  checkType('int', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, {required: true}
-);
-  checkType('int', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, {required: true}
-);
-  checkType('int', 'rTCRTPStreamStatsDict.remb', rTCRTPStreamStatsDict.remb, {required: true}
-);
+  checkType('String', 'rTCRTPStreamStatsDict.ssrc', rTCRTPStreamStatsDict.ssrc, {required: true});
+  checkType('String', 'rTCRTPStreamStatsDict.associateStatsId', rTCRTPStreamStatsDict.associateStatsId, {required: true});
+  checkType('boolean', 'rTCRTPStreamStatsDict.isRemote', rTCRTPStreamStatsDict.isRemote, {required: true});
+  checkType('String', 'rTCRTPStreamStatsDict.mediaTrackId', rTCRTPStreamStatsDict.mediaTrackId, {required: true});
+  checkType('String', 'rTCRTPStreamStatsDict.transportId', rTCRTPStreamStatsDict.transportId, {required: true});
+  checkType('String', 'rTCRTPStreamStatsDict.codecId', rTCRTPStreamStatsDict.codecId, {required: true});
+  checkType('int', 'rTCRTPStreamStatsDict.firCount', rTCRTPStreamStatsDict.firCount, {required: true});
+  checkType('int', 'rTCRTPStreamStatsDict.pliCount', rTCRTPStreamStatsDict.pliCount, {required: true});
+  checkType('int', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, {required: true});
+  checkType('int', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, {required: true});
+  checkType('int', 'rTCRTPStreamStatsDict.remb', rTCRTPStreamStatsDict.remb, {required: true});
 
   // Init parent class
   RTCRTPStreamStats.super_.call(this, rTCRTPStreamStatsDict)
@@ -14998,16 +15025,15 @@ RTCRTPStreamStats.check = checkRTCRTPStreamStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -15038,12 +15064,9 @@ function RTCStats(rTCStatsDict){
     return new RTCStats(rTCStatsDict)
 
   // Check rTCStatsDict has the required fields
-  checkType('String', 'rTCStatsDict.id', rTCStatsDict.id, {required: true}
-);
-  checkType('RTCStatsType', 'rTCStatsDict.type', rTCStatsDict.type, {required: true}
-);
-  checkType('double', 'rTCStatsDict.timestamp', rTCStatsDict.timestamp, {required: true}
-);
+  checkType('String', 'rTCStatsDict.id', rTCStatsDict.id, {required: true});
+  checkType('RTCStatsType', 'rTCStatsDict.type', rTCStatsDict.type, {required: true});
+  checkType('double', 'rTCStatsDict.timestamp', rTCStatsDict.timestamp, {required: true});
 
   // Init parent class
   RTCStats.super_.call(this, rTCStatsDict)
@@ -15107,16 +15130,15 @@ RTCStats.check = checkRTCStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -15158,16 +15180,15 @@ module.exports = checkRTCStatsIceCandidatePairState;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -15208,16 +15229,15 @@ module.exports = checkRTCStatsIceCandidateType;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -15258,16 +15278,15 @@ module.exports = checkRTCStatsType;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -15313,20 +15332,13 @@ function RTCTransportStats(rTCTransportStatsDict){
     return new RTCTransportStats(rTCTransportStatsDict)
 
   // Check rTCTransportStatsDict has the required fields
-  checkType('int', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, {required: true}
-);
-  checkType('int', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, {required: true}
-);
-  checkType('String', 'rTCTransportStatsDict.rtcpTransportStatsId', rTCTransportStatsDict.rtcpTransportStatsId, {required: true}
-);
-  checkType('boolean', 'rTCTransportStatsDict.activeConnection', rTCTransportStatsDict.activeConnection, {required: true}
-);
-  checkType('String', 'rTCTransportStatsDict.selectedCandidatePairId', rTCTransportStatsDict.selectedCandidatePairId, {required: true}
-);
-  checkType('String', 'rTCTransportStatsDict.localCertificateId', rTCTransportStatsDict.localCertificateId, {required: true}
-);
-  checkType('String', 'rTCTransportStatsDict.remoteCertificateId', rTCTransportStatsDict.remoteCertificateId, {required: true}
-);
+  checkType('int', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, {required: true});
+  checkType('int', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, {required: true});
+  checkType('String', 'rTCTransportStatsDict.rtcpTransportStatsId', rTCTransportStatsDict.rtcpTransportStatsId, {required: true});
+  checkType('boolean', 'rTCTransportStatsDict.activeConnection', rTCTransportStatsDict.activeConnection, {required: true});
+  checkType('String', 'rTCTransportStatsDict.selectedCandidatePairId', rTCTransportStatsDict.selectedCandidatePairId, {required: true});
+  checkType('String', 'rTCTransportStatsDict.localCertificateId', rTCTransportStatsDict.localCertificateId, {required: true});
+  checkType('String', 'rTCTransportStatsDict.remoteCertificateId', rTCTransportStatsDict.remoteCertificateId, {required: true});
 
   // Init parent class
   RTCTransportStats.super_.call(this, rTCTransportStatsDict)
@@ -15410,16 +15422,15 @@ RTCTransportStats.check = checkRTCTransportStats;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -15451,14 +15462,10 @@ function ServerInfo(serverInfoDict){
     return new ServerInfo(serverInfoDict)
 
   // Check serverInfoDict has the required fields
-  checkType('String', 'serverInfoDict.version', serverInfoDict.version, {required: true}
-);
-  checkType('ModuleInfo', 'serverInfoDict.modules', serverInfoDict.modules, {isArray: true, required: true}
-);
-  checkType('ServerType', 'serverInfoDict.type', serverInfoDict.type, {required: true}
-);
-  checkType('String', 'serverInfoDict.capabilities', serverInfoDict.capabilities, {isArray: true, required: true}
-);
+  checkType('String', 'serverInfoDict.version', serverInfoDict.version, {required: true});
+  checkType('ModuleInfo', 'serverInfoDict.modules', serverInfoDict.modules, {isArray: true, required: true});
+  checkType('ServerType', 'serverInfoDict.type', serverInfoDict.type, {required: true});
+  checkType('String', 'serverInfoDict.capabilities', serverInfoDict.capabilities, {isArray: true, required: true});
 
   // Init parent class
   ServerInfo.super_.call(this, serverInfoDict)
@@ -15527,16 +15534,15 @@ ServerInfo.check = checkServerInfo;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -15577,16 +15583,15 @@ module.exports = checkServerType;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -15614,10 +15619,8 @@ function Tag(tagDict){
     return new Tag(tagDict)
 
   // Check tagDict has the required fields
-  checkType('String', 'tagDict.key', tagDict.key, {required: true}
-);
-  checkType('String', 'tagDict.value', tagDict.value, {required: true}
-);
+  checkType('String', 'tagDict.key', tagDict.key, {required: true});
+  checkType('String', 'tagDict.value', tagDict.value, {required: true});
 
   // Init parent class
   Tag.super_.call(this, tagDict)
@@ -15676,16 +15679,15 @@ Tag.check = checkTag;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var inherits = require('inherits');
@@ -15713,10 +15715,8 @@ function VideoCaps(videoCapsDict){
     return new VideoCaps(videoCapsDict)
 
   // Check videoCapsDict has the required fields
-  checkType('VideoCodec', 'videoCapsDict.codec', videoCapsDict.codec, {required: true}
-);
-  checkType('Fraction', 'videoCapsDict.framerate', videoCapsDict.framerate, {required: true}
-);
+  checkType('VideoCodec', 'videoCapsDict.codec', videoCapsDict.codec, {required: true});
+  checkType('Fraction', 'videoCapsDict.framerate', videoCapsDict.framerate, {required: true});
 
   // Init parent class
   VideoCaps.super_.call(this, videoCapsDict)
@@ -15775,16 +15775,15 @@ VideoCaps.check = checkVideoCaps;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 var kurentoClient = require('kurento-client');
@@ -15825,16 +15824,15 @@ module.exports = checkVideoCodec;
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 /**
@@ -21528,16 +21526,15 @@ if (typeof Object.create === 'function') {
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 /**
