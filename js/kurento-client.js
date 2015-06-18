@@ -958,21 +958,23 @@ module.exports = KurentoClient;
 
 },{"./MediaObjectCreator":2,"./TransactionsManager":3,"./createPromise":5,"./disguise":6,"async":8,"checktype":38,"es6-promise":"es6-promise","events":15,"extend":40,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":114,"promisecallback":"promisecallback","reconnect-ws":119,"url":35}],2:[function(require,module,exports){
 /*
- * (C) Copyright 2014 Kurento (http://kurento.org/)
+ * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
-var checkParams = require('checktype').checkParams;
+var async = require('async');
+
+var checkType = require('checktype');
+var checkParams = checkType.checkParams;
 
 var createPromise = require('./createPromise');
 var register = require('./register');
@@ -1016,6 +1018,8 @@ function createConstructor(item, strict) {
   return constructor;
 }
 
+var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
+
 function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
   describe, strict) {
   if (!(this instanceof MediaObjectCreator))
@@ -1053,7 +1057,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
     var params = item.params || {};
     delete item.params;
 
-    if (host instanceof register.classes.MediaPipeline)
+    if (params.mediaPipeline == undefined && host instanceof register.classes.MediaPipeline)
       params.mediaPipeline = host;
 
     item.constructorParams = checkParams(params, constructor.constructorParams,
@@ -1098,15 +1102,50 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
     };
 
     if (type instanceof Array) {
-      if (params === true && host.connect)
-        return createPromise(type, createMediaObject, function (error,
-          elements) {
-          if (error) return callback(error)
+      var createPipeline = false
 
-          host.connect(elements, callback)
+      type.forEach(function (request) {
+        var params = request.params || {}
+
+        if (typeof params.mediaPipeline === 'number')
+          createPipeline = true
+      })
+
+      function connectElements(error, elements) {
+        if (error) return callback(error)
+
+        if (params === true && host.connect)
+          return host.connect(elements.filter(function (element) {
+              try {
+                checkMediaElement(element)
+                return true
+              } catch (e) {}
+            }),
+            function (error) {
+              if (error) return callback(error)
+
+              callback(null, elements)
+            })
+
+        callback(null, elements)
+      }
+
+      if (createPipeline)
+        return host.transaction(function () {
+          var mediaObjects = []
+
+          async.map(type, function (request, callback) {
+              var params = request.params || {}
+
+              if (typeof params.mediaPipeline === 'number')
+                params.mediaPipeline = mediaObjects[params.mediaPipeline]
+
+              mediaObjects.push(createMediaObject(request, callback))
+            },
+            connectElements)
         })
 
-      return createPromise(type, createMediaObject, callback)
+      return createPromise(type, createMediaObject, connectElements)
     }
 
     type = {
@@ -1128,7 +1167,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
 module.exports = MediaObjectCreator;
 
-},{"./TransactionsManager":3,"./createPromise":5,"./register":7,"checktype":38}],3:[function(require,module,exports){
+},{"./TransactionsManager":3,"./createPromise":5,"./register":7,"async":8,"checktype":38}],3:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
