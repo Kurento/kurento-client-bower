@@ -16063,8 +16063,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var Hub = require('kurento-client-core').abstracts.Hub;
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -16346,8 +16348,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var Hub = require('kurento-client-core').abstracts.Hub;
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -16481,8 +16485,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var Hub = require('kurento-client-core').abstracts.Hub;
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -16739,8 +16745,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var Hub = require('kurento-client-core').abstracts.Hub;
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -16920,8 +16928,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -17067,8 +17077,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var UriEndpoint = require('kurento-client-core').abstracts.UriEndpoint;
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -17294,8 +17306,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -17633,8 +17647,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var SessionEndpoint = require('kurento-client-core').abstracts.SessionEndpoint;
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
