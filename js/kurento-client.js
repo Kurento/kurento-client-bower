@@ -114,8 +114,10 @@ function deferred(mediaObject, params, prevRpc, callback) {
   return promiseCallback(Promise.all(promises), callback);
 };
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 /**
@@ -437,8 +439,7 @@ function KurentoClient(ws_uri, options, callback) {
 
   function encodeCreate(transaction, params, callback) {
     if (transaction)
-      return transactionOperation.call(transaction, 'create', params,
-        callback);
+      return transactionOperation.call(transaction, 'create', params, callback)
 
     if (transactionsManager.length)
       return transactionOperation.call(transactionsManager, 'create',
@@ -462,13 +463,14 @@ function KurentoClient(ws_uri, options, callback) {
       callback(null, registerObject(mediaObject, id));
     }
 
-    deferred(null, params.constructorParams, null, function (error) {
-      if (error) return callback(error);
+    return deferred(null, params.constructorParams, null, function (error) {
+        if (error) throw error;
 
-      params.constructorParams = serializeParams(params.constructorParams);
+        params.constructorParams = serializeParams(params.constructorParams);
 
-      encode('create', params, callback2);
-    });
+        return encode('create', params, callback2);
+      })
+      .catch(callback)
   };
 
   /**
@@ -512,14 +514,15 @@ function KurentoClient(ws_uri, options, callback) {
       };
 
       prevRpc = deferred(params.object, params.operationParams, prevRpc,
-        function (error) {
-          if (error) return reject(error);
+          function (error) {
+            if (error) throw error
 
-          params = serializeParams(params);
-          params.operationParams = serializeParams(params.operationParams);
+            params = serializeParams(params);
+            params.operationParams = serializeParams(params.operationParams);
 
-          encode(method, params, callback2);
-        })
+            return encode(method, params, callback2);
+          })
+        .catch(reject)
     });
 
     prevRpc_result = promiseCallback(promise, callback);
@@ -729,6 +732,8 @@ function KurentoClient(ws_uri, options, callback) {
    */
 
   function connect(callback) {
+    callback = (callback || noop).bind(this)
+
     //
     // Reconnect websockets
     //
@@ -815,44 +820,42 @@ function KurentoClient(ws_uri, options, callback) {
 
     // Check for available modules in the Kurento Media Server
 
-    if (options.strict) {
-      var promise = this.getServerManager()
-        .then(function (serverManager) {
-          return serverManager.getInfo()
+    var thenable = this
+    if (options.strict)
+      thenable = this.getServerManager()
+      .then(function (serverManager) {
+        return serverManager.getInfo()
+      })
+      .then(function (info) {
+        var serverModules = info.modules.map(function (module) {
+          return module.name
         })
-        .then(function (info) {
-          var serverModules = info.modules.map(function (module) {
-            return module.name
+
+        var notInstalled = KurentoClient.register.modules.filter(
+          function (module) {
+            return serverModules.indexOf(module) < 0
           })
 
-          var notInstalled = KurentoClient.register.modules.filter(
-            function (module) {
-              return serverModules.indexOf(module) < 0
-            })
+        var length = notInstalled.length
+        if (length) {
+          if (length === 1)
+            var message = "Module '" + notInstalled[0] +
+              "' is not installed in the Kurento Media Server"
+          else
+            var message = "Modules '" + notInstalled.slice(0, -1).join("', '") +
+              "' and '" + notInstalled[length - 1] +
+              "' are not installed in the Kurento Media Server"
 
-          var length = notInstalled.length
-          if (length) {
-            if (length === 1)
-              var message = "Module '" + notInstalled[0] +
-                "' is not installed in the Kurento Media Server"
-            else
-              var message = "Modules '" + notInstalled.slice(0, -1).join(
-                  "', '") + "' and '" + notInstalled[length - 1] +
-                "' are not installed in the Kurento Media Server"
+          var error = new SyntaxError(message)
+          error.modules = notInstalled
 
-            var error = new SyntaxError(message)
-            error.modules = notInstalled
+          return Promise.reject(error)
+        }
 
-            return Promise.reject(error)
-          }
+        return Promise.resolve(self)
+      })
 
-          return Promise.resolve(self)
-        })
-
-      if (callback)
-        promise.then(callback.bind(undefined, null), callback);
-    } else if (callback)
-      this.then(callback.bind(undefined, null), callback);
+    promiseCallback(thenable, callback);
   };
   connect.call(self, callback);
 };
@@ -21815,18 +21818,17 @@ register('kurento-client-filters')
 
 },{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./disguise":6,"./register":7,"checktype":38,"error-tojson":39}],"promisecallback":[function(require,module,exports){
 /*
- * (C) Copyright 2014 Kurento (http://kurento.org/)
+ * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/lgpl-2.1.html
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
  */
 
 
@@ -21841,12 +21843,12 @@ function promiseCallback(promise, callback, thisArg)
     {
       try
       {
-        callback.call(thisArg, error, result);
+        return callback.call(thisArg, error, result);
       }
       catch(exception)
       {
         // Show the exception in the console with its full stack trace
-        console.error(exception);
+        console.trace(exception);
         throw exception;
       }
     };
