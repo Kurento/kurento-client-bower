@@ -9602,8 +9602,10 @@ var transactionOperation = TransactionsManager.transactionOperation;
 var MediaObject = require('./abstracts/MediaObject');
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -9967,8 +9969,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var SdpEndpoint = require('./SdpEndpoint');
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -10462,8 +10466,10 @@ var HubPort = require('../HubPort');
 var MediaObject = require('./MediaObject');
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -10584,8 +10590,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var MediaObject = require('./MediaObject');
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -11136,8 +11144,10 @@ var disguise = kurentoClient.disguise;
 var EventEmitter = require('events').EventEmitter;
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -11908,8 +11918,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var SessionEndpoint = require('./SessionEndpoint');
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -12223,8 +12235,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var MediaObject = require('./MediaObject');
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
@@ -12538,8 +12552,10 @@ var Transaction = kurentoClient.TransactionsManager.Transaction;
 var Endpoint = require('./Endpoint');
 
 
-function noop(error) {
+function noop(error, result) {
   if (error) console.trace(error);
+
+  return result
 };
 
 
