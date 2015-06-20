@@ -14926,8 +14926,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -14995,7 +14998,7 @@ AlphaBlending.prototype.setMaster = function(source, zOrder, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setMaster', params, callback);
+  return disguise(this._invoke(transaction, 'setMaster', params, callback), this)
 };
 /**
  * @callback module:elements.AlphaBlending~setMasterCallback
@@ -15054,7 +15057,7 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setPortProperties', params, callback);
+  return disguise(this._invoke(transaction, 'setPortProperties', params, callback), this)
 };
 /**
  * @callback module:elements.AlphaBlending~setPortPropertiesCallback
@@ -15123,6 +15126,8 @@ AlphaBlending.check = checkAlphaBlending;
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
+
+var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
@@ -15211,8 +15216,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -15278,7 +15286,7 @@ Dispatcher.prototype.connect = function(source, sink, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'connect', params, callback);
+  return disguise(this._invoke(transaction, 'connect', params, callback), this)
 };
 /**
  * @callback module:elements.Dispatcher~connectCallback
@@ -15348,8 +15356,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -15402,7 +15413,7 @@ DispatcherOneToMany.prototype.removeSource = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'removeSource', callback);
+  return disguise(this._invoke(transaction, 'removeSource', callback), this)
 };
 /**
  * @callback module:elements.DispatcherOneToMany~removeSourceCallback
@@ -15435,7 +15446,7 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setSource', params, callback);
+  return disguise(this._invoke(transaction, 'setSource', params, callback), this)
 };
 /**
  * @callback module:elements.DispatcherOneToMany~setSourceCallback
@@ -15504,6 +15515,8 @@ DispatcherOneToMany.check = checkDispatcherOneToMany;
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
+
+var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
@@ -15608,8 +15621,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -15679,7 +15695,7 @@ Mixer.prototype.connect = function(media, source, sink, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'connect', params, callback);
+  return disguise(this._invoke(transaction, 'connect', params, callback), this)
 };
 /**
  * @callback module:elements.Mixer~connectCallback
@@ -15721,7 +15737,7 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'disconnect', params, callback);
+  return disguise(this._invoke(transaction, 'disconnect', params, callback), this)
 };
 /**
  * @callback module:elements.Mixer~disconnectCallback
@@ -15791,8 +15807,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -15851,7 +15870,7 @@ PlayerEndpoint.prototype.play = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'play', callback);
+  return disguise(this._invoke(transaction, 'play', callback), this)
 };
 /**
  * @callback module:elements.PlayerEndpoint~playCallback
@@ -15940,8 +15959,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -15992,7 +16014,7 @@ RecorderEndpoint.prototype.record = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'record', callback);
+  return disguise(this._invoke(transaction, 'record', callback), this)
 };
 /**
  * @callback module:elements.RecorderEndpoint~recordCallback
@@ -16083,6 +16105,8 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
@@ -16169,8 +16193,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -16227,7 +16254,7 @@ WebRtcEndpoint.prototype.getStunServerAddress = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getStunServerAddress', callback);
+  return disguise(this._invoke(transaction, 'getStunServerAddress', callback), this)
 };
 /**
  * @callback module:elements.WebRtcEndpoint~getStunServerAddressCallback
@@ -16258,7 +16285,7 @@ WebRtcEndpoint.prototype.setStunServerAddress = function(stunServerAddress, call
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setStunServerAddress', params, callback);
+  return disguise(this._invoke(transaction, 'setStunServerAddress', params, callback), this)
 };
 /**
  * @callback module:elements.WebRtcEndpoint~setStunServerAddressCallback
@@ -16283,7 +16310,7 @@ WebRtcEndpoint.prototype.getStunServerPort = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getStunServerPort', callback);
+  return disguise(this._invoke(transaction, 'getStunServerPort', callback), this)
 };
 /**
  * @callback module:elements.WebRtcEndpoint~getStunServerPortCallback
@@ -16314,7 +16341,7 @@ WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setStunServerPort', params, callback);
+  return disguise(this._invoke(transaction, 'setStunServerPort', params, callback), this)
 };
 /**
  * @callback module:elements.WebRtcEndpoint~setStunServerPortCallback
@@ -16342,7 +16369,7 @@ WebRtcEndpoint.prototype.getTurnUrl = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getTurnUrl', callback);
+  return disguise(this._invoke(transaction, 'getTurnUrl', callback), this)
 };
 /**
  * @callback module:elements.WebRtcEndpoint~getTurnUrlCallback
@@ -16376,7 +16403,7 @@ WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setTurnUrl', params, callback);
+  return disguise(this._invoke(transaction, 'setTurnUrl', params, callback), this)
 };
 /**
  * @callback module:elements.WebRtcEndpoint~setTurnUrlCallback
@@ -16413,7 +16440,7 @@ WebRtcEndpoint.prototype.addIceCandidate = function(candidate, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'addIceCandidate', params, callback);
+  return disguise(this._invoke(transaction, 'addIceCandidate', params, callback), this)
 };
 /**
  * @callback module:elements.WebRtcEndpoint~addIceCandidateCallback
@@ -16440,7 +16467,7 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'gatherCandidates', callback);
+  return disguise(this._invoke(transaction, 'gatherCandidates', callback), this)
 };
 /**
  * @callback module:elements.WebRtcEndpoint~gatherCandidatesCallback
@@ -16510,8 +16537,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -16563,7 +16593,7 @@ HttpEndpoint.prototype.getUrl = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getUrl', callback);
+  return disguise(this._invoke(transaction, 'getUrl', callback), this)
 };
 /**
  * @callback module:elements/abstracts.HttpEndpoint~getUrlCallback
