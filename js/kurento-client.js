@@ -12783,6 +12783,8 @@ function AudioCaps(audioCapsDict){
   if(!(this instanceof AudioCaps))
     return new AudioCaps(audioCapsDict)
 
+  audioCapsDict = audioCapsDict || {}
+
   // Check audioCapsDict has the required fields
   checkType('AudioCodec', 'audioCapsDict.codec', audioCapsDict.codec, {required: true});
   checkType('int', 'audioCapsDict.bitrate', audioCapsDict.bitrate, {required: true});
@@ -12928,6 +12930,8 @@ var ComplexType = require('./ComplexType');
 function CodecConfiguration(codecConfigurationDict){
   if(!(this instanceof CodecConfiguration))
     return new CodecConfiguration(codecConfigurationDict)
+
+  codecConfigurationDict = codecConfigurationDict || {}
 
   // Check codecConfigurationDict has the required fields
   checkType('String', 'codecConfigurationDict.name', codecConfigurationDict.name, {required: true});
@@ -13091,6 +13095,8 @@ var ComplexType = require('./ComplexType');
 function ElementConnectionData(elementConnectionDataDict){
   if(!(this instanceof ElementConnectionData))
     return new ElementConnectionData(elementConnectionDataDict)
+
+  elementConnectionDataDict = elementConnectionDataDict || {}
 
   // Check elementConnectionDataDict has the required fields
   checkType('MediaElement', 'elementConnectionDataDict.source', elementConnectionDataDict.source, {required: true});
@@ -13256,6 +13262,8 @@ var ComplexType = require('./ComplexType');
 function Fraction(fractionDict){
   if(!(this instanceof Fraction))
     return new Fraction(fractionDict)
+
+  fractionDict = fractionDict || {}
 
   // Check fractionDict has the required fields
   checkType('int', 'fractionDict.numerator', fractionDict.numerator, {required: true});
@@ -13503,6 +13511,8 @@ function ModuleInfo(moduleInfoDict){
   if(!(this instanceof ModuleInfo))
     return new ModuleInfo(moduleInfoDict)
 
+  moduleInfoDict = moduleInfoDict || {}
+
   // Check moduleInfoDict has the required fields
   checkType('String', 'moduleInfoDict.version', moduleInfoDict.version, {required: true});
   checkType('String', 'moduleInfoDict.name', moduleInfoDict.name, {required: true});
@@ -13608,6 +13618,8 @@ var RTCStats = require('./RTCStats');
 function RTCCertificateStats(rTCCertificateStatsDict){
   if(!(this instanceof RTCCertificateStats))
     return new RTCCertificateStats(rTCCertificateStatsDict)
+
+  rTCCertificateStatsDict = rTCCertificateStatsDict || {}
 
   // Check rTCCertificateStatsDict has the required fields
   checkType('String', 'rTCCertificateStatsDict.fingerprint', rTCCertificateStatsDict.fingerprint, {required: true});
@@ -13724,6 +13736,8 @@ var RTCStats = require('./RTCStats');
 function RTCCodec(rTCCodecDict){
   if(!(this instanceof RTCCodec))
     return new RTCCodec(rTCCodecDict)
+
+  rTCCodecDict = rTCCodecDict || {}
 
   // Check rTCCodecDict has the required fields
   checkType('int', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, {required: true});
@@ -13904,6 +13918,8 @@ function RTCDataChannelStats(rTCDataChannelStatsDict){
   if(!(this instanceof RTCDataChannelStats))
     return new RTCDataChannelStats(rTCDataChannelStatsDict)
 
+  rTCDataChannelStatsDict = rTCDataChannelStatsDict || {}
+
   // Check rTCDataChannelStatsDict has the required fields
   checkType('String', 'rTCDataChannelStatsDict.label', rTCDataChannelStatsDict.label, {required: true});
   checkType('String', 'rTCDataChannelStatsDict.protocol', rTCDataChannelStatsDict.protocol, {required: true});
@@ -14048,6 +14064,8 @@ var RTCStats = require('./RTCStats');
 function RTCIceCandidateAttributes(rTCIceCandidateAttributesDict){
   if(!(this instanceof RTCIceCandidateAttributes))
     return new RTCIceCandidateAttributes(rTCIceCandidateAttributesDict)
+
+  rTCIceCandidateAttributesDict = rTCIceCandidateAttributesDict || {}
 
   // Check rTCIceCandidateAttributesDict has the required fields
   checkType('String', 'rTCIceCandidateAttributesDict.ipAddress', rTCIceCandidateAttributesDict.ipAddress, {required: true});
@@ -14202,6 +14220,8 @@ var RTCStats = require('./RTCStats');
 function RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict){
   if(!(this instanceof RTCIceCandidatePairStats))
     return new RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict)
+
+  rTCIceCandidatePairStatsDict = rTCIceCandidatePairStatsDict || {}
 
   // Check rTCIceCandidatePairStatsDict has the required fields
   checkType('String', 'rTCIceCandidatePairStatsDict.transportId', rTCIceCandidatePairStatsDict.transportId, {required: true});
@@ -14374,6 +14394,8 @@ function RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict){
   if(!(this instanceof RTCInboundRTPStreamStats))
     return new RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict)
 
+  rTCInboundRTPStreamStatsDict = rTCInboundRTPStreamStatsDict || {}
+
   // Check rTCInboundRTPStreamStatsDict has the required fields
   checkType('int', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, {required: true});
   checkType('int', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, {required: true});
@@ -14489,6 +14511,8 @@ var RTCStats = require('./RTCStats');
 function RTCMediaStreamStats(rTCMediaStreamStatsDict){
   if(!(this instanceof RTCMediaStreamStats))
     return new RTCMediaStreamStats(rTCMediaStreamStatsDict)
+
+  rTCMediaStreamStatsDict = rTCMediaStreamStatsDict || {}
 
   // Check rTCMediaStreamStatsDict has the required fields
   checkType('String', 'rTCMediaStreamStatsDict.streamIdentifier', rTCMediaStreamStatsDict.streamIdentifier, {required: true});
@@ -14619,6 +14643,8 @@ var RTCStats = require('./RTCStats');
 function RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict){
   if(!(this instanceof RTCMediaStreamTrackStats))
     return new RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict)
+
+  rTCMediaStreamTrackStatsDict = rTCMediaStreamTrackStatsDict || {}
 
   // Check rTCMediaStreamTrackStatsDict has the required fields
   checkType('String', 'rTCMediaStreamTrackStatsDict.trackIdentifier', rTCMediaStreamTrackStatsDict.trackIdentifier, {required: true});
@@ -14796,6 +14822,8 @@ function RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict){
   if(!(this instanceof RTCOutboundRTPStreamStats))
     return new RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict)
 
+  rTCOutboundRTPStreamStatsDict = rTCOutboundRTPStreamStatsDict || {}
+
   // Check rTCOutboundRTPStreamStatsDict has the required fields
   checkType('int', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, {required: true});
   checkType('int', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, {required: true});
@@ -14905,6 +14933,8 @@ var RTCStats = require('./RTCStats');
 function RTCPeerConnectionStats(rTCPeerConnectionStatsDict){
   if(!(this instanceof RTCPeerConnectionStats))
     return new RTCPeerConnectionStats(rTCPeerConnectionStatsDict)
+
+  rTCPeerConnectionStatsDict = rTCPeerConnectionStatsDict || {}
 
   // Check rTCPeerConnectionStatsDict has the required fields
   checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, {required: true});
@@ -15028,6 +15058,8 @@ var RTCStats = require('./RTCStats');
 function RTCRTPStreamStats(rTCRTPStreamStatsDict){
   if(!(this instanceof RTCRTPStreamStats))
     return new RTCRTPStreamStats(rTCRTPStreamStatsDict)
+
+  rTCRTPStreamStatsDict = rTCRTPStreamStatsDict || {}
 
   // Check rTCRTPStreamStatsDict has the required fields
   checkType('String', 'rTCRTPStreamStatsDict.ssrc', rTCRTPStreamStatsDict.ssrc, {required: true});
@@ -15181,6 +15213,8 @@ var ComplexType = require('./ComplexType');
 function RTCStats(rTCStatsDict){
   if(!(this instanceof RTCStats))
     return new RTCStats(rTCStatsDict)
+
+  rTCStatsDict = rTCStatsDict || {}
 
   // Check rTCStatsDict has the required fields
   checkType('String', 'rTCStatsDict.id', rTCStatsDict.id, {required: true});
@@ -15450,6 +15484,8 @@ function RTCTransportStats(rTCTransportStatsDict){
   if(!(this instanceof RTCTransportStats))
     return new RTCTransportStats(rTCTransportStatsDict)
 
+  rTCTransportStatsDict = rTCTransportStatsDict || {}
+
   // Check rTCTransportStatsDict has the required fields
   checkType('int', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, {required: true});
   checkType('int', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, {required: true});
@@ -15579,6 +15615,8 @@ var ComplexType = require('./ComplexType');
 function ServerInfo(serverInfoDict){
   if(!(this instanceof ServerInfo))
     return new ServerInfo(serverInfoDict)
+
+  serverInfoDict = serverInfoDict || {}
 
   // Check serverInfoDict has the required fields
   checkType('String', 'serverInfoDict.version', serverInfoDict.version, {required: true});
@@ -15737,6 +15775,8 @@ function Tag(tagDict){
   if(!(this instanceof Tag))
     return new Tag(tagDict)
 
+  tagDict = tagDict || {}
+
   // Check tagDict has the required fields
   checkType('String', 'tagDict.key', tagDict.key, {required: true});
   checkType('String', 'tagDict.value', tagDict.value, {required: true});
@@ -15832,6 +15872,8 @@ var ComplexType = require('./ComplexType');
 function VideoCaps(videoCapsDict){
   if(!(this instanceof VideoCaps))
     return new VideoCaps(videoCapsDict)
+
+  videoCapsDict = videoCapsDict || {}
 
   // Check videoCapsDict has the required fields
   checkType('VideoCodec', 'videoCapsDict.codec', videoCapsDict.codec, {required: true});
