@@ -8313,6 +8313,8 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var MediaElement = require('./abstracts/MediaElement');
@@ -8397,8 +8399,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -8561,7 +8566,7 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getGstreamerDot', params, callback);
+  return disguise(this._invoke(transaction, 'getGstreamerDot', params, callback), this)
 };
 /**
  * @callback module:core.MediaPipeline~getGstreamerDotCallback
@@ -8570,8 +8575,6 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
  *  The dot graph
  */
 
-
-var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
 
 /**
  * Connect the source of a media to the sink of the next one
@@ -8599,31 +8602,7 @@ MediaPipeline.prototype.connect = function(media, callback){
   if(media.length < 2)
     throw new SyntaxError('Need at least two media elements to connect');
 
-  // Check MediaElements are of the correct type
-  media.forEach(checkMediaElement);
-
-  // Connect the media elements
-  var src = media[0];
-  var sink = media[media.length-1]
-
-  // Generate promise
-  var promise = new Promise(function(resolve, reject)
-  {
-    function callback(error, result)
-    {
-      if(error) return reject(error);
-
-      resolve(result);
-    };
-
-    async.each(media.slice(1), function(sink, callback)
-    {
-      src = src.connect(sink, callback);
-    },
-    callback);
-  });
-
-  return disguise(promiseCallback(promise, callback), sink)
+  return media[0].connect(media.slice(1), callback)
 };
 /**
  * @callback MediaPipeline~connectCallback
@@ -8684,6 +8663,8 @@ MediaPipeline.check = checkMediaPipeline;
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
+
+var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
@@ -8769,8 +8750,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -8826,7 +8810,7 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getMaxVideoSendBandwidth', callback);
+  return disguise(this._invoke(transaction, 'getMaxVideoSendBandwidth', callback), this)
 };
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~getMaxVideoSendBandwidthCallback
@@ -8860,7 +8844,7 @@ BaseRtpEndpoint.prototype.setMaxVideoSendBandwidth = function(maxVideoSendBandwi
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setMaxVideoSendBandwidth', params, callback);
+  return disguise(this._invoke(transaction, 'setMaxVideoSendBandwidth', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~setMaxVideoSendBandwidthCallback
@@ -8885,7 +8869,7 @@ BaseRtpEndpoint.prototype.getMediaState = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getMediaState', callback);
+  return disguise(this._invoke(transaction, 'getMediaState', callback), this)
 };
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~getMediaStateCallback
@@ -8914,7 +8898,7 @@ BaseRtpEndpoint.prototype.getMinVideoRecvBandwidth = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getMinVideoRecvBandwidth', callback);
+  return disguise(this._invoke(transaction, 'getMinVideoRecvBandwidth', callback), this)
 };
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~getMinVideoRecvBandwidthCallback
@@ -8948,7 +8932,7 @@ BaseRtpEndpoint.prototype.setMinVideoRecvBandwidth = function(minVideoRecvBandwi
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setMinVideoRecvBandwidth', params, callback);
+  return disguise(this._invoke(transaction, 'setMinVideoRecvBandwidth', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~setMinVideoRecvBandwidthCallback
@@ -8976,7 +8960,7 @@ BaseRtpEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getMinVideoSendBandwidth', callback);
+  return disguise(this._invoke(transaction, 'getMinVideoSendBandwidth', callback), this)
 };
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~getMinVideoSendBandwidthCallback
@@ -9010,7 +8994,7 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setMinVideoSendBandwidth', params, callback);
+  return disguise(this._invoke(transaction, 'setMinVideoSendBandwidth', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~setMinVideoSendBandwidthCallback
@@ -9040,7 +9024,7 @@ BaseRtpEndpoint.prototype.getStats = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getStats', callback);
+  return disguise(this._invoke(transaction, 'getStats', callback), this)
 };
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~getStatsCallback
@@ -9105,6 +9089,8 @@ BaseRtpEndpoint.check = checkBaseRtpEndpoint;
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
+
+var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
@@ -9189,6 +9175,8 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var MediaElement = require('./MediaElement');
@@ -9264,6 +9252,8 @@ Filter.check = checkFilter;
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
+
+var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
@@ -9390,10 +9380,18 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
 
+var checkArray = checkType.checkArray;
+
 var Transaction = kurentoClient.TransactionsManager.Transaction;
+
+var each = require('async').each
+
+var promiseCallback = require('promisecallback');
 
 var MediaObject = require('./MediaObject');
 
@@ -9463,6 +9461,49 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var promise
+  if(sink instanceof Array)
+  {
+    callback = arguments[arguments.length-1] instanceof Function
+             ? Array.prototype.pop.call(arguments)
+             : undefined;
+
+    var media = sink
+    var src = this;
+    sink = media[media.length-1]
+
+    // Check if we have enought media components
+    if(!media.length)
+      throw new SyntaxError('Need at least one media element to connect');
+
+    // Check MediaElements are of the correct type
+    checkArray('MediaElement', 'media', media)
+
+    // Generate promise
+    promise = new Promise(function(resolve, reject)
+    {
+      function callback(error, result)
+      {
+        if(error) return reject(error);
+
+        resolve(result);
+      };
+
+      each(media, function(sink, callback)
+      {
+        src = src.connect(sink, callback);
+      },
+      callback);
+    });
+
+    promise = promiseCallback(promise, callback)
+  }
+  else
+  {
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
   callback = arguments[arguments.length-1] instanceof Function
            ? Array.prototype.pop.call(arguments)
            : undefined;
@@ -9496,42 +9537,10 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
 
   callback = (callback || noop).bind(this)
 
-  if(sink instanceof Array)
-  {
-    var media = sink
-
-    // Check if we have enought media components
-    if(!media.length)
-      throw new SyntaxError('Need at least one media element to connect');
-
-    // Check MediaElements are of the correct type
-    media.forEach(checkMediaElement);
-
-    // Connect the media elements
-    var src = this;
-    var sink = media[media.length-1]
-
-    // Generate promise
-    var promise = new Promise(function(resolve, reject)
-    {
-      function callback(error, result)
-      {
-        if(error) return reject(error);
-
-        resolve(result);
-      };
-
-      async.each(media, function(sink, callback)
-      {
-        src = src.connect(sink, callback);
-      },
-      callback);
-    });
-
-    return disguise(promiseCallback(promise, callback), sink)
+    promise = this._invoke(transaction, 'connect', params, callback)
   }
 
-  return this._invoke(transaction, 'connect', params, callback);
+  return disguise(promise, sink)
 };
 /**
  * @callback module:core/abstracts.MediaElement~connectCallback
@@ -9602,7 +9611,7 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'disconnect', params, callback);
+  return disguise(this._invoke(transaction, 'disconnect', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaElement~disconnectCallback
@@ -9652,7 +9661,7 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getGstreamerDot', params, callback);
+  return disguise(this._invoke(transaction, 'getGstreamerDot', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaElement~getGstreamerDotCallback
@@ -9713,7 +9722,7 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getSinkConnections', params, callback);
+  return disguise(this._invoke(transaction, 'getSinkConnections', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaElement~getSinkConnectionsCallback
@@ -9775,7 +9784,7 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getSourceConnections', params, callback);
+  return disguise(this._invoke(transaction, 'getSourceConnections', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaElement~getSourceConnectionsCallback
@@ -9810,7 +9819,7 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setAudioFormat', params, callback);
+  return disguise(this._invoke(transaction, 'setAudioFormat', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaElement~setAudioFormatCallback
@@ -9844,7 +9853,7 @@ MediaElement.prototype.setOutputBitrate = function(bitrate, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setOutputBitrate', params, callback);
+  return disguise(this._invoke(transaction, 'setOutputBitrate', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaElement~setOutputBitrateCallback
@@ -9876,7 +9885,7 @@ MediaElement.prototype.setVideoFormat = function(caps, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setVideoFormat', params, callback);
+  return disguise(this._invoke(transaction, 'setVideoFormat', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaElement~setVideoFormatCallback
@@ -9917,7 +9926,7 @@ module.exports = MediaElement;
 
 MediaElement.check = checkMediaElement;
 
-},{"./MediaObject":48,"inherits":"inherits","kurento-client":"kurento-client"}],48:[function(require,module,exports){
+},{"./MediaObject":48,"async":"async","inherits":"inherits","kurento-client":"kurento-client","promisecallback":"promisecallback"}],48:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9938,16 +9947,17 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
 var Promise = require('es6-promise').Promise;
 
 var promiseCallback = require('promisecallback');
-
-var disguise = kurentoClient.disguise;
 
 var EventEmitter = require('events').EventEmitter;
 
@@ -10094,12 +10104,12 @@ MediaObject.prototype.getChilds = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getChilds', function(error, result)
+  return disguise(this._invoke(transaction, 'getChilds', function(error, result)
   {
     if (error) return callback(error);
 
     this.emit('_describe', result, callback);
-  });
+  }), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~getChildsCallback
@@ -10125,7 +10135,7 @@ MediaObject.prototype.getCreationTime = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getCreationTime', callback);
+  return disguise(this._invoke(transaction, 'getCreationTime', callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~getCreationTimeCallback
@@ -10153,12 +10163,12 @@ MediaObject.prototype.getMediaPipeline = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getMediaPipeline', function(error, result)
+  return disguise(this._invoke(transaction, 'getMediaPipeline', function(error, result)
   {
     if (error) return callback(error);
 
     this.emit('_describe', result, callback);
-  });
+  }), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~getMediaPipelineCallback
@@ -10185,7 +10195,7 @@ MediaObject.prototype.getName = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getName', callback);
+  return disguise(this._invoke(transaction, 'getName', callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~getNameCallback
@@ -10217,7 +10227,7 @@ MediaObject.prototype.setName = function(name, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setName', params, callback);
+  return disguise(this._invoke(transaction, 'setName', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~setNameCallback
@@ -10245,12 +10255,12 @@ MediaObject.prototype.getParent = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getParent', function(error, result)
+  return disguise(this._invoke(transaction, 'getParent', function(error, result)
   {
     if (error) return callback(error);
 
     this.emit('_describe', result, callback);
-  });
+  }), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~getParentCallback
@@ -10277,7 +10287,7 @@ MediaObject.prototype.getSendTagsInEvents = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getSendTagsInEvents', callback);
+  return disguise(this._invoke(transaction, 'getSendTagsInEvents', callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~getSendTagsInEventsCallback
@@ -10309,7 +10319,7 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setSendTagsInEvents', params, callback);
+  return disguise(this._invoke(transaction, 'setSendTagsInEvents', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~setSendTagsInEventsCallback
@@ -10352,7 +10362,7 @@ MediaObject.prototype.addTag = function(key, value, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'addTag', params, callback);
+  return disguise(this._invoke(transaction, 'addTag', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~addTagCallback
@@ -10384,7 +10394,7 @@ MediaObject.prototype.getTag = function(key, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getTag', params, callback);
+  return disguise(this._invoke(transaction, 'getTag', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~getTagCallback
@@ -10411,7 +10421,7 @@ MediaObject.prototype.getTags = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getTags', callback);
+  return disguise(this._invoke(transaction, 'getTags', callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~getTagsCallback
@@ -10445,7 +10455,7 @@ MediaObject.prototype.removeTag = function(key, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'removeTag', params, callback);
+  return disguise(this._invoke(transaction, 'removeTag', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.MediaObject~removeTagCallback
@@ -10516,7 +10526,7 @@ Object.defineProperty(MediaObject.prototype, '_invoke',
       });
     }
 
-    return disguise(promiseCallback(promise, callback, this), this)
+    return promiseCallback(promise, callback, this)
   }
 })
 /**
@@ -10718,8 +10728,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -10775,7 +10788,7 @@ SdpEndpoint.prototype.getMaxVideoRecvBandwidth = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getMaxVideoRecvBandwidth', callback);
+  return disguise(this._invoke(transaction, 'getMaxVideoRecvBandwidth', callback), this)
 };
 /**
  * @callback module:core/abstracts.SdpEndpoint~getMaxVideoRecvBandwidthCallback
@@ -10809,7 +10822,7 @@ SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth,
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setMaxVideoRecvBandwidth', params, callback);
+  return disguise(this._invoke(transaction, 'setMaxVideoRecvBandwidth', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.SdpEndpoint~setMaxVideoRecvBandwidthCallback
@@ -10840,7 +10853,7 @@ SdpEndpoint.prototype.generateOffer = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'generateOffer', callback);
+  return disguise(this._invoke(transaction, 'generateOffer', callback), this)
 };
 /**
  * @callback module:core/abstracts.SdpEndpoint~generateOfferCallback
@@ -10871,7 +10884,7 @@ SdpEndpoint.prototype.getLocalSessionDescriptor = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getLocalSessionDescriptor', callback);
+  return disguise(this._invoke(transaction, 'getLocalSessionDescriptor', callback), this)
 };
 /**
  * @callback module:core/abstracts.SdpEndpoint~getLocalSessionDescriptorCallback
@@ -10901,7 +10914,7 @@ SdpEndpoint.prototype.getRemoteSessionDescriptor = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getRemoteSessionDescriptor', callback);
+  return disguise(this._invoke(transaction, 'getRemoteSessionDescriptor', callback), this)
 };
 /**
  * @callback module:core/abstracts.SdpEndpoint~getRemoteSessionDescriptorCallback
@@ -10936,7 +10949,7 @@ SdpEndpoint.prototype.processAnswer = function(answer, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'processAnswer', params, callback);
+  return disguise(this._invoke(transaction, 'processAnswer', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.SdpEndpoint~processAnswerCallback
@@ -10971,7 +10984,7 @@ SdpEndpoint.prototype.processOffer = function(offer, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'processOffer', params, callback);
+  return disguise(this._invoke(transaction, 'processOffer', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.SdpEndpoint~processOfferCallback
@@ -11035,8 +11048,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -11090,7 +11106,7 @@ ServerManager.prototype.getInfo = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getInfo', callback);
+  return disguise(this._invoke(transaction, 'getInfo', callback), this)
 };
 /**
  * @callback module:core/abstracts.ServerManager~getInfoCallback
@@ -11116,7 +11132,7 @@ ServerManager.prototype.getMetadata = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getMetadata', callback);
+  return disguise(this._invoke(transaction, 'getMetadata', callback), this)
 };
 /**
  * @callback module:core/abstracts.ServerManager~getMetadataCallback
@@ -11142,12 +11158,12 @@ ServerManager.prototype.getPipelines = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getPipelines', function(error, result)
+  return disguise(this._invoke(transaction, 'getPipelines', function(error, result)
   {
     if (error) return callback(error);
 
     this.emit('_describe', result, callback);
-  });
+  }), this)
 };
 /**
  * @callback module:core/abstracts.ServerManager~getPipelinesCallback
@@ -11173,7 +11189,7 @@ ServerManager.prototype.getSessions = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getSessions', callback);
+  return disguise(this._invoke(transaction, 'getSessions', callback), this)
 };
 /**
  * @callback module:core/abstracts.ServerManager~getSessionsCallback
@@ -11211,7 +11227,7 @@ ServerManager.prototype.getKmd = function(moduleName, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getKmd', params, callback);
+  return disguise(this._invoke(transaction, 'getKmd', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.ServerManager~getKmdCallback
@@ -11274,6 +11290,8 @@ ServerManager.check = checkServerManager;
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
+
+var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
@@ -11352,8 +11370,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -11404,7 +11425,7 @@ UriEndpoint.prototype.getUri = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'getUri', callback);
+  return disguise(this._invoke(transaction, 'getUri', callback), this)
 };
 /**
  * @callback module:core/abstracts.UriEndpoint~getUriCallback
@@ -11435,7 +11456,7 @@ UriEndpoint.prototype.pause = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'pause', callback);
+  return disguise(this._invoke(transaction, 'pause', callback), this)
 };
 /**
  * @callback module:core/abstracts.UriEndpoint~pauseCallback
@@ -11460,7 +11481,7 @@ UriEndpoint.prototype.stop = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'stop', callback);
+  return disguise(this._invoke(transaction, 'stop', callback), this)
 };
 /**
  * @callback module:core/abstracts.UriEndpoint~stopCallback
