@@ -17854,6 +17854,8 @@ function IceCandidate(iceCandidateDict){
   if(!(this instanceof IceCandidate))
     return new IceCandidate(iceCandidateDict)
 
+  iceCandidateDict = iceCandidateDict || {}
+
   // Check iceCandidateDict has the required fields
   checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true});
   checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true});
