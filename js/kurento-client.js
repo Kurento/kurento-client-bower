@@ -16931,8 +16931,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -17039,7 +17042,7 @@ FaceOverlayFilter.prototype.setOverlayedImage = function(uri, offsetXPercent, of
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'setOverlayedImage', params, callback);
+  return disguise(this._invoke(transaction, 'setOverlayedImage', params, callback), this)
 };
 /**
  * @callback module:filters.FaceOverlayFilter~setOverlayedImageCallback
@@ -17065,7 +17068,7 @@ FaceOverlayFilter.prototype.unsetOverlayedImage = function(callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'unsetOverlayedImage', callback);
+  return disguise(this._invoke(transaction, 'unsetOverlayedImage', callback), this)
 };
 /**
  * @callback module:filters.FaceOverlayFilter~unsetOverlayedImageCallback
@@ -17133,6 +17136,8 @@ FaceOverlayFilter.check = checkFaceOverlayFilter;
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
+
+var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
@@ -17231,8 +17236,11 @@ var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
 
+var disguise = kurentoClient.disguise;
+
 var checkType      = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -17332,7 +17340,7 @@ ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offset
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'addImage', params, callback);
+  return disguise(this._invoke(transaction, 'addImage', params, callback), this)
 };
 /**
  * @callback module:filters.ImageOverlayFilter~addImageCallback
@@ -17364,7 +17372,7 @@ ImageOverlayFilter.prototype.removeImage = function(id, callback){
 
   callback = (callback || noop).bind(this)
 
-  return this._invoke(transaction, 'removeImage', params, callback);
+  return disguise(this._invoke(transaction, 'removeImage', params, callback), this)
 };
 /**
  * @callback module:filters.ImageOverlayFilter~removeImageCallback
@@ -17432,6 +17440,8 @@ ImageOverlayFilter.check = checkImageOverlayFilter;
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
+
+var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
@@ -17520,6 +17530,8 @@ ZBarFilter.check = checkZBarFilter;
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
+
+var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
