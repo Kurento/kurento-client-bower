@@ -16460,12 +16460,17 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
  * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
+ *
+ * @property {external:Boolean} [useDataChannels]
+ *  Activate data channels support
  */
 WebRtcEndpoint.constructorParams = {
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
-  }
+  },
+  useDataChannels: {
+    type: 'boolean'  }
 };
 
 /**
