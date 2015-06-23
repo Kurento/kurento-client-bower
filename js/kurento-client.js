@@ -9869,7 +9869,7 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
  * @alias module:core/abstracts.MediaElement.setOutputBitrate
  *
  * @param {external:Integer} bitrate
- *  Configure the enconding media bitrate in kbps
+ *  Configure the enconding media bitrate in bps
  *
  * @param {module:core/abstracts.MediaElement~setOutputBitrateCallback} [callback]
  *
