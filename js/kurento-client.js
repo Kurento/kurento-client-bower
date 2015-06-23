@@ -17315,7 +17315,16 @@ var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
+var Transaction = kurentoClient.TransactionsManager.Transaction;
+
 var Filter = require('kurento-client-core').abstracts.Filter;
+
+
+function noop(error, result) {
+  if (error) console.trace(error);
+
+  return result
+};
 
 
 /**
@@ -17333,6 +17342,37 @@ function GStreamerFilter(){
   GStreamerFilter.super_.call(this);
 };
 inherits(GStreamerFilter, Filter);
+
+
+//
+// Public properties
+//
+
+/**
+ * GStreamer command.
+ *
+ * @alias module:filters.GStreamerFilter#getCommand
+ *
+ * @param {module:filters.GStreamerFilter~getCommandCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+GStreamerFilter.prototype.getCommand = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getCommand', callback), this)
+};
+/**
+ * @callback module:filters.GStreamerFilter~getCommandCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
 
 
 /**
