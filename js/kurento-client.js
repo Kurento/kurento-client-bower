@@ -14544,13 +14544,35 @@ var ComplexType = require('./ComplexType');
  * @constructor module:core/complexTypes.RembParams
  *
  * @property {external:Integer} packetsRecvIntervalTop
+ *  Size of the RTP packets history to smooth fraction-lost.
+ *  Units: num of packets
  * @property {external:Number} exponentialFactor
+ *  Factor used to increase exponentially the next REMB when it is below the 
+ *  threshold.
+ *  REMB[i+1] = REMB[i] * (1 + exponentialFactor)
  * @property {external:Integer} linealFactorMin
- *  bps
+ *  Set the min of the factor used to increase linearly the next REMB when it is
+ *  Units: bps (bits per second).
+ *  REMB[i+1] = REMB[i] + MIN (linealFactorMin, linealFactor)
  * @property {external:Number} linealFactorGrade
+ *  Determine the value of the next linearFactor based on the threshold and the 
+ *  current REMB. Taking into account that the frequency of updating is 500ms, 
+ *  the default value makes that the last REMB is reached in 60secs.
+ *  linealFactor = (REMB - TH) / linealFactorGrade
  * @property {external:Number} decrementFactor
+ *  Determine how much is decreased the current REMB when too losses are 
+ *  detected.
+ *  REMB[i+1] = REMB[i] * decrementFactor
  * @property {external:Number} thresholdFactor
+ *  Determine the next threshold (TH) when too losses are detected.
+ *  TH[i+1] = REMB[i] * thresholdFactor
  * @property {external:Integer} upLosses
+ *  Max fraction-lost to no determine too losses. This value is the denominator 
+ *  of the fraction N/256, so the default value is about 4% of losses (12/256)
+ * @property {external:Integer} rembOnConnect
+ *  REMB propagated upstream when video sending is started in a new connected 
+ *  endpoint.
+ *    Unit: bps(bits per second)
  */
 function RembParams(rembParamsDict){
   if(!(this instanceof RembParams))
@@ -14566,6 +14588,7 @@ function RembParams(rembParamsDict){
   checkType('float', 'rembParamsDict.decrementFactor', rembParamsDict.decrementFactor);
   checkType('float', 'rembParamsDict.thresholdFactor', rembParamsDict.thresholdFactor);
   checkType('int', 'rembParamsDict.upLosses', rembParamsDict.upLosses);
+  checkType('int', 'rembParamsDict.rembOnConnect', rembParamsDict.rembOnConnect);
 
   // Init parent class
   RembParams.super_.call(this, rembParamsDict)
@@ -14606,6 +14629,11 @@ function RembParams(rembParamsDict){
       writable: true,
       enumerable: true,
       value: rembParamsDict.upLosses
+    },
+    rembOnConnect: {
+      writable: true,
+      enumerable: true,
+      value: rembParamsDict.rembOnConnect
     }
   })
 }
