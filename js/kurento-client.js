@@ -9073,20 +9073,45 @@ BaseRtpEndpoint.prototype.setRembParams = function(rembParams, callback){
  *
  * @alias module:core/abstracts.BaseRtpEndpoint.getStats
  *
+ * @param {module:core/complexTypes.MediaType} [mediaType]
+ *  One of {@link module:core/abstracts.BaseRtpEndpoint#MediaType.AUDIO} or 
+ *  {@link module:core/abstracts.BaseRtpEndpoint#MediaType.VIDEO}
+ *
  * @param {module:core/abstracts.BaseRtpEndpoint~getStatsCallback} [callback]
  *
  * @return {external:Promise}
  */
-BaseRtpEndpoint.prototype.getStats = function(callback){
+BaseRtpEndpoint.prototype.getStats = function(mediaType, callback){
   var transaction = (arguments[0] instanceof Transaction)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  if(!arguments.length) callback = undefined;
+  callback = arguments[arguments.length-1] instanceof Function
+           ? Array.prototype.pop.call(arguments)
+           : undefined;
+
+  switch(arguments.length){
+    case 0: mediaType = undefined;
+    break;
+
+    default:
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
+          error.length = arguments.length;
+          error.min = 0;
+          error.max = 1;
+
+      throw error;
+  }
+
+  checkType('MediaType', 'mediaType', mediaType);
+
+  var params = {
+    mediaType: mediaType
+  };
 
   callback = (callback || noop).bind(this)
 
-  return disguise(this._invoke(transaction, 'getStats', callback), this)
+  return disguise(this._invoke(transaction, 'getStats', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~getStatsCallback
