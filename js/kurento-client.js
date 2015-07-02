@@ -13,15 +13,6 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
  * details.
  */
 
-/**
- * Media API for the Kurento Web SDK
- *
- * @module KurentoClient
- *
- * @copyright 2013-2015 Kurento (http://kurento.org/)
- * @license LGPL
- */
-
 var EventEmitter = require('events').EventEmitter;
 var url = require('url');
 
@@ -55,6 +46,14 @@ const MEDIA_OBJECT_METHOD_NOT_FOUND = 40105
 
 const BASE_TIMEOUT = 20000;
 
+/**
+ * @function module:kurentoClient.KurentoClient~findIndex
+ *
+ * @param {external:Array} list
+ * @param {external:Function} predicate
+ *
+ * @return {external:Integer}
+ */
 function findIndex(list, predicate) {
   for (var i = 0, item; item = list[i]; i++)
     if (predicate(item)) return i;
@@ -64,6 +63,12 @@ function findIndex(list, predicate) {
 
 /**
  * Serialize objects using their id
+ *
+ * @function module:kurentoClient.KurentoClient~serializeParams
+ *
+ * @param {external:Object} params
+ *
+ * @return {external:Object}
  */
 function serializeParams(params) {
   for (var key in params) {
@@ -78,6 +83,12 @@ function serializeParams(params) {
   return params;
 };
 
+/**
+ * @function module:kurentoClient.KurentoClient~serializeOperation
+ *
+ * @param {external:Object} operation
+ * @param {external:Integer} index
+ */
 function serializeOperation(operation, index) {
   var params = operation.params;
 
@@ -96,6 +107,16 @@ function serializeOperation(operation, index) {
   operation.id = index;
 };
 
+/**
+ * @function module:kurentoClient.KurentoClient~deferred
+ *
+ * @param {module:core/abstracts.MediaObject} mediaObject
+ * @param {external:Object} params
+ * @param {external:Promise} prevRpc
+ * @param {external:Function} callback
+ *
+ * @return {external:Promise}
+ */
 function deferred(mediaObject, params, prevRpc, callback) {
   var promises = [];
 
@@ -114,6 +135,14 @@ function deferred(mediaObject, params, prevRpc, callback) {
   return promiseCallback(Promise.all(promises), callback);
 };
 
+/**
+ * @function module:kurentoClient.KurentoClient~noop
+ *
+ * @param error
+ * @param result
+ *
+ * @return result
+ */
 function noop(error, result) {
   if (error) console.trace(error);
 
@@ -121,28 +150,33 @@ function noop(error, result) {
 };
 
 /**
+ * @typedef {Object} module:kurentoClient.KurentoClient~KurentoClientDict
+ *   @property {external:Number} [failAfter=5]
+ *    Don't try to reconnect after several tries
+ *   @property {external:Boolean} [enableTransactions=true]
+ *    Enable transactions functionality
+ *   @property {external:Boolean} [strict=true]
+ *    Throw an error when creating an object of unknown type
+ *   @property {external:String} [access_token]
+ *    Set access token for the WebSocket connection
+ *   @property {external:Number} [max_retries=0]
+ *    Number of tries to send the requests
+ *   @property {external:Number} [request_timeout=20000]
+ *    Timeout between requests retries
+ *   @property {external:Number} [response_timeout=20000]
+ *    Timeout while a response is being stored
+ *   @property {external:Number} [duplicates_timeout=20000]
+ *    Timeout to ignore duplicated responses
+ */
+
+/**
  * Creates a connection with the Kurento Media Server
  *
- * @class
+ * @class module:kurentoClient.KurentoClient
  *
  * @param {external:String} ws_uri - Address of the Kurento Media Server
- * @param {Object} [options]
- *   @property failAfter - Don't try to reconnect after several tries
- *     @default 5
- *   @property enableTransactions - Enable transactions functionality
- *     @default true
- *   @property strict - Throw an error when creating an object of unknown type
- *     @default true
- *   @property access_token - Set access token for the WebSocket connection
- *   @property max_retries - Number of tries to send the requests
- *     @default 0
- *   @property request_timeout - Timeout between requests retries
- *     @default 20000
- *   @property response_timeout - Timeout while a response is being stored
- *     @default 20000
- *   @property duplicates_timeout - Timeout to ignore duplicated responses
- *     @default 20000
- * @param {KurentoClientApi~constructorCallback} [callback]
+ * @param {module:kurentoClient.KurentoClient~KurentoClientDict} [options]
+ * @param {module:kurentoClient.KurentoClient~constructorCallback} [callback]
  */
 function KurentoClient(ws_uri, options, callback) {
   if (!(this instanceof KurentoClient))
@@ -532,6 +566,12 @@ function KurentoClient(ws_uri, options, callback) {
 
   // Commit mechanisms
 
+  /**
+   * @function module:kurentoClient.KurentoClient~commitTransactional
+   *
+   * @param {external:Object} params
+   * @param {external:Function} callback
+   */
   function commitTransactional(params, callback) {
     if (transactionsManager.length)
       return transactionOperation.call(transactionsManager, 'transaction',
@@ -619,6 +659,12 @@ function KurentoClient(ws_uri, options, callback) {
       callback);
   }
 
+  /**
+   * @function module:kurentoClient.KurentoClient~commitSerial
+   *
+   * @param {external:Object} params
+   * @param {external:Function} callback
+   */
   function commitSerial(params, callback) {
     if (transactionsManager.length)
       return transactionOperation.call(transactionsManager, 'transaction',
@@ -644,6 +690,12 @@ function KurentoClient(ws_uri, options, callback) {
       callback)
   }
 
+  /**
+   * @function module:kurentoClient.KurentoClient~registerObject
+   *
+   * @param {module:core/abstracts.MediaObject} mediaObject
+   * @param {external:string} id
+   */
   function registerObject(mediaObject, id) {
     var object = objects[id];
     if (object) return object;
@@ -667,8 +719,10 @@ function KurentoClient(ws_uri, options, callback) {
   /**
    * Get a MediaObject from its ID
    *
+   * @function module:kurentoClient.KurentoClient#getMediaobjectById
+   *
    * @param {(external:String|external:string[])} id - ID of the MediaElement
-   * @callback {getMediaobjectByIdCallback} callback
+   * @param {module:kurentoClient.KurentoClient~getMediaobjectByIdCallback} callback
    *
    * @return {external:Promise}
    */
@@ -676,9 +730,9 @@ function KurentoClient(ws_uri, options, callback) {
     return disguise(createPromise(id, describe, callback), this)
   };
   /**
-   * @callback KurentoClientApi~getMediaobjectByIdCallback
+   * @callback module:kurentoClient.KurentoClient~getMediaobjectByIdCallback
    * @param {external:Error} error
-   * @param {(module:core/abstract~MediaElement|module:core/abstract~MediaElement[])} result
+   * @param {(module:core/abstracts.MediaElement|module:core/abstracts.MediaElement[])} result
    *  The requested MediaElement
    */
 
@@ -686,6 +740,12 @@ function KurentoClient(ws_uri, options, callback) {
     encodeRpc, encodeTransaction, this.getMediaobjectById.bind(this),
     options.strict);
 
+  /**
+   * @function module:kurentoClient.KurentoClient~describe
+   *
+   * @param {external:string} id
+   * @param {external:Function} callback
+   */
   function describe(id, callback) {
     if (id == undefined)
       return callback(new TypeError("'id' can't be null or undefined"))
@@ -708,6 +768,10 @@ function KurentoClient(ws_uri, options, callback) {
     encode('describe', params, callback2);
   };
 
+  /**
+   * @function module:kurentoClient.KurentoClient#_resetCache
+   * @private
+   */
   Object.defineProperty(this, '_resetCache', {
     value: function () {
       objects = {}
@@ -717,17 +781,19 @@ function KurentoClient(ws_uri, options, callback) {
   /**
    * Create a new instance of a MediaObject
    *
+   * @function module:kurentoClient.KurentoClient#create
+   *
    * @param {external:String} type - Type of the element
    * @param {external:string[]} [params]
-   * @callback {createMediaPipelineCallback} callback
+   * @param {module:kurentoClient.KurentoClient~createCallback} callback
    *
-   * @return {(module:core~MediaObject|module:core~MediaObject[])}
+   * @return {(module:core/abstracts.MediaObject|module:core/abstracts.MediaObject[])}
    */
   this.create = mediaObjectCreator.create.bind(mediaObjectCreator);
   /**
-   * @callback KurentoClientApi~createCallback
+   * @callback module:kurentoClient.KurentoClient~createCallback
    * @param {external:Error} error
-   * @param {module:core/abstract~MediaElement} result
+   * @param {module:core/abstracts.MediaElement} result
    *  The created MediaElement
    */
 
@@ -755,6 +821,9 @@ function KurentoClient(ws_uri, options, callback) {
       }
     })
 
+    /**
+     * @function module:kurentoClient.KurentoClient#close
+     */
     this.close = function () {
       closed = true;
 
@@ -767,6 +836,14 @@ function KurentoClient(ws_uri, options, callback) {
     // Promise interface ("thenable")
     //
 
+    /**
+     * @function module:kurentoClient.KurentoClient#then
+     *
+     * @param {external:Function} onFulfilled
+     * @param {external:Function} [onRejected]
+     *
+     * @return {external:Promise}
+     */
     this.then = function (onFulfilled, onRejected) {
       var promise = new Promise(function (resolve, reject) {
         function success() {
@@ -816,6 +893,13 @@ function KurentoClient(ws_uri, options, callback) {
       return disguise(promise, this)
     };
 
+    /**
+     * @function module:kurentoClient.KurentoClient#catch
+     *
+     * @param {external:Function} [onRejected]
+     *
+     * @return {external:Promise}
+     */
     this.catch = this.then.bind(this, null);
 
     // Check for available modules in the Kurento Media Server
@@ -861,17 +945,19 @@ function KurentoClient(ws_uri, options, callback) {
 };
 inherits(KurentoClient, EventEmitter);
 /**
- * @callback KurentoClientApi~constructorCallback
+ * @callback module:kurentoClient.KurentoClient~constructorCallback
  * @param {external:Error} error
- * @param {module:KurentoClientApi~KurentoClient} client
+ * @param {module:kurentoClient.KurentoClient} client
  *  The created KurentoClient
  */
 
 /**
  * Connect the source of a media to the sink of the next one
  *
- * @param {...module:core/abstract~MediaObject} media - A media to be connected
- * @callback {module:KurentoClientApi~connectCallback} [callback]
+ * @function module:kurentoClient.KurentoClient#connect
+ *
+ * @param {...module:core/abstracts.MediaObject} media - A media to be connected
+ * @param {module:kurentoClient.KurentoClient~connectCallback} [callback]
  *
  * @return {external:Promise}
  *
@@ -893,14 +979,16 @@ KurentoClient.prototype.connect = function (media, callback) {
   return media[0].connect(media.slice(1), callback)
 };
 /**
- * @callback KurentoClientApi~connectCallback
+ * @callback module:kurentoClient.KurentoClient~connectCallback
  * @param {external:Error} error
  */
 
 /**
  * Get a reference to the current Kurento Media Server we are connected
  *
- * @callback {module:KurentoClientApi~getServerManagerCallback} callback
+ * @function module:kurentoClient.KurentoClient#getServerManager
+ *
+ * @param {module:kurentoClient.KurentoClient~getServerManagerCallback} callback
  *
  * @return {external:Promise}
  */
@@ -908,9 +996,9 @@ KurentoClient.prototype.getServerManager = function (callback) {
   return this.getMediaobjectById('manager_ServerManager', callback)
 };
 /**
- * @callback KurentoClientApi~getServerManagerCallback
+ * @callback module:kurentoClient.KurentoClient~getServerManagerCallback
  * @param {external:Error} error
- * @param {module:core/abstract~ServerManager} server
+ * @param {module:core/abstracts.ServerManager} server
  *  Info of the MediaServer instance
  */
 
@@ -919,10 +1007,28 @@ KurentoClient.prototype.getServerManager = function (callback) {
 //
 var singletons = {};
 
-KurentoClient.getSingleton = function (ws_uri, callback) {
+/**
+ * Creates a unique connection with the Kurento Media Server
+ *
+ * @function module:kurentoClient.KurentoClient.getSingleton
+ * @see module:kurentoClient.KurentoClient
+ *
+ * @param {external:String} ws_uri - Address of the Kurento Media Server
+ * @param {module:kurentoClient.KurentoClient~KurentoClientDict} [options]
+ * @param {module:kurentoClient.KurentoClient~constructorCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+KurentoClient.getSingleton = function (ws_uri, options, callback) {
   var client = singletons[ws_uri]
-  if (!client)
-    client = KurentoClient(ws_uri, function (error, client) {
+  if (!client) {
+    // Fix optional parameters
+    if (options instanceof Function) {
+      callback = options;
+      options = undefined;
+    };
+
+    client = KurentoClient(ws_uri, options, function (error, client) {
       if (error) return callback(error);
 
       singletons[ws_uri] = client
@@ -930,6 +1036,7 @@ KurentoClient.getSingleton = function (ws_uri, callback) {
         delete singletons[ws_uri]
       })
     });
+  }
 
   return disguise(promiseCallback(client, callback), client)
 }
@@ -967,6 +1074,13 @@ var Transaction = require('./TransactionsManager').Transaction;
  * Get the constructor for a type
  *
  * If the type is not registered, use generic {module:core/abstracts.MediaObject}
+ *
+ * @function module:kurentoClient~MediaObjectCreator~getConstructor
+ *
+ * @param {external:string} type
+ * @param {external:Boolean} strict
+ *
+ * @return {module:core/abstracts.MediaObject}
  */
 function getConstructor(type, strict) {
   var result = register.classes[type] || register.abstracts[type];
@@ -983,6 +1097,14 @@ function getConstructor(type, strict) {
   return register.abstracts.MediaObject;
 };
 
+/**
+ * @function module:kurentoClient~MediaObjectCreator~createConstructor
+ *
+ * @param item
+ * @param {external:Boolean} strict
+ *
+ * @return {module:core/abstracts.MediaObject}
+ */
 function createConstructor(item, strict) {
   var constructor = getConstructor(item.type, strict);
 
@@ -1002,12 +1124,27 @@ function createConstructor(item, strict) {
 
 var checkMediaElement = checkType.bind(null, 'MediaElement', 'media');
 
+/**
+ * @class module:kurentoClient~MediaObjectCreator
+ *
+ * @param host
+ * @param encodeCreate
+ * @param encodeRpc
+ * @param encodeTransaction
+ * @param describe
+ * @param-[strict]
+ */
 function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
   describe, strict) {
   if (!(this instanceof MediaObjectCreator))
     return new MediaObjectCreator(host, encodeCreate, encodeRpc,
       encodeTransaction, describe)
 
+  /**
+   * @param constructor
+   *
+   * @return {module:core/abstracts.MediaObject}
+   */
   function createObject(constructor) {
     var mediaObject = new constructor(strict)
 
@@ -1026,6 +1163,9 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
   /**
    * Request to the server to create a new MediaElement
+   *
+   * @param item
+   * @param {module:kurentoClient~MediaObjectCreator~createMediaObjectCallback} [callback]
    */
   function createMediaObject(item, callback) {
     var transaction = item.transaction;
@@ -1062,7 +1202,18 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
     return mediaObject
   };
+  /**
+   * @callback module:kurentoClient~MediaObjectCreator~createMediaObjectCallback
+   * @param {external:Error} error
+   */
 
+  /**
+   * @method module:kurentoClient~MediaObjectCreator#create
+   *
+   * @param type
+   * @param params
+   * @param {module:kurentoClient~MediaObjectCreator~createCallback} [callback]
+   */
   this.create = function (type, params, callback) {
     var transaction = (arguments[0] instanceof Transaction) ? Array.prototype
       .shift.apply(arguments) : undefined;
@@ -1138,7 +1289,19 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
     return createMediaObject(type, callback)
   };
+  /**
+   * @callback module:kurentoClient~MediaObjectCreator~createCallback
+   *
+   * @param {external:Error} error
+   * @param {module:core/abstracts.MediaObject} mediaObject
+   *  The created MediaObject
+   */
 
+  /**
+   * @method module:kurentoClient~MediaObjectCreator#createInmediate
+   *
+   * @param item
+   */
   this.createInmediate = function (item) {
     var constructor = createConstructor(item, strict);
     delete constructor.item;
@@ -22289,6 +22452,15 @@ exports.abstracts = require('./abstracts');
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
+ */
+
+/**
+ * Media API for the Kurento Web SDK
+ *
+ * @module kurentoClient
+ *
+ * @copyright 2013-2015 Kurento (http://kurento.org/)
+ * @license LGPL
  */
 
 require('error-tojson');
