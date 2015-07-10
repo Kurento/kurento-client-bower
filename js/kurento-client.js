@@ -8713,6 +8713,8 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
   switch(arguments.length){
     case 0: details = undefined;
     break;
+    case 1: console.log('All optional params are used')
+    break;
 
     default:
       var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
@@ -9279,6 +9281,8 @@ BaseRtpEndpoint.prototype.getStats = function(mediaType, callback){
   switch(arguments.length){
     case 0: mediaType = undefined;
     break;
+    case 1: console.log('All optional params are used')
+    break;
 
     default:
       var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
@@ -9786,6 +9790,8 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
     case 2: sourceMediaDescription = undefined;
     case 3: sinkMediaDescription = undefined;
     break;
+    case 4: console.log('All optional params are used')
+    break;
 
     default:
       var error = new RangeError('Number of params ('+arguments.length+') not in range [1-4]');
@@ -9860,6 +9866,8 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
     case 2: sourceMediaDescription = undefined;
     case 3: sinkMediaDescription = undefined;
     break;
+    case 4: console.log('All optional params are used')
+    break;
 
     default:
       var error = new RangeError('Number of params ('+arguments.length+') not in range [1-4]');
@@ -9915,6 +9923,8 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
 
   switch(arguments.length){
     case 0: details = undefined;
+    break;
+    case 1: console.log('All optional params are used')
     break;
 
     default:
@@ -9974,6 +9984,8 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
   switch(arguments.length){
     case 0: mediaType = undefined;
     case 1: description = undefined;
+    break;
+    case 2: console.log('All optional params are used')
     break;
 
     default:
@@ -10036,6 +10048,8 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
   switch(arguments.length){
     case 0: mediaType = undefined;
     case 1: description = undefined;
+    break;
+    case 2: console.log('All optional params are used')
     break;
 
     default:
