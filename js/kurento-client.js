@@ -1045,7 +1045,7 @@ KurentoClient.getSingleton = function (ws_uri, options, callback) {
 
 module.exports = KurentoClient;
 
-},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./createPromise":5,"./disguise":6,"async":"async","checktype":37,"es6-promise":"es6-promise","events":14,"extend":39,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":115,"promisecallback":"promisecallback","reconnect-ws":120,"url":34}],2:[function(require,module,exports){
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./createPromise":5,"./disguise":6,"async":"async","checktype":37,"es6-promise":"es6-promise","events":14,"extend":39,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":116,"promisecallback":"promisecallback","reconnect-ws":121,"url":34}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
@@ -9306,7 +9306,7 @@ BaseRtpEndpoint.prototype.getStats = function(mediaType, callback){
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~getStatsCallback
  * @param {external:Error} error
- * @param {Object.<string, module:core/complexTypes.RTCStats>} result
+ * @param {Object.<string, module:core/complexTypes.Stats>} result
  *  Delivers a successful result in the form of a RTC stats report. A RTC stats 
  *  report represents a map between strings, identifying the inspected objects 
  *  (RTCStats.id), and their corresponding RTCStats objects.
@@ -13546,12 +13546,8 @@ var RTCRTPStreamStats = require('./RTCRTPStreamStats');
  *  Total number of RTP packets received for this SSRC.
  * @property {external:int64} bytesReceived
  *  Total number of bytes received for this SSRC.
- * @property {external:int64} packetsLost
- *  Total number of RTP packets lost for this SSRC.
  * @property {external:double} jitter
  *  Packet Jitter measured in seconds for this SSRC.
- * @property {external:double} fractionLost
- *  The fraction packet loss reported for this SSRC.
 
  * @extends module:core.RTCRTPStreamStats
  */
@@ -13564,9 +13560,7 @@ function RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict){
   // Check rTCInboundRTPStreamStatsDict has the required fields
   checkType('int64', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, {required: true});
   checkType('int64', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, {required: true});
-  checkType('int64', 'rTCInboundRTPStreamStatsDict.packetsLost', rTCInboundRTPStreamStatsDict.packetsLost, {required: true});
   checkType('double', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, {required: true});
-  checkType('double', 'rTCInboundRTPStreamStatsDict.fractionLost', rTCInboundRTPStreamStatsDict.fractionLost, {required: true});
 
   // Init parent class
   RTCInboundRTPStreamStats.super_.call(this, rTCInboundRTPStreamStatsDict)
@@ -13583,20 +13577,10 @@ function RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict){
       enumerable: true,
       value: rTCInboundRTPStreamStatsDict.bytesReceived
     },
-    packetsLost: {
-      writable: true,
-      enumerable: true,
-      value: rTCInboundRTPStreamStatsDict.packetsLost
-    },
     jitter: {
       writable: true,
       enumerable: true,
       value: rTCInboundRTPStreamStatsDict.jitter
-    },
-    fractionLost: {
-      writable: true,
-      enumerable: true,
-      value: rTCInboundRTPStreamStatsDict.fractionLost
     }
   })
 }
@@ -14217,6 +14201,10 @@ var RTCStats = require('./RTCStats');
  *  the sender. This metric is only valid for video and is sent by receiver.
  * @property {external:int64} remb
  *  The Receiver Estimated Maximum Bitrate (REMB). This metric is only valid for
+ * @property {external:int64} packetsLost
+ *  Total number of RTP packets lost for this SSRC.
+ * @property {external:double} fractionLost
+ *  The fraction packet loss reported for this SSRC.
 
  * @extends module:core.RTCStats
  */
@@ -14238,6 +14226,8 @@ function RTCRTPStreamStats(rTCRTPStreamStatsDict){
   checkType('int64', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, {required: true});
   checkType('int64', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, {required: true});
   checkType('int64', 'rTCRTPStreamStatsDict.remb', rTCRTPStreamStatsDict.remb, {required: true});
+  checkType('int64', 'rTCRTPStreamStatsDict.packetsLost', rTCRTPStreamStatsDict.packetsLost, {required: true});
+  checkType('double', 'rTCRTPStreamStatsDict.fractionLost', rTCRTPStreamStatsDict.fractionLost, {required: true});
 
   // Init parent class
   RTCRTPStreamStats.super_.call(this, rTCRTPStreamStatsDict)
@@ -14298,6 +14288,16 @@ function RTCRTPStreamStats(rTCRTPStreamStatsDict){
       writable: true,
       enumerable: true,
       value: rTCRTPStreamStatsDict.remb
+    },
+    packetsLost: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.packetsLost
+    },
+    fractionLost: {
+      writable: true,
+      enumerable: true,
+      value: rTCRTPStreamStatsDict.fractionLost
     }
   })
 }
@@ -14359,7 +14359,7 @@ var kurentoClient = require('kurento-client');
 var checkType = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
 
-var ComplexType = require('./ComplexType');
+var Stats = require('./Stats');
 
 
 /**
@@ -14367,13 +14367,8 @@ var ComplexType = require('./ComplexType');
  *
  * @constructor module:core/complexTypes.RTCStats
  *
- * @property {external:String} id
- *  A unique id that is associated with the object that was inspected to produce
- * @property {module:core/complexTypes.RTCStatsType} type
- *  The type of this object.
- * @property {external:double} timestamp
- *  The timestamp associated with this object. The time is relative to the UNIX 
- *  epoch (Jan 1, 1970, UTC).
+
+ * @extends module:core.Stats
  */
 function RTCStats(rTCStatsDict){
   if(!(this instanceof RTCStats))
@@ -14382,33 +14377,15 @@ function RTCStats(rTCStatsDict){
   rTCStatsDict = rTCStatsDict || {}
 
   // Check rTCStatsDict has the required fields
-  checkType('String', 'rTCStatsDict.id', rTCStatsDict.id, {required: true});
-  checkType('RTCStatsType', 'rTCStatsDict.type', rTCStatsDict.type, {required: true});
-  checkType('double', 'rTCStatsDict.timestamp', rTCStatsDict.timestamp, {required: true});
 
   // Init parent class
   RTCStats.super_.call(this, rTCStatsDict)
 
   // Set object properties
   Object.defineProperties(this, {
-    id: {
-      writable: true,
-      enumerable: true,
-      value: rTCStatsDict.id
-    },
-    type: {
-      writable: true,
-      enumerable: true,
-      value: rTCStatsDict.type
-    },
-    timestamp: {
-      writable: true,
-      enumerable: true,
-      value: rTCStatsDict.timestamp
-    }
   })
 }
-inherits(RTCStats, ComplexType)
+inherits(RTCStats, Stats)
 
 // Private identifiers to allow re-construction of the complexType on the server
 // They need to be enumerable so JSON.stringify() can access to them
@@ -14442,7 +14419,7 @@ module.exports = RTCStats;
 
 RTCStats.check = checkRTCStats;
 
-},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],79:[function(require,module,exports){
+},{"./Stats":85,"inherits":"inherits","kurento-client":"kurento-client"}],79:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14542,55 +14519,6 @@ function checkRTCStatsIceCandidateType(key, value)
 module.exports = checkRTCStatsIceCandidateType;
 
 },{"kurento-client":"kurento-client"}],81:[function(require,module,exports){
-/* Autogenerated with Kurento Idl */
-
-/*
- * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
- *
- * All rights reserved. This program and the accompanying materials are made
- * available under the terms of the GNU Lesser General Public License (LGPL)
- * version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
- */
-
-var kurentoClient = require('kurento-client');
-
-
-
-/**
- * The type of the object.
- *
- * @typedef core/complexTypes.RTCStatsType
- *
- * @type {(inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate)}
- */
-
-/**
- * Checker for {@link core/complexTypes.RTCStatsType}
- *
- * @memberof module:core/complexTypes
- *
- * @param {external:String} key
- * @param {module:core/complexTypes.RTCStatsType} value
- */
-function checkRTCStatsType(key, value)
-{
-  if(typeof value != 'string')
-    throw SyntaxError(key+' param should be a String, not '+typeof value);
-
-  if(!value.match('inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate'))
-    throw SyntaxError(key+' param is not one of [inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate] ('+value+')');
-};
-
-
-module.exports = checkRTCStatsType;
-
-},{"kurento-client":"kurento-client"}],82:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14736,7 +14664,7 @@ module.exports = RTCTransportStats;
 
 RTCTransportStats.check = checkRTCTransportStats;
 
-},{"./RTCStats":78,"inherits":"inherits","kurento-client":"kurento-client"}],83:[function(require,module,exports){
+},{"./RTCStats":78,"inherits":"inherits","kurento-client":"kurento-client"}],82:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14896,7 +14824,7 @@ module.exports = RembParams;
 
 RembParams.check = checkRembParams;
 
-},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],84:[function(require,module,exports){
+},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],83:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15010,7 +14938,7 @@ module.exports = ServerInfo;
 
 ServerInfo.check = checkServerInfo;
 
-},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],85:[function(require,module,exports){
+},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],84:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15059,7 +14987,163 @@ function checkServerType(key, value)
 
 module.exports = checkServerType;
 
-},{"kurento-client":"kurento-client"}],86:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],85:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ */
+
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
+var ComplexType = require('./ComplexType');
+
+
+/**
+ * A dictionary that represents the stats gathered.
+ *
+ * @constructor module:core/complexTypes.Stats
+ *
+ * @property {external:String} id
+ *  A unique id that is associated with the object that was inspected to produce
+ * @property {module:core/complexTypes.StatsType} type
+ *  The type of this object.
+ * @property {external:double} timestamp
+ *  The timestamp associated with this object. The time is relative to the UNIX 
+ *  epoch (Jan 1, 1970, UTC).
+ */
+function Stats(statsDict){
+  if(!(this instanceof Stats))
+    return new Stats(statsDict)
+
+  statsDict = statsDict || {}
+
+  // Check statsDict has the required fields
+  checkType('String', 'statsDict.id', statsDict.id, {required: true});
+  checkType('StatsType', 'statsDict.type', statsDict.type, {required: true});
+  checkType('double', 'statsDict.timestamp', statsDict.timestamp, {required: true});
+
+  // Init parent class
+  Stats.super_.call(this, statsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    id: {
+      writable: true,
+      enumerable: true,
+      value: statsDict.id
+    },
+    type: {
+      writable: true,
+      enumerable: true,
+      value: statsDict.type
+    },
+    timestamp: {
+      writable: true,
+      enumerable: true,
+      value: statsDict.timestamp
+    }
+  })
+}
+inherits(Stats, ComplexType)
+
+// Private identifiers to allow re-construction of the complexType on the server
+// They need to be enumerable so JSON.stringify() can access to them
+Object.defineProperties(Stats.prototype, {
+  __module__: {
+    enumerable: true,
+    value: "kurento"
+  },
+  __type__: {
+    enumerable: true,
+    value: "Stats"
+  }
+})
+
+/**
+ * Checker for {@link core/complexTypes.Stats}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.Stats} value
+ */
+function checkStats(key, value)
+{
+  if(!(value instanceof Stats))
+    throw ChecktypeError(key, Stats, value);
+};
+
+
+module.exports = Stats;
+
+Stats.check = checkStats;
+
+},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],86:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License (LGPL)
+ * version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ */
+
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * The type of the object.
+ *
+ * @typedef core/complexTypes.StatsType
+ *
+ * @type {(inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate)}
+ */
+
+/**
+ * Checker for {@link core/complexTypes.StatsType}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.StatsType} value
+ */
+function checkStatsType(key, value)
+{
+  if(typeof value != 'string')
+    throw SyntaxError(key+' param should be a String, not '+typeof value);
+
+  if(!value.match('inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate'))
+    throw SyntaxError(key+' param is not one of [inboundrtp|outboundrtp|session|datachannel|track|transport|candidatepair|localcandidate|remotecandidate] ('+value+')');
+};
+
+
+module.exports = checkStatsType;
+
+},{"kurento-client":"kurento-client"}],87:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15157,7 +15241,7 @@ module.exports = Tag;
 
 Tag.check = checkTag;
 
-},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],87:[function(require,module,exports){
+},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],88:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15255,7 +15339,7 @@ module.exports = VideoCaps;
 
 VideoCaps.check = checkVideoCaps;
 
-},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],88:[function(require,module,exports){
+},{"./ComplexType":57,"inherits":"inherits","kurento-client":"kurento-client"}],89:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15304,7 +15388,7 @@ function checkVideoCodec(key, value)
 
 module.exports = checkVideoCodec;
 
-},{"kurento-client":"kurento-client"}],89:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],90:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15359,10 +15443,11 @@ var RTCRTPStreamStats = require('./RTCRTPStreamStats');
 var RTCStats = require('./RTCStats');
 var RTCStatsIceCandidatePairState = require('./RTCStatsIceCandidatePairState');
 var RTCStatsIceCandidateType = require('./RTCStatsIceCandidateType');
-var RTCStatsType = require('./RTCStatsType');
 var RTCTransportStats = require('./RTCTransportStats');
 var ServerInfo = require('./ServerInfo');
 var ServerType = require('./ServerType');
+var Stats = require('./Stats');
+var StatsType = require('./StatsType');
 var Tag = require('./Tag');
 var VideoCaps = require('./VideoCaps');
 var VideoCodec = require('./VideoCodec');
@@ -15397,15 +15482,16 @@ exports.RTCRTPStreamStats = RTCRTPStreamStats;
 exports.RTCStats = RTCStats;
 exports.RTCStatsIceCandidatePairState = RTCStatsIceCandidatePairState;
 exports.RTCStatsIceCandidateType = RTCStatsIceCandidateType;
-exports.RTCStatsType = RTCStatsType;
 exports.RTCTransportStats = RTCTransportStats;
 exports.ServerInfo = ServerInfo;
 exports.ServerType = ServerType;
+exports.Stats = Stats;
+exports.StatsType = StatsType;
 exports.Tag = Tag;
 exports.VideoCaps = VideoCaps;
 exports.VideoCodec = VideoCodec;
 
-},{"./AudioCaps":54,"./AudioCodec":55,"./CodecConfiguration":56,"./ComplexType":57,"./ConnectionState":58,"./ElementConnectionData":59,"./FilterType":60,"./Fraction":61,"./GstreamerDotDetails":62,"./MediaState":63,"./MediaType":64,"./ModuleInfo":65,"./RTCCertificateStats":66,"./RTCCodec":67,"./RTCDataChannelState":68,"./RTCDataChannelStats":69,"./RTCIceCandidateAttributes":70,"./RTCIceCandidatePairStats":71,"./RTCInboundRTPStreamStats":72,"./RTCMediaStreamStats":73,"./RTCMediaStreamTrackStats":74,"./RTCOutboundRTPStreamStats":75,"./RTCPeerConnectionStats":76,"./RTCRTPStreamStats":77,"./RTCStats":78,"./RTCStatsIceCandidatePairState":79,"./RTCStatsIceCandidateType":80,"./RTCStatsType":81,"./RTCTransportStats":82,"./RembParams":83,"./ServerInfo":84,"./ServerType":85,"./Tag":86,"./VideoCaps":87,"./VideoCodec":88}],90:[function(require,module,exports){
+},{"./AudioCaps":54,"./AudioCodec":55,"./CodecConfiguration":56,"./ComplexType":57,"./ConnectionState":58,"./ElementConnectionData":59,"./FilterType":60,"./Fraction":61,"./GstreamerDotDetails":62,"./MediaState":63,"./MediaType":64,"./ModuleInfo":65,"./RTCCertificateStats":66,"./RTCCodec":67,"./RTCDataChannelState":68,"./RTCDataChannelStats":69,"./RTCIceCandidateAttributes":70,"./RTCIceCandidatePairStats":71,"./RTCInboundRTPStreamStats":72,"./RTCMediaStreamStats":73,"./RTCMediaStreamTrackStats":74,"./RTCOutboundRTPStreamStats":75,"./RTCPeerConnectionStats":76,"./RTCRTPStreamStats":77,"./RTCStats":78,"./RTCStatsIceCandidatePairState":79,"./RTCStatsIceCandidateType":80,"./RTCTransportStats":81,"./RembParams":82,"./ServerInfo":83,"./ServerType":84,"./Stats":85,"./StatsType":86,"./Tag":87,"./VideoCaps":88,"./VideoCodec":89}],91:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15606,7 +15692,7 @@ module.exports = AlphaBlending;
 
 AlphaBlending.check = checkAlphaBlending;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],91:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],92:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15695,7 +15781,7 @@ module.exports = Composite;
 
 Composite.check = checkComposite;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],92:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],93:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15835,7 +15921,7 @@ module.exports = Dispatcher;
 
 Dispatcher.check = checkDispatcher;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],93:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],94:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15995,7 +16081,7 @@ module.exports = DispatcherOneToMany;
 
 DispatcherOneToMany.check = checkDispatcherOneToMany;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],94:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],95:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16100,7 +16186,7 @@ module.exports = HttpPostEndpoint;
 
 HttpPostEndpoint.check = checkHttpPostEndpoint;
 
-},{"./abstracts/HttpEndpoint":100,"inherits":"inherits","kurento-client":"kurento-client"}],95:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":101,"inherits":"inherits","kurento-client":"kurento-client"}],96:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16286,7 +16372,7 @@ module.exports = Mixer;
 
 Mixer.check = checkMixer;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],96:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],97:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16438,7 +16524,7 @@ module.exports = PlayerEndpoint;
 
 PlayerEndpoint.check = checkPlayerEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],97:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],98:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16584,7 +16670,7 @@ module.exports = RecorderEndpoint;
 
 RecorderEndpoint.check = checkRecorderEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],98:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],99:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16672,7 +16758,7 @@ module.exports = RtpEndpoint;
 
 RtpEndpoint.check = checkRtpEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],99:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],100:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17021,7 +17107,7 @@ module.exports = WebRtcEndpoint;
 
 WebRtcEndpoint.check = checkWebRtcEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],100:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],101:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17141,7 +17227,7 @@ module.exports = HttpEndpoint;
 
 HttpEndpoint.check = checkHttpEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],101:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],102:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17172,7 +17258,7 @@ var HttpEndpoint = require('./HttpEndpoint');
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":100}],102:[function(require,module,exports){
+},{"./HttpEndpoint":101}],103:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17281,7 +17367,7 @@ module.exports = IceCandidate;
 
 IceCandidate.check = checkIceCandidate;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],103:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],104:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17330,7 +17416,7 @@ function checkIceComponentState(key, value)
 
 module.exports = checkIceComponentState;
 
-},{"kurento-client":"kurento-client"}],104:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],105:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17380,7 +17466,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"kurento-client":"kurento-client"}],105:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],106:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17415,7 +17501,7 @@ exports.IceCandidate = IceCandidate;
 exports.IceComponentState = IceComponentState;
 exports.MediaProfileSpecType = MediaProfileSpecType;
 
-},{"./IceCandidate":102,"./IceComponentState":103,"./MediaProfileSpecType":104}],106:[function(require,module,exports){
+},{"./IceCandidate":103,"./IceComponentState":104,"./MediaProfileSpecType":105}],107:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17621,7 +17707,7 @@ module.exports = FaceOverlayFilter;
 
 FaceOverlayFilter.check = checkFaceOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],107:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],108:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17760,7 +17846,7 @@ module.exports = GStreamerFilter;
 
 GStreamerFilter.check = checkGStreamerFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],108:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17965,7 +18051,7 @@ module.exports = ImageOverlayFilter;
 
 ImageOverlayFilter.check = checkImageOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18055,7 +18141,7 @@ module.exports = ZBarFilter;
 
 ZBarFilter.check = checkZBarFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18131,7 +18217,7 @@ module.exports = OpenCVFilter;
 
 OpenCVFilter.check = checkOpenCVFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],112:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18162,7 +18248,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":110}],112:[function(require,module,exports){
+},{"./OpenCVFilter":111}],113:[function(require,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -18228,7 +18314,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],113:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -18249,7 +18335,7 @@ var JsonRpcClient  = require('./jsonrpcclient');
 
 exports.JsonRpcClient  = JsonRpcClient;
 
-},{"./jsonrpcclient":114}],114:[function(require,module,exports){
+},{"./jsonrpcclient":115}],115:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -18284,7 +18370,7 @@ function JsonRpcClient(wsUrl, onRequest, onerror)
 
 module.exports  = JsonRpcClient;
 
-},{"../..":115,"ws":119}],115:[function(require,module,exports){
+},{"../..":116,"ws":120}],116:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -19040,7 +19126,7 @@ var clients = require('./clients');
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":112,"./clients":113,"./packers":118,"events":14,"inherits":"inherits"}],116:[function(require,module,exports){
+},{"./Mapper":113,"./clients":114,"./packers":119,"events":14,"inherits":"inherits"}],117:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -19144,7 +19230,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],117:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -19159,7 +19245,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],118:[function(require,module,exports){
+},{}],119:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC  = require('./XmlRPC');
 
@@ -19167,7 +19253,7 @@ var XmlRPC  = require('./XmlRPC');
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":116,"./XmlRPC":117}],119:[function(require,module,exports){
+},{"./JsonRPC":117,"./XmlRPC":118}],120:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -19212,7 +19298,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -19231,7 +19317,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":121,"websocket-stream":128}],121:[function(require,module,exports){
+},{"reconnect-core":122,"websocket-stream":129}],122:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -19359,7 +19445,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":122,"events":14}],122:[function(require,module,exports){
+},{"backoff":123,"events":14}],123:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -19410,7 +19496,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":123,"./lib/function_call.js":124,"./lib/strategy/exponential":125,"./lib/strategy/fibonacci":126}],123:[function(require,module,exports){
+},{"./lib/backoff":124,"./lib/function_call.js":125,"./lib/strategy/exponential":126,"./lib/strategy/fibonacci":127}],124:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -19496,7 +19582,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":14,"util":36}],124:[function(require,module,exports){
+},{"events":14,"util":36}],125:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -19725,7 +19811,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":123,"./strategy/fibonacci":126,"events":14,"util":36}],125:[function(require,module,exports){
+},{"./backoff":124,"./strategy/fibonacci":127,"events":14,"util":36}],126:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -19761,7 +19847,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":127,"util":36}],126:[function(require,module,exports){
+},{"./strategy":128,"util":36}],127:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -19798,7 +19884,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":127,"util":36}],127:[function(require,module,exports){
+},{"./strategy":128,"util":36}],128:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -19898,7 +19984,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":14,"util":36}],128:[function(require,module,exports){
+},{"events":14,"util":36}],129:[function(require,module,exports){
 (function (process){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -19994,7 +20080,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,require('_process'))
-},{"_process":16,"isbuffer":129,"through":130,"ws":131}],129:[function(require,module,exports){
+},{"_process":16,"isbuffer":130,"through":131,"ws":132}],130:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -20004,7 +20090,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":9}],130:[function(require,module,exports){
+},{"buffer":9}],131:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -20116,9 +20202,9 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":16,"stream":32}],131:[function(require,module,exports){
-arguments[4][119][0].apply(exports,arguments)
-},{"dup":119}],"async":[function(require,module,exports){
+},{"_process":16,"stream":32}],132:[function(require,module,exports){
+arguments[4][120][0].apply(exports,arguments)
+},{"dup":120}],"async":[function(require,module,exports){
 (function (process,global){
 /*!
  * async
@@ -22356,7 +22442,7 @@ exports.PassThrough = PassThrough;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./HubPort":40,"./MediaPipeline":41,"./PassThrough":42,"./abstracts":53,"./complexTypes":89}],"kurento-client-elements":[function(require,module,exports){
+},{"./HubPort":40,"./MediaPipeline":41,"./PassThrough":42,"./abstracts":53,"./complexTypes":90}],"kurento-client-elements":[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -22412,7 +22498,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":90,"./Composite":91,"./Dispatcher":92,"./DispatcherOneToMany":93,"./HttpPostEndpoint":94,"./Mixer":95,"./PlayerEndpoint":96,"./RecorderEndpoint":97,"./RtpEndpoint":98,"./WebRtcEndpoint":99,"./abstracts":101,"./complexTypes":105}],"kurento-client-filters":[function(require,module,exports){
+},{"./AlphaBlending":91,"./Composite":92,"./Dispatcher":93,"./DispatcherOneToMany":94,"./HttpPostEndpoint":95,"./Mixer":96,"./PlayerEndpoint":97,"./RecorderEndpoint":98,"./RtpEndpoint":99,"./WebRtcEndpoint":100,"./abstracts":102,"./complexTypes":106}],"kurento-client-filters":[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -22455,7 +22541,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":106,"./GStreamerFilter":107,"./ImageOverlayFilter":108,"./ZBarFilter":109,"./abstracts":111}],"kurento-client":[function(require,module,exports){
+},{"./FaceOverlayFilter":107,"./GStreamerFilter":108,"./ImageOverlayFilter":109,"./ZBarFilter":110,"./abstracts":112}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
