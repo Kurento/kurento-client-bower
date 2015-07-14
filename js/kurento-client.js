@@ -12885,13 +12885,13 @@ var RTCStats = require('./RTCStats');
  *
  * @constructor module:core/complexTypes.RTCCodec
  *
- * @property {external:Integer} payloadType
+ * @property {external:int64} payloadType
  *  Payload type as used in RTP encoding.
  * @property {external:String} codec
  *  e.g., video/vp8 or equivalent.
- * @property {external:Integer} clockRate
+ * @property {external:int64} clockRate
  *  Represents the media sampling rate.
- * @property {external:Integer} channels
+ * @property {external:int64} channels
  *  Use 2 for stereo, missing for most other cases.
  * @property {external:String} parameters
  *  From the SDP description line.
@@ -12905,10 +12905,10 @@ function RTCCodec(rTCCodecDict){
   rTCCodecDict = rTCCodecDict || {}
 
   // Check rTCCodecDict has the required fields
-  checkType('int', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, {required: true});
+  checkType('int64', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, {required: true});
   checkType('String', 'rTCCodecDict.codec', rTCCodecDict.codec, {required: true});
-  checkType('int', 'rTCCodecDict.clockRate', rTCCodecDict.clockRate, {required: true});
-  checkType('int', 'rTCCodecDict.channels', rTCCodecDict.channels, {required: true});
+  checkType('int64', 'rTCCodecDict.clockRate', rTCCodecDict.clockRate, {required: true});
+  checkType('int64', 'rTCCodecDict.channels', rTCCodecDict.channels, {required: true});
   checkType('String', 'rTCCodecDict.parameters', rTCCodecDict.parameters, {required: true});
 
   // Init parent class
@@ -13062,18 +13062,18 @@ var RTCStats = require('./RTCStats');
  *  The RTCDatachannel label.
  * @property {external:String} protocol
  *  The protocol used.
- * @property {external:Integer} datachannelid
+ * @property {external:int64} datachannelid
  *  The RTCDatachannel identifier.
  * @property {module:core/complexTypes.RTCDataChannelState} state
  *  The state of the RTCDatachannel.
- * @property {external:Integer} messagesSent
+ * @property {external:int64} messagesSent
  *  Represents the total number of API 'message' events sent.
- * @property {external:Integer} bytesSent
+ * @property {external:int64} bytesSent
  *  Represents the total number of payload bytes sent on this RTCDatachannel, 
  *  i.e., not including headers or padding.
- * @property {external:Integer} messagesReceived
+ * @property {external:int64} messagesReceived
  *  Represents the total number of API 'message' events received.
- * @property {external:Integer} bytesReceived
+ * @property {external:int64} bytesReceived
  *  Represents the total number of bytes received on this RTCDatachannel, i.e., 
  *  not including headers or padding.
 
@@ -13088,12 +13088,12 @@ function RTCDataChannelStats(rTCDataChannelStatsDict){
   // Check rTCDataChannelStatsDict has the required fields
   checkType('String', 'rTCDataChannelStatsDict.label', rTCDataChannelStatsDict.label, {required: true});
   checkType('String', 'rTCDataChannelStatsDict.protocol', rTCDataChannelStatsDict.protocol, {required: true});
-  checkType('int', 'rTCDataChannelStatsDict.datachannelid', rTCDataChannelStatsDict.datachannelid, {required: true});
+  checkType('int64', 'rTCDataChannelStatsDict.datachannelid', rTCDataChannelStatsDict.datachannelid, {required: true});
   checkType('RTCDataChannelState', 'rTCDataChannelStatsDict.state', rTCDataChannelStatsDict.state, {required: true});
-  checkType('int', 'rTCDataChannelStatsDict.messagesSent', rTCDataChannelStatsDict.messagesSent, {required: true});
-  checkType('int', 'rTCDataChannelStatsDict.bytesSent', rTCDataChannelStatsDict.bytesSent, {required: true});
-  checkType('int', 'rTCDataChannelStatsDict.messagesReceived', rTCDataChannelStatsDict.messagesReceived, {required: true});
-  checkType('int', 'rTCDataChannelStatsDict.bytesReceived', rTCDataChannelStatsDict.bytesReceived, {required: true});
+  checkType('int64', 'rTCDataChannelStatsDict.messagesSent', rTCDataChannelStatsDict.messagesSent, {required: true});
+  checkType('int64', 'rTCDataChannelStatsDict.bytesSent', rTCDataChannelStatsDict.bytesSent, {required: true});
+  checkType('int64', 'rTCDataChannelStatsDict.messagesReceived', rTCDataChannelStatsDict.messagesReceived, {required: true});
+  checkType('int64', 'rTCDataChannelStatsDict.bytesReceived', rTCDataChannelStatsDict.bytesReceived, {required: true});
 
   // Init parent class
   RTCDataChannelStats.super_.call(this, rTCDataChannelStatsDict)
@@ -13210,7 +13210,7 @@ var RTCStats = require('./RTCStats');
  * @property {external:String} ipAddress
  *  It is the IP address of the candidate, allowing for IPv4 addresses, IPv6 
  *  addresses, and fully qualified domain names (FQDNs).
- * @property {external:Integer} portNumber
+ * @property {external:int64} portNumber
  *  It is the port number of the candidate.
  * @property {external:String} transport
  *  Valid values for transport is one of udp and tcp. Based on the 'transport' 
@@ -13218,7 +13218,7 @@ var RTCStats = require('./RTCStats');
  * @property {module:core/complexTypes.RTCStatsIceCandidateType} candidateType
  *  The enumeration RTCStatsIceCandidateType is based on the cand-type defined 
  *  in [RFC5245] section 15.1.
- * @property {external:Integer} priority
+ * @property {external:int64} priority
  *  Represents the priority of the candidate
  * @property {external:String} addressSourceUrl
  *  The URL of the TURN or STUN server indicated in the RTCIceServers that 
@@ -13234,10 +13234,10 @@ function RTCIceCandidateAttributes(rTCIceCandidateAttributesDict){
 
   // Check rTCIceCandidateAttributesDict has the required fields
   checkType('String', 'rTCIceCandidateAttributesDict.ipAddress', rTCIceCandidateAttributesDict.ipAddress, {required: true});
-  checkType('int', 'rTCIceCandidateAttributesDict.portNumber', rTCIceCandidateAttributesDict.portNumber, {required: true});
+  checkType('int64', 'rTCIceCandidateAttributesDict.portNumber', rTCIceCandidateAttributesDict.portNumber, {required: true});
   checkType('String', 'rTCIceCandidateAttributesDict.transport', rTCIceCandidateAttributesDict.transport, {required: true});
   checkType('RTCStatsIceCandidateType', 'rTCIceCandidateAttributesDict.candidateType', rTCIceCandidateAttributesDict.candidateType, {required: true});
-  checkType('int', 'rTCIceCandidateAttributesDict.priority', rTCIceCandidateAttributesDict.priority, {required: true});
+  checkType('int64', 'rTCIceCandidateAttributesDict.priority', rTCIceCandidateAttributesDict.priority, {required: true});
   checkType('String', 'rTCIceCandidateAttributesDict.addressSourceUrl', rTCIceCandidateAttributesDict.addressSourceUrl, {required: true});
 
   // Init parent class
@@ -13356,7 +13356,7 @@ var RTCStats = require('./RTCStats');
  *  associated with this candidate pair.
  * @property {module:core/complexTypes.RTCStatsIceCandidatePairState} state
  *  Represents the state of the checklist for the local and remote candidates in
- * @property {external:Integer} priority
+ * @property {external:int64} priority
  *  Calculated from candidate priorities as defined in [RFC5245] section 5.7.2.
  * @property {external:Boolean} nominated
  *  Related to updating the nominated flag described in Section 7.1.3.2.4 of 
@@ -13365,18 +13365,18 @@ var RTCStats = require('./RTCStats');
  *  Has gotten ACK to an ICE request.
  * @property {external:Boolean} readable
  *  Has gotten a valid incoming ICE request.
- * @property {external:Integer} bytesSent
+ * @property {external:int64} bytesSent
  *  Represents the total number of payload bytes sent on this candidate pair, 
  *  i.e., not including headers or padding.
- * @property {external:Integer} bytesReceived
+ * @property {external:int64} bytesReceived
  *  Represents the total number of payload bytes received on this candidate 
  *  pair, i.e., not including headers or padding.
- * @property {external:Number} roundTripTime
+ * @property {external:double} roundTripTime
  *  Represents the RTT computed by the STUN connectivity checks
- * @property {external:Number} availableOutgoingBitrate
+ * @property {external:double} availableOutgoingBitrate
  *  Measured in Bits per second, and is implementation dependent. It may be 
  *  calculated by the underlying congestion control.
- * @property {external:Number} availableIncomingBitrate
+ * @property {external:double} availableIncomingBitrate
  *  Measured in Bits per second, and is implementation dependent. It may be 
  *  calculated by the underlying congestion control.
 
@@ -13393,15 +13393,15 @@ function RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict){
   checkType('String', 'rTCIceCandidatePairStatsDict.localCandidateId', rTCIceCandidatePairStatsDict.localCandidateId, {required: true});
   checkType('String', 'rTCIceCandidatePairStatsDict.remoteCandidateId', rTCIceCandidatePairStatsDict.remoteCandidateId, {required: true});
   checkType('RTCStatsIceCandidatePairState', 'rTCIceCandidatePairStatsDict.state', rTCIceCandidatePairStatsDict.state, {required: true});
-  checkType('int', 'rTCIceCandidatePairStatsDict.priority', rTCIceCandidatePairStatsDict.priority, {required: true});
+  checkType('int64', 'rTCIceCandidatePairStatsDict.priority', rTCIceCandidatePairStatsDict.priority, {required: true});
   checkType('boolean', 'rTCIceCandidatePairStatsDict.nominated', rTCIceCandidatePairStatsDict.nominated, {required: true});
   checkType('boolean', 'rTCIceCandidatePairStatsDict.writable', rTCIceCandidatePairStatsDict.writable, {required: true});
   checkType('boolean', 'rTCIceCandidatePairStatsDict.readable', rTCIceCandidatePairStatsDict.readable, {required: true});
-  checkType('int', 'rTCIceCandidatePairStatsDict.bytesSent', rTCIceCandidatePairStatsDict.bytesSent, {required: true});
-  checkType('int', 'rTCIceCandidatePairStatsDict.bytesReceived', rTCIceCandidatePairStatsDict.bytesReceived, {required: true});
-  checkType('float', 'rTCIceCandidatePairStatsDict.roundTripTime', rTCIceCandidatePairStatsDict.roundTripTime, {required: true});
-  checkType('float', 'rTCIceCandidatePairStatsDict.availableOutgoingBitrate', rTCIceCandidatePairStatsDict.availableOutgoingBitrate, {required: true});
-  checkType('float', 'rTCIceCandidatePairStatsDict.availableIncomingBitrate', rTCIceCandidatePairStatsDict.availableIncomingBitrate, {required: true});
+  checkType('int64', 'rTCIceCandidatePairStatsDict.bytesSent', rTCIceCandidatePairStatsDict.bytesSent, {required: true});
+  checkType('int64', 'rTCIceCandidatePairStatsDict.bytesReceived', rTCIceCandidatePairStatsDict.bytesReceived, {required: true});
+  checkType('double', 'rTCIceCandidatePairStatsDict.roundTripTime', rTCIceCandidatePairStatsDict.roundTripTime, {required: true});
+  checkType('double', 'rTCIceCandidatePairStatsDict.availableOutgoingBitrate', rTCIceCandidatePairStatsDict.availableOutgoingBitrate, {required: true});
+  checkType('double', 'rTCIceCandidatePairStatsDict.availableIncomingBitrate', rTCIceCandidatePairStatsDict.availableIncomingBitrate, {required: true});
 
   // Init parent class
   RTCIceCandidatePairStats.super_.call(this, rTCIceCandidatePairStatsDict)
@@ -13542,15 +13542,15 @@ var RTCRTPStreamStats = require('./RTCRTPStreamStats');
  *
  * @constructor module:core/complexTypes.RTCInboundRTPStreamStats
  *
- * @property {external:Integer} packetsReceived
+ * @property {external:int64} packetsReceived
  *  Total number of RTP packets received for this SSRC.
- * @property {external:Integer} bytesReceived
+ * @property {external:int64} bytesReceived
  *  Total number of bytes received for this SSRC.
- * @property {external:Integer} packetsLost
+ * @property {external:int64} packetsLost
  *  Total number of RTP packets lost for this SSRC.
- * @property {external:Number} jitter
+ * @property {external:double} jitter
  *  Packet Jitter measured in seconds for this SSRC.
- * @property {external:Number} fractionLost
+ * @property {external:double} fractionLost
  *  The fraction packet loss reported for this SSRC.
 
  * @extends module:core.RTCRTPStreamStats
@@ -13562,11 +13562,11 @@ function RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict){
   rTCInboundRTPStreamStatsDict = rTCInboundRTPStreamStatsDict || {}
 
   // Check rTCInboundRTPStreamStatsDict has the required fields
-  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, {required: true});
-  checkType('int', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, {required: true});
-  checkType('int', 'rTCInboundRTPStreamStatsDict.packetsLost', rTCInboundRTPStreamStatsDict.packetsLost, {required: true});
-  checkType('float', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, {required: true});
-  checkType('float', 'rTCInboundRTPStreamStatsDict.fractionLost', rTCInboundRTPStreamStatsDict.fractionLost, {required: true});
+  checkType('int64', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, {required: true});
+  checkType('int64', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, {required: true});
+  checkType('int64', 'rTCInboundRTPStreamStatsDict.packetsLost', rTCInboundRTPStreamStatsDict.packetsLost, {required: true});
+  checkType('double', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, {required: true});
+  checkType('double', 'rTCInboundRTPStreamStatsDict.fractionLost', rTCInboundRTPStreamStatsDict.fractionLost, {required: true});
 
   // Init parent class
   RTCInboundRTPStreamStats.super_.call(this, rTCInboundRTPStreamStatsDict)
@@ -13772,34 +13772,34 @@ var RTCStats = require('./RTCStats');
  *  true indicates that this is a remote source. false in other case.
  * @property {external:String} ssrcIds
  *  Synchronized sources.
- * @property {external:Integer} frameWidth
+ * @property {external:int64} frameWidth
  *  Only makes sense for video media streams and represents the width of the 
  *  video frame for this SSRC.
- * @property {external:Integer} frameHeight
+ * @property {external:int64} frameHeight
  *  Only makes sense for video media streams and represents the height of the 
  *  video frame for this SSRC.
- * @property {external:Number} framesPerSecond
+ * @property {external:double} framesPerSecond
  *  Only valid for video. It represents the nominal FPS value.
- * @property {external:Integer} framesSent
+ * @property {external:int64} framesSent
  *  Only valid for video. It represents the total number of frames sent for this
- * @property {external:Integer} framesReceived
+ * @property {external:int64} framesReceived
  *  Only valid for video and when remoteSource is set to true. It represents the
- * @property {external:Integer} framesDecoded
+ * @property {external:int64} framesDecoded
  *  Only valid for video. It represents the total number of frames correctly 
  *  decoded for this SSRC. 
- * @property {external:Integer} framesDropped
+ * @property {external:int64} framesDropped
  *  Only valid for video. The total number of frames dropped predecode or 
  *  dropped because the frame missed its display deadline.
- * @property {external:Integer} framesCorrupted
+ * @property {external:int64} framesCorrupted
  *  Only valid for video. The total number of corrupted frames that have been 
  *  detected.
- * @property {external:Number} audioLevel
+ * @property {external:double} audioLevel
  *  Only valid for audio, and the value is between 0..1 (linear), where 1.0 
  *  represents 0 dBov.
- * @property {external:Number} echoReturnLoss
+ * @property {external:double} echoReturnLoss
  *  Only present on audio tracks sourced from a microphone where echo 
  *  cancellation is applied. Calculated in decibels.
- * @property {external:Number} echoReturnLossEnhancement
+ * @property {external:double} echoReturnLossEnhancement
  *  Only present on audio tracks sourced from a microphone where echo 
  *  cancellation is applied.
 
@@ -13815,17 +13815,17 @@ function RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict){
   checkType('String', 'rTCMediaStreamTrackStatsDict.trackIdentifier', rTCMediaStreamTrackStatsDict.trackIdentifier, {required: true});
   checkType('boolean', 'rTCMediaStreamTrackStatsDict.remoteSource', rTCMediaStreamTrackStatsDict.remoteSource, {required: true});
   checkType('String', 'rTCMediaStreamTrackStatsDict.ssrcIds', rTCMediaStreamTrackStatsDict.ssrcIds, {isArray: true, required: true});
-  checkType('int', 'rTCMediaStreamTrackStatsDict.frameWidth', rTCMediaStreamTrackStatsDict.frameWidth, {required: true});
-  checkType('int', 'rTCMediaStreamTrackStatsDict.frameHeight', rTCMediaStreamTrackStatsDict.frameHeight, {required: true});
-  checkType('float', 'rTCMediaStreamTrackStatsDict.framesPerSecond', rTCMediaStreamTrackStatsDict.framesPerSecond, {required: true});
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesSent', rTCMediaStreamTrackStatsDict.framesSent, {required: true});
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesReceived', rTCMediaStreamTrackStatsDict.framesReceived, {required: true});
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDecoded', rTCMediaStreamTrackStatsDict.framesDecoded, {required: true});
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesDropped', rTCMediaStreamTrackStatsDict.framesDropped, {required: true});
-  checkType('int', 'rTCMediaStreamTrackStatsDict.framesCorrupted', rTCMediaStreamTrackStatsDict.framesCorrupted, {required: true});
-  checkType('float', 'rTCMediaStreamTrackStatsDict.audioLevel', rTCMediaStreamTrackStatsDict.audioLevel, {required: true});
-  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLoss', rTCMediaStreamTrackStatsDict.echoReturnLoss, {required: true});
-  checkType('float', 'rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement', rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement, {required: true});
+  checkType('int64', 'rTCMediaStreamTrackStatsDict.frameWidth', rTCMediaStreamTrackStatsDict.frameWidth, {required: true});
+  checkType('int64', 'rTCMediaStreamTrackStatsDict.frameHeight', rTCMediaStreamTrackStatsDict.frameHeight, {required: true});
+  checkType('double', 'rTCMediaStreamTrackStatsDict.framesPerSecond', rTCMediaStreamTrackStatsDict.framesPerSecond, {required: true});
+  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesSent', rTCMediaStreamTrackStatsDict.framesSent, {required: true});
+  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesReceived', rTCMediaStreamTrackStatsDict.framesReceived, {required: true});
+  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesDecoded', rTCMediaStreamTrackStatsDict.framesDecoded, {required: true});
+  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesDropped', rTCMediaStreamTrackStatsDict.framesDropped, {required: true});
+  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesCorrupted', rTCMediaStreamTrackStatsDict.framesCorrupted, {required: true});
+  checkType('double', 'rTCMediaStreamTrackStatsDict.audioLevel', rTCMediaStreamTrackStatsDict.audioLevel, {required: true});
+  checkType('double', 'rTCMediaStreamTrackStatsDict.echoReturnLoss', rTCMediaStreamTrackStatsDict.echoReturnLoss, {required: true});
+  checkType('double', 'rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement', rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement, {required: true});
 
   // Init parent class
   RTCMediaStreamTrackStats.super_.call(this, rTCMediaStreamTrackStatsDict)
@@ -13971,13 +13971,13 @@ var RTCRTPStreamStats = require('./RTCRTPStreamStats');
  *
  * @constructor module:core/complexTypes.RTCOutboundRTPStreamStats
  *
- * @property {external:Integer} packetsSent
+ * @property {external:int64} packetsSent
  *  Total number of RTP packets sent for this SSRC.
- * @property {external:Integer} bytesSent
+ * @property {external:int64} bytesSent
  *  Total number of bytes sent for this SSRC.
- * @property {external:Number} targetBitrate
+ * @property {external:double} targetBitrate
  *  Presently configured bitrate target of this SSRC, in bits per second.
- * @property {external:Number} roundTripTime
+ * @property {external:double} roundTripTime
  *  Estimated round trip time (seconds) for this SSRC based on the RTCP 
  *  timestamp.
 
@@ -13990,10 +13990,10 @@ function RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict){
   rTCOutboundRTPStreamStatsDict = rTCOutboundRTPStreamStatsDict || {}
 
   // Check rTCOutboundRTPStreamStatsDict has the required fields
-  checkType('int', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, {required: true});
-  checkType('int', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, {required: true});
-  checkType('float', 'rTCOutboundRTPStreamStatsDict.targetBitrate', rTCOutboundRTPStreamStatsDict.targetBitrate, {required: true});
-  checkType('float', 'rTCOutboundRTPStreamStatsDict.roundTripTime', rTCOutboundRTPStreamStatsDict.roundTripTime, {required: true});
+  checkType('int64', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, {required: true});
+  checkType('int64', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, {required: true});
+  checkType('double', 'rTCOutboundRTPStreamStatsDict.targetBitrate', rTCOutboundRTPStreamStatsDict.targetBitrate, {required: true});
+  checkType('double', 'rTCOutboundRTPStreamStatsDict.roundTripTime', rTCOutboundRTPStreamStatsDict.roundTripTime, {required: true});
 
   // Init parent class
   RTCOutboundRTPStreamStats.super_.call(this, rTCOutboundRTPStreamStatsDict)
@@ -14088,9 +14088,9 @@ var RTCStats = require('./RTCStats');
  *
  * @constructor module:core/complexTypes.RTCPeerConnectionStats
  *
- * @property {external:Integer} dataChannelsOpened
+ * @property {external:int64} dataChannelsOpened
  *  Represents the number of unique datachannels opened.
- * @property {external:Integer} dataChannelsClosed
+ * @property {external:int64} dataChannelsClosed
  *  Represents the number of unique datachannels closed.
 
  * @extends module:core.RTCStats
@@ -14102,8 +14102,8 @@ function RTCPeerConnectionStats(rTCPeerConnectionStatsDict){
   rTCPeerConnectionStatsDict = rTCPeerConnectionStatsDict || {}
 
   // Check rTCPeerConnectionStatsDict has the required fields
-  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, {required: true});
-  checkType('int', 'rTCPeerConnectionStatsDict.dataChannelsClosed', rTCPeerConnectionStatsDict.dataChannelsClosed, {required: true});
+  checkType('int64', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, {required: true});
+  checkType('int64', 'rTCPeerConnectionStatsDict.dataChannelsClosed', rTCPeerConnectionStatsDict.dataChannelsClosed, {required: true});
 
   // Init parent class
   RTCPeerConnectionStats.super_.call(this, rTCPeerConnectionStatsDict)
@@ -14203,19 +14203,19 @@ var RTCStats = require('./RTCStats');
  *  inspected to produce the RTCTransportStats associated with this RTP stream.
  * @property {external:String} codecId
  *  The codec identifier
- * @property {external:Integer} firCount
+ * @property {external:int64} firCount
  *  Count the total number of Full Intra Request (FIR) packets received by the 
  *  sender. This metric is only valid for video and is sent by receiver.
- * @property {external:Integer} pliCount
+ * @property {external:int64} pliCount
  *  Count the total number of Packet Loss Indication (PLI) packets received by 
  *  the sender and is sent by receiver.
- * @property {external:Integer} nackCount
+ * @property {external:int64} nackCount
  *  Count the total number of Negative ACKnowledgement (NACK) packets received 
  *  by the sender and is sent by receiver.
- * @property {external:Integer} sliCount
+ * @property {external:int64} sliCount
  *  Count the total number of Slice Loss Indication (SLI) packets received by 
  *  the sender. This metric is only valid for video and is sent by receiver.
- * @property {external:Integer} remb
+ * @property {external:int64} remb
  *  The Receiver Estimated Maximum Bitrate (REMB). This metric is only valid for
 
  * @extends module:core.RTCStats
@@ -14233,11 +14233,11 @@ function RTCRTPStreamStats(rTCRTPStreamStatsDict){
   checkType('String', 'rTCRTPStreamStatsDict.mediaTrackId', rTCRTPStreamStatsDict.mediaTrackId, {required: true});
   checkType('String', 'rTCRTPStreamStatsDict.transportId', rTCRTPStreamStatsDict.transportId, {required: true});
   checkType('String', 'rTCRTPStreamStatsDict.codecId', rTCRTPStreamStatsDict.codecId, {required: true});
-  checkType('int', 'rTCRTPStreamStatsDict.firCount', rTCRTPStreamStatsDict.firCount, {required: true});
-  checkType('int', 'rTCRTPStreamStatsDict.pliCount', rTCRTPStreamStatsDict.pliCount, {required: true});
-  checkType('int', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, {required: true});
-  checkType('int', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, {required: true});
-  checkType('int', 'rTCRTPStreamStatsDict.remb', rTCRTPStreamStatsDict.remb, {required: true});
+  checkType('int64', 'rTCRTPStreamStatsDict.firCount', rTCRTPStreamStatsDict.firCount, {required: true});
+  checkType('int64', 'rTCRTPStreamStatsDict.pliCount', rTCRTPStreamStatsDict.pliCount, {required: true});
+  checkType('int64', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, {required: true});
+  checkType('int64', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, {required: true});
+  checkType('int64', 'rTCRTPStreamStatsDict.remb', rTCRTPStreamStatsDict.remb, {required: true});
 
   // Init parent class
   RTCRTPStreamStats.super_.call(this, rTCRTPStreamStatsDict)
@@ -14622,10 +14622,10 @@ var RTCStats = require('./RTCStats');
  *
  * @constructor module:core/complexTypes.RTCTransportStats
  *
- * @property {external:Integer} bytesSent
+ * @property {external:int64} bytesSent
  *  Represents the total number of payload bytes sent on this PeerConnection, 
  *  i.e., not including headers or padding.
- * @property {external:Integer} bytesReceived
+ * @property {external:int64} bytesReceived
  *  Represents the total number of bytes received on this PeerConnection, i.e., 
  *  not including headers or padding.
  * @property {external:String} rtcpTransportStatsId
@@ -14652,8 +14652,8 @@ function RTCTransportStats(rTCTransportStatsDict){
   rTCTransportStatsDict = rTCTransportStatsDict || {}
 
   // Check rTCTransportStatsDict has the required fields
-  checkType('int', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, {required: true});
-  checkType('int', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, {required: true});
+  checkType('int64', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, {required: true});
+  checkType('int64', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, {required: true});
   checkType('String', 'rTCTransportStatsDict.rtcpTransportStatsId', rTCTransportStatsDict.rtcpTransportStatsId, {required: true});
   checkType('boolean', 'rTCTransportStatsDict.activeConnection', rTCTransportStatsDict.activeConnection, {required: true});
   checkType('String', 'rTCTransportStatsDict.selectedCandidatePairId', rTCTransportStatsDict.selectedCandidatePairId, {required: true});
