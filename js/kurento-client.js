@@ -22469,7 +22469,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.0.0-dev'});
+Object.defineProperty(exports, 'version', {value: '6.0.0'});
 
 
 var AlphaBlending = require('./AlphaBlending');
