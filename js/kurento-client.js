@@ -22492,7 +22492,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.0.0'});
+Object.defineProperty(exports, 'version', {value: '6.0.1-dev'});
 
 
 var HubPort = require('./HubPort');
@@ -22534,7 +22534,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.0.0'});
+Object.defineProperty(exports, 'version', {value: '6.0.1-dev'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -22590,7 +22590,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.0.0'});
+Object.defineProperty(exports, 'version', {value: '6.0.1-dev'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
