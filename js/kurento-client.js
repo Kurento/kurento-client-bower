@@ -8685,6 +8685,67 @@ inherits(MediaPipeline, MediaObject);
 
 
 //
+// Public properties
+//
+
+/**
+ * If statistics about pipeline latency are enabled for all mediaElements
+ *
+ * @alias module:core.MediaPipeline#getLatencyStats
+ *
+ * @param {module:core.MediaPipeline~getLatencyStatsCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaPipeline.prototype.getLatencyStats = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getLatencyStats', callback), this)
+};
+/**
+ * @callback module:core.MediaPipeline~getLatencyStatsCallback
+ * @param {external:Error} error
+ * @param {external:Boolean} result
+ */
+
+/**
+ * If statistics about pipeline latency are enabled for all mediaElements
+ *
+ * @alias module:core.MediaPipeline#setLatencyStats
+ *
+ * @param {external:Boolean} latencyStats
+ * @param {module:core.MediaPipeline~setLatencyStatsCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaPipeline.prototype.setLatencyStats = function(latencyStats, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('boolean', 'latencyStats', latencyStats, {required: true});
+
+  var params = {
+    latencyStats: latencyStats
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setLatencyStats', params, callback), this)
+};
+/**
+ * @callback module:core.MediaPipeline~setLatencyStatsCallback
+ * @param {external:Error} error
+ */
+
+
+//
 // Public methods
 //
 
@@ -9249,67 +9310,6 @@ BaseRtpEndpoint.prototype.setRembParams = function(rembParams, callback){
 /**
  * @callback module:core/abstracts.BaseRtpEndpoint~setRembParamsCallback
  * @param {external:Error} error
- */
-
-
-//
-// Public methods
-//
-
-/**
- * Provides statistics collected for this endpoint
- *
- * @alias module:core/abstracts.BaseRtpEndpoint.getStats
- *
- * @param {module:core/complexTypes.MediaType} [mediaType]
- *  One of {@link module:core/abstracts.BaseRtpEndpoint#MediaType.AUDIO} or 
- *  {@link module:core/abstracts.BaseRtpEndpoint#MediaType.VIDEO}
- *
- * @param {module:core/abstracts.BaseRtpEndpoint~getStatsCallback} [callback]
- *
- * @return {external:Promise}
- */
-BaseRtpEndpoint.prototype.getStats = function(mediaType, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  callback = arguments[arguments.length-1] instanceof Function
-           ? Array.prototype.pop.call(arguments)
-           : undefined;
-
-  switch(arguments.length){
-    case 0: mediaType = undefined;
-    break;
-    case 1: console.log('All optional params are used')
-    break;
-
-    default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
-          error.length = arguments.length;
-          error.min = 0;
-          error.max = 1;
-
-      throw error;
-  }
-
-  checkType('MediaType', 'mediaType', mediaType);
-
-  var params = {
-    mediaType: mediaType
-  };
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'getStats', params, callback), this)
-};
-/**
- * @callback module:core/abstracts.BaseRtpEndpoint~getStatsCallback
- * @param {external:Error} error
- * @param {Object.<string, module:core/complexTypes.Stats>} result
- *  Delivers a successful result in the form of a RTC stats report. A RTC stats 
- *  report represents a map between strings, identifying the inspected objects 
- *  (RTCStats.id), and their corresponding RTCStats objects.
  */
 
 
@@ -10079,6 +10079,62 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
  * @param {module:core/complexTypes.ElementConnectionData} result
  *  A list of the connections information that are sending media to this 
  *  element. The list will be empty if no sources are found.
+ */
+
+/**
+ * Provides statistics collected for this endpoint
+ *
+ * @alias module:core/abstracts.MediaElement.getStats
+ *
+ * @param {module:core/complexTypes.MediaType} [mediaType]
+ *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO} or {@link 
+ *  module:core/abstracts.MediaElement#MediaType.VIDEO}
+ *
+ * @param {module:core/abstracts.MediaElement~getStatsCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.getStats = function(mediaType, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  callback = arguments[arguments.length-1] instanceof Function
+           ? Array.prototype.pop.call(arguments)
+           : undefined;
+
+  switch(arguments.length){
+    case 0: mediaType = undefined;
+    break;
+    case 1: console.log('All optional params are used')
+    break;
+
+    default:
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
+          error.length = arguments.length;
+          error.min = 0;
+          error.max = 1;
+
+      throw error;
+  }
+
+  checkType('MediaType', 'mediaType', mediaType);
+
+  var params = {
+    mediaType: mediaType
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getStats', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~getStatsCallback
+ * @param {external:Error} error
+ * @param {Object.<string, module:core/complexTypes.Stats>} result
+ *  Delivers a successful result in the form of a RTC stats report. A RTC stats 
+ *  report represents a map between strings, identifying the inspected objects 
+ *  (RTCStats.id), and their corresponding RTCStats objects.
  */
 
 /**
