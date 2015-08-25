@@ -8621,7 +8621,7 @@ HubPort.events = MediaElement.events;
 
 
 /**
- * Checker for {@link core.HubPort}
+ * Checker for {@link module:core.HubPort}
  *
  * @memberof module:core
  *
@@ -8949,7 +8949,7 @@ MediaPipeline.events = MediaObject.events;
 
 
 /**
- * Checker for {@link core.MediaPipeline}
+ * Checker for {@link module:core.MediaPipeline}
  *
  * @memberof module:core
  *
@@ -9035,7 +9035,7 @@ PassThrough.events = MediaElement.events;
 
 
 /**
- * Checker for {@link core.PassThrough}
+ * Checker for {@link module:core.PassThrough}
  *
  * @memberof module:core
  *
@@ -9424,7 +9424,7 @@ BaseRtpEndpoint.events = SdpEndpoint.events.concat(['ConnectionStateChanged', 'M
 
 
 /**
- * Checker for {@link core/abstracts.BaseRtpEndpoint}
+ * Checker for {@link module:core/abstracts.BaseRtpEndpoint}
  *
  * @memberof module:core/abstracts
  *
@@ -9509,7 +9509,7 @@ Endpoint.events = MediaElement.events;
 
 
 /**
- * Checker for {@link core/abstracts.Endpoint}
+ * Checker for {@link module:core/abstracts.Endpoint}
  *
  * @memberof module:core/abstracts
  *
@@ -9587,7 +9587,7 @@ Filter.events = MediaElement.events;
 
 
 /**
- * Checker for {@link core/abstracts.Filter}
+ * Checker for {@link module:core/abstracts.Filter}
  *
  * @memberof module:core/abstracts
  *
@@ -9714,7 +9714,7 @@ Hub.events = MediaObject.events;
 
 
 /**
- * Checker for {@link core/abstracts.Hub}
+ * Checker for {@link module:core/abstracts.Hub}
  *
  * @memberof module:core/abstracts
  *
@@ -10347,7 +10347,7 @@ MediaElement.events = MediaObject.events.concat(['ElementConnected', 'ElementDis
 
 
 /**
- * Checker for {@link core/abstracts.MediaElement}
+ * Checker for {@link module:core/abstracts.MediaElement}
  *
  * @memberof module:core/abstracts
  *
@@ -11128,7 +11128,7 @@ MediaObject.events = ['Error'];
 
 
 /**
- * Checker for {@link core/abstracts.MediaObject}
+ * Checker for {@link module:core/abstracts.MediaObject}
  *
  * @memberof module:core/abstracts
  *
@@ -11448,7 +11448,7 @@ SdpEndpoint.events = SessionEndpoint.events;
 
 
 /**
- * Checker for {@link core/abstracts.SdpEndpoint}
+ * Checker for {@link module:core/abstracts.SdpEndpoint}
  *
  * @memberof module:core/abstracts
  *
@@ -11691,7 +11691,7 @@ ServerManager.events = MediaObject.events.concat(['ObjectCreated', 'ObjectDestro
 
 
 /**
- * Checker for {@link core/abstracts.ServerManager}
+ * Checker for {@link module:core/abstracts.ServerManager}
  *
  * @memberof module:core/abstracts
  *
@@ -11770,7 +11770,7 @@ SessionEndpoint.events = Endpoint.events.concat(['MediaSessionStarted', 'MediaSe
 
 
 /**
- * Checker for {@link core/abstracts.SessionEndpoint}
+ * Checker for {@link module:core/abstracts.SessionEndpoint}
  *
  * @memberof module:core/abstracts
  *
@@ -11943,7 +11943,7 @@ UriEndpoint.events = Endpoint.events;
 
 
 /**
- * Checker for {@link core/abstracts.UriEndpoint}
+ * Checker for {@link module:core/abstracts.UriEndpoint}
  *
  * @memberof module:core/abstracts
  *
@@ -12090,7 +12090,7 @@ Object.defineProperties(AudioCaps.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.AudioCaps}
+ * Checker for {@link module:core/complexTypes.AudioCaps}
  *
  * @memberof module:core/complexTypes
  *
@@ -12138,7 +12138,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.AudioCodec}
+ * Checker for {@link module:core/complexTypes.AudioCodec}
  *
  * @memberof module:core/complexTypes
  *
@@ -12238,7 +12238,7 @@ Object.defineProperties(CodecConfiguration.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.CodecConfiguration}
+ * Checker for {@link module:core/complexTypes.CodecConfiguration}
  *
  * @memberof module:core/complexTypes
  *
@@ -12349,7 +12349,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.ConnectionState}
+ * Checker for {@link module:core/complexTypes.ConnectionState}
  *
  * @memberof module:core/complexTypes
  *
@@ -12470,7 +12470,7 @@ Object.defineProperties(ElementConnectionData.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.ElementConnectionData}
+ * Checker for {@link module:core/complexTypes.ElementConnectionData}
  *
  * @memberof module:core/complexTypes
  *
@@ -12570,7 +12570,7 @@ Object.defineProperties(ElementStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.ElementStats}
+ * Checker for {@link module:core/complexTypes.ElementStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -12670,7 +12670,7 @@ Object.defineProperties(EndpointStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.EndpointStats}
+ * Checker for {@link module:core/complexTypes.EndpointStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -12719,7 +12719,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.FilterType}
+ * Checker for {@link module:core/complexTypes.FilterType}
  *
  * @memberof module:core/complexTypes
  *
@@ -12819,7 +12819,7 @@ Object.defineProperties(Fraction.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.Fraction}
+ * Checker for {@link module:core/complexTypes.Fraction}
  *
  * @memberof module:core/complexTypes
  *
@@ -12867,7 +12867,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.GstreamerDotDetails}
+ * Checker for {@link module:core/complexTypes.GstreamerDotDetails}
  *
  * @memberof module:core/complexTypes
  *
@@ -12916,7 +12916,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.MediaState}
+ * Checker for {@link module:core/complexTypes.MediaState}
  *
  * @memberof module:core/complexTypes
  *
@@ -12966,7 +12966,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.MediaType}
+ * Checker for {@link module:core/complexTypes.MediaType}
  *
  * @memberof module:core/complexTypes
  *
@@ -13073,7 +13073,7 @@ Object.defineProperties(ModuleInfo.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.ModuleInfo}
+ * Checker for {@link module:core/complexTypes.ModuleInfo}
  *
  * @memberof module:core/complexTypes
  *
@@ -13187,7 +13187,7 @@ Object.defineProperties(RTCCertificateStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCCertificateStats}
+ * Checker for {@link module:core/complexTypes.RTCCertificateStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -13311,7 +13311,7 @@ Object.defineProperties(RTCCodec.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCCodec}
+ * Checker for {@link module:core/complexTypes.RTCCodec}
  *
  * @memberof module:core/complexTypes
  *
@@ -13359,7 +13359,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.RTCDataChannelState}
+ * Checker for {@link module:core/complexTypes.RTCDataChannelState}
  *
  * @memberof module:core/complexTypes
  *
@@ -13510,7 +13510,7 @@ Object.defineProperties(RTCDataChannelStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCDataChannelStats}
+ * Checker for {@link module:core/complexTypes.RTCDataChannelStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -13645,7 +13645,7 @@ Object.defineProperties(RTCIceCandidateAttributes.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCIceCandidateAttributes}
+ * Checker for {@link module:core/complexTypes.RTCIceCandidateAttributes}
  *
  * @memberof module:core/complexTypes
  *
@@ -13843,7 +13843,7 @@ Object.defineProperties(RTCIceCandidatePairStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCIceCandidatePairStats}
+ * Checker for {@link module:core/complexTypes.RTCIceCandidatePairStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -13952,7 +13952,7 @@ Object.defineProperties(RTCInboundRTPStreamStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCInboundRTPStreamStats}
+ * Checker for {@link module:core/complexTypes.RTCInboundRTPStreamStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -14052,7 +14052,7 @@ Object.defineProperties(RTCMediaStreamStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCMediaStreamStats}
+ * Checker for {@link module:core/complexTypes.RTCMediaStreamStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -14256,7 +14256,7 @@ Object.defineProperties(RTCMediaStreamTrackStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCMediaStreamTrackStats}
+ * Checker for {@link module:core/complexTypes.RTCMediaStreamTrackStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -14374,7 +14374,7 @@ Object.defineProperties(RTCOutboundRTPStreamStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCOutboundRTPStreamStats}
+ * Checker for {@link module:core/complexTypes.RTCOutboundRTPStreamStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -14474,7 +14474,7 @@ Object.defineProperties(RTCPeerConnectionStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCPeerConnectionStats}
+ * Checker for {@link module:core/complexTypes.RTCPeerConnectionStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -14669,7 +14669,7 @@ Object.defineProperties(RTCRTPStreamStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCRTPStreamStats}
+ * Checker for {@link module:core/complexTypes.RTCRTPStreamStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -14753,7 +14753,7 @@ Object.defineProperties(RTCStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCStats}
+ * Checker for {@link module:core/complexTypes.RTCStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -14802,7 +14802,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.RTCStatsIceCandidatePairState}
+ * Checker for {@link module:core/complexTypes.RTCStatsIceCandidatePairState}
  *
  * @memberof module:core/complexTypes
  *
@@ -14851,7 +14851,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.RTCStatsIceCandidateType}
+ * Checker for {@link module:core/complexTypes.RTCStatsIceCandidateType}
  *
  * @memberof module:core/complexTypes
  *
@@ -14998,7 +14998,7 @@ Object.defineProperties(RTCTransportStats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RTCTransportStats}
+ * Checker for {@link module:core/complexTypes.RTCTransportStats}
  *
  * @memberof module:core/complexTypes
  *
@@ -15158,7 +15158,7 @@ Object.defineProperties(RembParams.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.RembParams}
+ * Checker for {@link module:core/complexTypes.RembParams}
  *
  * @memberof module:core/complexTypes
  *
@@ -15272,7 +15272,7 @@ Object.defineProperties(ServerInfo.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.ServerInfo}
+ * Checker for {@link module:core/complexTypes.ServerInfo}
  *
  * @memberof module:core/complexTypes
  *
@@ -15320,7 +15320,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.ServerType}
+ * Checker for {@link module:core/complexTypes.ServerType}
  *
  * @memberof module:core/complexTypes
  *
@@ -15428,7 +15428,7 @@ Object.defineProperties(Stats.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.Stats}
+ * Checker for {@link module:core/complexTypes.Stats}
  *
  * @memberof module:core/complexTypes
  *
@@ -15476,7 +15476,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.StatsType}
+ * Checker for {@link module:core/complexTypes.StatsType}
  *
  * @memberof module:core/complexTypes
  *
@@ -15575,7 +15575,7 @@ Object.defineProperties(Tag.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.Tag}
+ * Checker for {@link module:core/complexTypes.Tag}
  *
  * @memberof module:core/complexTypes
  *
@@ -15673,7 +15673,7 @@ Object.defineProperties(VideoCaps.prototype, {
 })
 
 /**
- * Checker for {@link core/complexTypes.VideoCaps}
+ * Checker for {@link module:core/complexTypes.VideoCaps}
  *
  * @memberof module:core/complexTypes
  *
@@ -15721,7 +15721,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link core/complexTypes.VideoCodec}
+ * Checker for {@link module:core/complexTypes.VideoCodec}
  *
  * @memberof module:core/complexTypes
  *
