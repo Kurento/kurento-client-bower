@@ -18045,7 +18045,7 @@ FaceOverlayFilter.events = Filter.events;
 
 
 /**
- * Checker for {@link filters.FaceOverlayFilter}
+ * Checker for {@link module:filters.FaceOverlayFilter}
  *
  * @memberof module:filters
  *
@@ -18184,7 +18184,7 @@ GStreamerFilter.events = Filter.events;
 
 
 /**
- * Checker for {@link filters.GStreamerFilter}
+ * Checker for {@link module:filters.GStreamerFilter}
  *
  * @memberof module:filters
  *
@@ -18389,7 +18389,7 @@ ImageOverlayFilter.events = Filter.events;
 
 
 /**
- * Checker for {@link filters.ImageOverlayFilter}
+ * Checker for {@link module:filters.ImageOverlayFilter}
  *
  * @memberof module:filters
  *
@@ -18479,7 +18479,7 @@ ZBarFilter.events = Filter.events.concat(['CodeFound']);
 
 
 /**
- * Checker for {@link filters.ZBarFilter}
+ * Checker for {@link module:filters.ZBarFilter}
  *
  * @memberof module:filters
  *
@@ -18555,7 +18555,7 @@ OpenCVFilter.events = Filter.events;
 
 
 /**
- * Checker for {@link filters/abstracts.OpenCVFilter}
+ * Checker for {@link module:filters/abstracts.OpenCVFilter}
  *
  * @memberof module:filters/abstracts
  *
