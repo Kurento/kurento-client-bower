@@ -16030,7 +16030,7 @@ AlphaBlending.events = Hub.events;
 
 
 /**
- * Checker for {@link elements.AlphaBlending}
+ * Checker for {@link module:elements.AlphaBlending}
  *
  * @memberof module:elements
  *
@@ -16119,7 +16119,7 @@ Composite.events = Hub.events;
 
 
 /**
- * Checker for {@link elements.Composite}
+ * Checker for {@link module:elements.Composite}
  *
  * @memberof module:elements
  *
@@ -16259,7 +16259,7 @@ Dispatcher.events = Hub.events;
 
 
 /**
- * Checker for {@link elements.Dispatcher}
+ * Checker for {@link module:elements.Dispatcher}
  *
  * @memberof module:elements
  *
@@ -16419,7 +16419,7 @@ DispatcherOneToMany.events = Hub.events;
 
 
 /**
- * Checker for {@link elements.DispatcherOneToMany}
+ * Checker for {@link module:elements.DispatcherOneToMany}
  *
  * @memberof module:elements
  *
@@ -16524,7 +16524,7 @@ HttpPostEndpoint.events = HttpEndpoint.events.concat(['EndOfStream']);
 
 
 /**
- * Checker for {@link elements.HttpPostEndpoint}
+ * Checker for {@link module:elements.HttpPostEndpoint}
  *
  * @memberof module:elements
  *
@@ -16710,7 +16710,7 @@ Mixer.events = Hub.events;
 
 
 /**
- * Checker for {@link elements.Mixer}
+ * Checker for {@link module:elements.Mixer}
  *
  * @memberof module:elements
  *
@@ -16862,7 +16862,7 @@ PlayerEndpoint.events = UriEndpoint.events.concat(['EndOfStream']);
 
 
 /**
- * Checker for {@link elements.PlayerEndpoint}
+ * Checker for {@link module:elements.PlayerEndpoint}
  *
  * @memberof module:elements
  *
@@ -17008,7 +17008,7 @@ RecorderEndpoint.events = UriEndpoint.events;
 
 
 /**
- * Checker for {@link elements.RecorderEndpoint}
+ * Checker for {@link module:elements.RecorderEndpoint}
  *
  * @memberof module:elements
  *
@@ -17096,7 +17096,7 @@ RtpEndpoint.events = SdpEndpoint.events;
 
 
 /**
- * Checker for {@link elements.RtpEndpoint}
+ * Checker for {@link module:elements.RtpEndpoint}
  *
  * @memberof module:elements
  *
@@ -17445,7 +17445,7 @@ WebRtcEndpoint.events = BaseRtpEndpoint.events.concat(['OnIceCandidate', 'OnIceC
 
 
 /**
- * Checker for {@link elements.WebRtcEndpoint}
+ * Checker for {@link module:elements.WebRtcEndpoint}
  *
  * @memberof module:elements
  *
@@ -17565,7 +17565,7 @@ HttpEndpoint.events = SessionEndpoint.events;
 
 
 /**
- * Checker for {@link elements/abstracts.HttpEndpoint}
+ * Checker for {@link module:elements/abstracts.HttpEndpoint}
  *
  * @memberof module:elements/abstracts
  *
@@ -17705,7 +17705,7 @@ Object.defineProperties(IceCandidate.prototype, {
 })
 
 /**
- * Checker for {@link elements/complexTypes.IceCandidate}
+ * Checker for {@link module:elements/complexTypes.IceCandidate}
  *
  * @memberof module:elements/complexTypes
  *
@@ -17753,7 +17753,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link elements/complexTypes.IceComponentState}
+ * Checker for {@link module:elements/complexTypes.IceComponentState}
  *
  * @memberof module:elements/complexTypes
  *
@@ -17803,7 +17803,7 @@ var kurentoClient = require('kurento-client');
  */
 
 /**
- * Checker for {@link elements/complexTypes.MediaProfileSpecType}
+ * Checker for {@link module:elements/complexTypes.MediaProfileSpecType}
  *
  * @memberof module:elements/complexTypes
  *
