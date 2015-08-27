@@ -9800,6 +9800,131 @@ inherits(MediaElement, MediaObject);
 
 
 //
+// Public properties
+//
+
+/**
+ * Maximum video bandwidth for transcoding.
+ *   Unit: bps(bits per second).
+ *   Default value: MAXINT
+ *
+ * @alias module:core/abstracts.MediaElement#getMaxOuputBitrate
+ *
+ * @param {module:core/abstracts.MediaElement~getMaxOuputBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.getMaxOuputBitrate = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getMaxOuputBitrate', callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~getMaxOuputBitrateCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Maximum video bandwidth for transcoding.
+ *   Unit: bps(bits per second).
+ *   Default value: MAXINT
+ *
+ * @alias module:core/abstracts.MediaElement#setMaxOuputBitrate
+ *
+ * @param {external:Integer} maxOuputBitrate
+ * @param {module:core/abstracts.MediaElement~setMaxOuputBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.setMaxOuputBitrate = function(maxOuputBitrate, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'maxOuputBitrate', maxOuputBitrate, {required: true});
+
+  var params = {
+    maxOuputBitrate: maxOuputBitrate
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setMaxOuputBitrate', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~setMaxOuputBitrateCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Minimum video bandwidth for transcoding.
+ *   Unit: bps(bits per second).
+ *   Default value: 0
+ *
+ * @alias module:core/abstracts.MediaElement#getMinOuputBitrate
+ *
+ * @param {module:core/abstracts.MediaElement~getMinOuputBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.getMinOuputBitrate = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getMinOuputBitrate', callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~getMinOuputBitrateCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Minimum video bandwidth for transcoding.
+ *   Unit: bps(bits per second).
+ *   Default value: 0
+ *
+ * @alias module:core/abstracts.MediaElement#setMinOuputBitrate
+ *
+ * @param {external:Integer} minOuputBitrate
+ * @param {module:core/abstracts.MediaElement~setMinOuputBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.setMinOuputBitrate = function(minOuputBitrate, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'minOuputBitrate', minOuputBitrate, {required: true});
+
+  var params = {
+    minOuputBitrate: minOuputBitrate
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setMinOuputBitrate', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~setMinOuputBitrateCallback
+ * @param {external:Error} error
+ */
+
+
+//
 // Public methods
 //
 
@@ -10266,6 +10391,7 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
  */
 
 /**
+ * @deprecated
  * Allows change the target bitrate for the media output, if the media is 
  * encoded using VP8 or H264. This method only works if it is called before the 
  * media starts to flow.
@@ -22848,7 +22974,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.0.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.1.0-dev'});
 
 
 var HubPort = require('./HubPort');
