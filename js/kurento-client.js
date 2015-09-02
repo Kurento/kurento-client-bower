@@ -10603,7 +10603,8 @@ function MediaObject(){
     var params =
     {
       object: this,
-      subscription: token
+      subscription: token.value,
+      sessionId: token.sessionId
     };
 
     this.emit('_rpc', undefined, 'unsubscribe', params, function(error)
@@ -11137,7 +11138,6 @@ MediaObject.prototype.release = function(callback){
 
         // Object was sucessfully released on the server,
         // remove it from cache and all its events
-        self.emit('release');
         Object.keys(self._events).forEach(function(event)
         {
           if(event[0] == '_'
@@ -11147,10 +11147,7 @@ MediaObject.prototype.release = function(callback){
 
           self.removeAllListeners(event);
         })
-
-        // Set id as null since the object don't exists anymore on the server so
-        // subsequent operations fail inmediatly
-        Object.defineProperty(self, 'id', {value: null});
+        self.emit('release');
 
         resolve();
       }
