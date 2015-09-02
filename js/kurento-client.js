@@ -10603,8 +10603,7 @@ function MediaObject(){
     var params =
     {
       object: this,
-      subscription: token.value,
-      sessionId: token.sessionId
+      subscription: token
     };
 
     this.emit('_rpc', undefined, 'unsubscribe', params, function(error)
@@ -11138,6 +11137,7 @@ MediaObject.prototype.release = function(callback){
 
         // Object was sucessfully released on the server,
         // remove it from cache and all its events
+        self.emit('release');
         Object.keys(self._events).forEach(function(event)
         {
           if(event[0] == '_'
@@ -11147,7 +11147,10 @@ MediaObject.prototype.release = function(callback){
 
           self.removeAllListeners(event);
         })
-        self.emit('release');
+
+        // Set id as null since the object don't exists anymore on the server so
+        // subsequent operations fail inmediatly
+        Object.defineProperty(self, 'id', {value: null});
 
         resolve();
       }
@@ -22971,7 +22974,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.1.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.1.0'});
 
 
 var HubPort = require('./HubPort');
@@ -23013,7 +23016,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.1.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.1.0'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -23069,7 +23072,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.1.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.1.0'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
