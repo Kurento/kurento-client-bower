@@ -1717,12 +1717,14 @@ register.modules = modules;
 },{"checktype":37}],8:[function(require,module,exports){
 
 },{}],9:[function(require,module,exports){
+(function (global){
 /*!
  * The buffer module from node.js, for the browser.
  *
  * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
  * @license  MIT
  */
+/* eslint-disable no-proto */
 
 var base64 = require('base64-js')
 var ieee754 = require('ieee754')
@@ -1762,20 +1764,22 @@ var rootParent = {}
  * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
  * get the Object implementation, which is slower but behaves correctly.
  */
-Buffer.TYPED_ARRAY_SUPPORT = (function () {
-  function Bar () {}
-  try {
-    var arr = new Uint8Array(1)
-    arr.foo = function () { return 42 }
-    arr.constructor = Bar
-    return arr.foo() === 42 && // typed array instances can be augmented
-        arr.constructor === Bar && // constructor can be set
-        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
-        arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
-  } catch (e) {
-    return false
-  }
-})()
+Buffer.TYPED_ARRAY_SUPPORT = global.TYPED_ARRAY_SUPPORT !== undefined
+  ? global.TYPED_ARRAY_SUPPORT
+  : (function () {
+      function Bar () {}
+      try {
+        var arr = new Uint8Array(1)
+        arr.foo = function () { return 42 }
+        arr.constructor = Bar
+        return arr.foo() === 42 && // typed array instances can be augmented
+            arr.constructor === Bar && // constructor can be set
+            typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+            arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
+      } catch (e) {
+        return false
+      }
+    })()
 
 function kMaxLength () {
   return Buffer.TYPED_ARRAY_SUPPORT
@@ -1931,10 +1935,16 @@ function fromJsonObject (that, object) {
   return that
 }
 
+if (Buffer.TYPED_ARRAY_SUPPORT) {
+  Buffer.prototype.__proto__ = Uint8Array.prototype
+  Buffer.__proto__ = Uint8Array
+}
+
 function allocate (that, length) {
   if (Buffer.TYPED_ARRAY_SUPPORT) {
     // Return an augmented `Uint8Array` instance, for best performance
     that = Buffer._augment(new Uint8Array(length))
+    that.__proto__ = Buffer.prototype
   } else {
     // Fallback: Return an object instance of the Buffer class
     that.length = length
@@ -3251,6 +3261,7 @@ function blitBuffer (src, dst, offset, length) {
   return i
 }
 
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"base64-js":10,"ieee754":11,"is-array":12}],10:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -17259,6 +17270,8 @@ function noop(error, result) {
  *
  * @constructor module:elements.WebRtcEndpoint
  *
+ * @fires {@link module:elements#event:OnDataChannelClosed OnDataChannelClosed}
+ * @fires {@link module:elements#event:OnDataChannelOpened OnDataChannelOpened}
  * @fires {@link module:elements#event:OnIceCandidate OnIceCandidate}
  * @fires {@link module:elements#event:OnIceComponentStateChanged OnIceComponentStateChanged}
  * @fires {@link module:elements#event:OnIceGatheringDone OnIceGatheringDone}
@@ -17485,6 +17498,114 @@ WebRtcEndpoint.prototype.addIceCandidate = function(candidate, callback){
  */
 
 /**
+ * Close an opened data channel
+ *
+ * @alias module:elements.WebRtcEndpoint.closeDataChannel
+ *
+ * @param {external:Integer} channelId
+ *  The channel identifier
+ *
+ * @param {module:elements.WebRtcEndpoint~closeDataChannelCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.closeDataChannel = function(channelId, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'channelId', channelId, {required: true});
+
+  var params = {
+    channelId: channelId
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'closeDataChannel', params, callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~closeDataChannelCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Create a new data channel if data channel are supported
+ *
+ * @alias module:elements.WebRtcEndpoint.createDataChannel
+ *
+ * @param {external:String} [label]
+ *  Channel's label attribute
+ *
+ * @param {external:Boolean} [ordered]
+ *  If the data channel should guarantee order or not
+ *
+ * @param {external:Integer} [maxPacketLifeTime]
+ *  the length of the time window (in milliseconds) during which transmissions 
+ *  and retransmissions may occur in unreliable mode
+ *
+ * @param {external:Integer} [maxRetransmits]
+ *  maximum number of retransmissions that are attempted in unreliable mode
+ *
+ * @param {external:String} [protocol]
+ *  the name of the sub-protocol used
+ *
+ * @param {module:elements.WebRtcEndpoint~createDataChannelCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.createDataChannel = function(label, ordered, maxPacketLifeTime, maxRetransmits, protocol, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  callback = arguments[arguments.length-1] instanceof Function
+           ? Array.prototype.pop.call(arguments)
+           : undefined;
+
+  switch(arguments.length){
+    case 0: label = undefined;
+    case 1: ordered = undefined;
+    case 2: maxPacketLifeTime = undefined;
+    case 3: maxRetransmits = undefined;
+    case 4: protocol = undefined;
+    break;
+    case 5: console.log('All optional params are used')
+    break;
+
+    default:
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-5]');
+          error.length = arguments.length;
+          error.min = 0;
+          error.max = 5;
+
+      throw error;
+  }
+
+  checkType('String', 'label', label);
+  checkType('boolean', 'ordered', ordered);
+  checkType('int', 'maxPacketLifeTime', maxPacketLifeTime);
+  checkType('int', 'maxRetransmits', maxRetransmits);
+  checkType('String', 'protocol', protocol);
+
+  var params = {
+    label: label,
+    ordered: ordered,
+    maxPacketLifeTime: maxPacketLifeTime,
+    maxRetransmits: maxRetransmits,
+    protocol: protocol
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'createDataChannel', params, callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~createDataChannelCallback
+ * @param {external:Error} error
+ */
+
+/**
  * Init the gathering of ICE candidates.
  * It must be called after SdpEndpoint::generateOffer or 
  * SdpEndpoint::processOffer
@@ -17536,7 +17657,7 @@ WebRtcEndpoint.constructorParams = {
  *
  * @extends module:core/abstracts.BaseRtpEndpoint.events
  */
-WebRtcEndpoint.events = BaseRtpEndpoint.events.concat(['OnIceCandidate', 'OnIceComponentStateChanged', 'OnIceGatheringDone']);
+WebRtcEndpoint.events = BaseRtpEndpoint.events.concat(['OnDataChannelClosed', 'OnDataChannelOpened', 'OnIceCandidate', 'OnIceComponentStateChanged', 'OnIceGatheringDone']);
 
 
 /**
