@@ -4205,8 +4205,8 @@ exports.isBuffer = isBuffer;
 function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
-}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/is-buffer/index.js")})
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/is-buffer/index.js":24}],18:[function(require,module,exports){
+}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/Development/kurento_js_merge_project@4/node_modules/is-buffer/index.js")})
+},{"/var/lib/jenkins/workspace/Development/kurento_js_merge_project@4/node_modules/is-buffer/index.js":24}],18:[function(require,module,exports){
 /*global define:false require:false */
 module.exports = (function(){
 	// Import Events
@@ -5154,7 +5154,7 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
   switch(arguments.length){
     case 0: details = undefined;
     break;
-    case 1: console.log('All optional params are used')
+    case 1: 
     break;
 
     default:
@@ -6295,7 +6295,7 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
     case 2: sourceMediaDescription = undefined;
     case 3: sinkMediaDescription = undefined;
     break;
-    case 4: console.log('All optional params are used')
+    case 4: 
     break;
 
     default:
@@ -6371,7 +6371,7 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
     case 2: sourceMediaDescription = undefined;
     case 3: sinkMediaDescription = undefined;
     break;
-    case 4: console.log('All optional params are used')
+    case 4: 
     break;
 
     default:
@@ -6429,7 +6429,7 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
   switch(arguments.length){
     case 0: details = undefined;
     break;
-    case 1: console.log('All optional params are used')
+    case 1: 
     break;
 
     default:
@@ -6490,7 +6490,7 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
     case 0: mediaType = undefined;
     case 1: description = undefined;
     break;
-    case 2: console.log('All optional params are used')
+    case 2: 
     break;
 
     default:
@@ -6554,7 +6554,7 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
     case 0: mediaType = undefined;
     case 1: description = undefined;
     break;
-    case 2: console.log('All optional params are used')
+    case 2: 
     break;
 
     default:
@@ -6611,7 +6611,7 @@ MediaElement.prototype.getStats = function(mediaType, callback){
   switch(arguments.length){
     case 0: mediaType = undefined;
     break;
-    case 1: console.log('All optional params are used')
+    case 1: 
     break;
 
     default:
