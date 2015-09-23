@@ -4205,8 +4205,8 @@ exports.isBuffer = isBuffer;
 function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
-}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/Development/kurento_js_merge_project@4/node_modules/is-buffer/index.js")})
-},{"/var/lib/jenkins/workspace/Development/kurento_js_merge_project@4/node_modules/is-buffer/index.js":24}],18:[function(require,module,exports){
+}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/is-buffer/index.js")})
+},{"/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/is-buffer/index.js":24}],18:[function(require,module,exports){
 /*global define:false require:false */
 module.exports = (function(){
 	// Import Events
@@ -13863,7 +13863,7 @@ WebRtcEndpoint.prototype.createDataChannel = function(label, ordered, maxPacketL
     case 3: maxRetransmits = undefined;
     case 4: protocol = undefined;
     break;
-    case 5: console.log('All optional params are used')
+    case 5: 
     break;
 
     default:
