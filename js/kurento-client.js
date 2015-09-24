@@ -4205,8 +4205,8 @@ exports.isBuffer = isBuffer;
 function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
-}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/Development/kurento_js_merge_project@3/node_modules/is-buffer/index.js")})
-},{"/var/lib/jenkins/workspace/Development/kurento_js_merge_project@3/node_modules/is-buffer/index.js":24}],18:[function(require,module,exports){
+}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/is-buffer/index.js")})
+},{"/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/is-buffer/index.js":24}],18:[function(require,module,exports){
 /*global define:false require:false */
 module.exports = (function(){
 	// Import Events
