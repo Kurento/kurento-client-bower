@@ -6610,8 +6610,8 @@ exports.isBuffer = isBuffer;
 function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
-}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/Development/kurento_js_merge_project@2/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
-},{"/var/lib/jenkins/workspace/Development/kurento_js_merge_project@2/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":15}],29:[function(require,module,exports){
+}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
+},{"/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":15}],29:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
 },{"./lib/_stream_passthrough.js":24}],30:[function(require,module,exports){
