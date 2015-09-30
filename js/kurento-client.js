@@ -6610,8 +6610,8 @@ exports.isBuffer = isBuffer;
 function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
-}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":15}],29:[function(require,module,exports){
+}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
+},{"/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":15}],29:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
 },{"./lib/_stream_passthrough.js":24}],30:[function(require,module,exports){
@@ -9638,7 +9638,9 @@ var kurentoClient = require('kurento-client');
 
 var disguise = kurentoClient.disguise;
 
-var ChecktypeError = kurentoClient.checkType.ChecktypeError;
+var checkType      = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -9667,6 +9669,65 @@ function Hub(){
   Hub.super_.call(this);
 };
 inherits(Hub, MediaObject);
+
+
+//
+// Public methods
+//
+
+/**
+ * Returns a string in dot (graphviz) format that represents the gstreamer 
+ * elements inside the pipeline
+ *
+ * @alias module:core/abstracts.Hub.getGstreamerDot
+ *
+ * @param {module:core/complexTypes.GstreamerDotDetails} [details]
+ *  Details of graph
+ *
+ * @param {module:core/abstracts.Hub~getGstreamerDotCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+Hub.prototype.getGstreamerDot = function(details, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  callback = arguments[arguments.length-1] instanceof Function
+           ? Array.prototype.pop.call(arguments)
+           : undefined;
+
+  switch(arguments.length){
+    case 0: details = undefined;
+    break;
+    case 1: 
+    break;
+
+    default:
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
+          error.length = arguments.length;
+          error.min = 0;
+          error.max = 1;
+
+      throw error;
+  }
+
+  checkType('GstreamerDotDetails', 'details', details);
+
+  var params = {
+    details: details
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getGstreamerDot', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.Hub~getGstreamerDotCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ *  The dot graph
+ */
 
 
 /**
@@ -12988,7 +13049,7 @@ var kurentoClient = require('kurento-client');
  *
  * @typedef core/complexTypes.GstreamerDotDetails
  *
- * @type {(SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL)}
+ * @type {(SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_FULL_PARAMS|SHOW_ALL|SHOW_VERBOSE)}
  */
 
 /**
@@ -13004,8 +13065,8 @@ function checkGstreamerDotDetails(key, value)
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
 
-  if(!value.match('SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL'))
-    throw SyntaxError(key+' param is not one of [SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL] ('+value+')');
+  if(!value.match('SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_FULL_PARAMS|SHOW_ALL|SHOW_VERBOSE'))
+    throw SyntaxError(key+' param is not one of [SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_FULL_PARAMS|SHOW_ALL|SHOW_VERBOSE] ('+value+')');
 };
 
 
