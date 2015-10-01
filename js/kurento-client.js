@@ -23242,7 +23242,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.1.1'});
+Object.defineProperty(exports, 'version', {value: '6.1.2-dev'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
