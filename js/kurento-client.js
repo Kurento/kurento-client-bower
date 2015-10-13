@@ -6612,8 +6612,8 @@ exports.isBuffer = isBuffer;
 function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
-}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
-},{"/var/lib/jenkins/workspace/kurento-js-build-project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":15}],29:[function(require,module,exports){
+}).call(this,{"isBuffer":require("/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
+},{"/var/lib/jenkins/workspace/Development/kurento_js_merge_project/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":15}],29:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
 },{"./lib/_stream_passthrough.js":24}],30:[function(require,module,exports){
@@ -17239,7 +17239,7 @@ var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
-var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
+var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
 
 
 /**
@@ -17251,14 +17251,14 @@ var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
  *  module:elements.RtpEndpoint RtpEndpoint} contains paired sink and source 
  *  :rom:cls:`MediaPad` for audio and video.
  *
- * @extends module:core/abstracts.SdpEndpoint
+ * @extends module:core/abstracts.BaseRtpEndpoint
  *
  * @constructor module:elements.RtpEndpoint
  */
 function RtpEndpoint(){
   RtpEndpoint.super_.call(this);
 };
-inherits(RtpEndpoint, SdpEndpoint);
+inherits(RtpEndpoint, BaseRtpEndpoint);
 
 
 /**
@@ -17278,9 +17278,9 @@ RtpEndpoint.constructorParams = {
 /**
  * @alias module:elements.RtpEndpoint.events
  *
- * @extends module:core/abstracts.SdpEndpoint.events
+ * @extends module:core/abstracts.BaseRtpEndpoint.events
  */
-RtpEndpoint.events = SdpEndpoint.events;
+RtpEndpoint.events = BaseRtpEndpoint.events;
 
 
 /**
