@@ -11395,6 +11395,68 @@ inherits(SdpEndpoint, SessionEndpoint);
 //
 
 /**
+ * Maximum audio bandwidth for receiving.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 0
+ *
+ * @alias module:core/abstracts.SdpEndpoint#getMaxAudioRecvBandwidth
+ *
+ * @param {module:core/abstracts.SdpEndpoint~getMaxAudioRecvBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+SdpEndpoint.prototype.getMaxAudioRecvBandwidth = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getMaxAudioRecvBandwidth', callback), this)
+};
+/**
+ * @callback module:core/abstracts.SdpEndpoint~getMaxAudioRecvBandwidthCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Maximum audio bandwidth for receiving.
+ *   Unit: kbps(kilobits per second).
+ *    0: unlimited.
+ *   Default value: 0
+ *
+ * @alias module:core/abstracts.SdpEndpoint#setMaxAudioRecvBandwidth
+ *
+ * @param {external:Integer} maxAudioRecvBandwidth
+ * @param {module:core/abstracts.SdpEndpoint~setMaxAudioRecvBandwidthCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+SdpEndpoint.prototype.setMaxAudioRecvBandwidth = function(maxAudioRecvBandwidth, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'maxAudioRecvBandwidth', maxAudioRecvBandwidth, {required: true});
+
+  var params = {
+    maxAudioRecvBandwidth: maxAudioRecvBandwidth
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setMaxAudioRecvBandwidth', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.SdpEndpoint~setMaxAudioRecvBandwidthCallback
+ * @param {external:Error} error
+ */
+
+/**
  * Maximum video bandwidth for receiving.
  *   Unit: kbps(kilobits per second).
  *    0: unlimited.
