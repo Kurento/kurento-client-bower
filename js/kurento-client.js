@@ -1043,6 +1043,7 @@ var async = require('async');
 
 var checkType = require('checktype');
 var checkParams = checkType.checkParams;
+var extend = require('extend');
 
 var createPromise = require('./createPromise');
 var register = require('./register');
@@ -1161,7 +1162,8 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
     if (params.mediaPipeline == undefined && host instanceof register.classes.MediaPipeline)
       params.mediaPipeline = host;
 
-    item.constructorParams = checkParams(params, constructor.constructorParams,
+    var params_ = extend({}, params)
+    item.constructorParams = checkParams(params_, constructor.constructorParams,
       item.type);
 
     if (!Object.keys(item.constructorParams).length)
@@ -1291,7 +1293,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
 module.exports = MediaObjectCreator;
 
-},{"./TransactionsManager":3,"./createPromise":5,"./register":7,"async":"async","checktype":38}],3:[function(require,module,exports){
+},{"./TransactionsManager":3,"./createPromise":5,"./register":7,"async":"async","checktype":38,"extend":40}],3:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
