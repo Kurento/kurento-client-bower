@@ -581,6 +581,27 @@ function KurentoClient(ws_uri, options, callback) {
 
     var operations = params.operations;
 
+    for (var i = 0, operation; operation = operations[i]; i++) {
+      var object = operation.params.object;
+      if (object instanceof MediaObject && object.id === null) {
+        var error = new ReferenceError('MediaObject not found in server');
+        error.code = 40101;
+        error.object = object;
+
+        // Notify error to all the operations in the transaction
+        operations.forEach(function (operation) {
+          if (operation.method == 'create')
+            operation.params.object.emit('_id', error);
+
+          var callback = operation.callback;
+          if (callback instanceof Function)
+            callback(error);
+        });
+
+        return callback(error);
+      }
+    }
+
     var promises = [];
 
     function checkId(operation, param) {
@@ -1024,7 +1045,7 @@ KurentoClient.getSingleton = function (ws_uri, options, callback) {
 
 module.exports = KurentoClient;
 
-},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./createPromise":5,"./disguise":6,"async":"async","checktype":38,"es6-promise":"es6-promise","events":14,"extend":40,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":121,"promisecallback":"promisecallback","reconnect-ws":126,"url":35}],2:[function(require,module,exports){
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./createPromise":5,"./disguise":6,"async":"async","checktype":38,"es6-promise":"es6-promise","events":14,"extend":40,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":119,"promisecallback":"promisecallback","reconnect-ws":124,"url":35}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
@@ -1043,7 +1064,6 @@ var async = require('async');
 
 var checkType = require('checktype');
 var checkParams = checkType.checkParams;
-var extend = require('extend');
 
 var createPromise = require('./createPromise');
 var register = require('./register');
@@ -1162,8 +1182,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
     if (params.mediaPipeline == undefined && host instanceof register.classes.MediaPipeline)
       params.mediaPipeline = host;
 
-    var params_ = extend({}, params)
-    item.constructorParams = checkParams(params_, constructor.constructorParams,
+    item.constructorParams = checkParams(params, constructor.constructorParams,
       item.type);
 
     if (!Object.keys(item.constructorParams).length)
@@ -1293,7 +1312,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
 module.exports = MediaObjectCreator;
 
-},{"./TransactionsManager":3,"./createPromise":5,"./register":7,"async":"async","checktype":38,"extend":40}],3:[function(require,module,exports){
+},{"./TransactionsManager":3,"./createPromise":5,"./register":7,"async":"async","checktype":38}],3:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -8884,7 +8903,7 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
   switch(arguments.length){
     case 0: details = undefined;
     break;
-    case 1: 
+    case 1: console.log('All optional params are used')
     break;
 
     default:
@@ -9642,9 +9661,7 @@ var kurentoClient = require('kurento-client');
 
 var disguise = kurentoClient.disguise;
 
-var checkType      = kurentoClient.checkType;
-var ChecktypeError = checkType.ChecktypeError;
-
+var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -9673,65 +9690,6 @@ function Hub(){
   Hub.super_.call(this);
 };
 inherits(Hub, MediaObject);
-
-
-//
-// Public methods
-//
-
-/**
- * Returns a string in dot (graphviz) format that represents the gstreamer 
- * elements inside the pipeline
- *
- * @alias module:core/abstracts.Hub.getGstreamerDot
- *
- * @param {module:core/complexTypes.GstreamerDotDetails} [details]
- *  Details of graph
- *
- * @param {module:core/abstracts.Hub~getGstreamerDotCallback} [callback]
- *
- * @return {external:Promise}
- */
-Hub.prototype.getGstreamerDot = function(details, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  callback = arguments[arguments.length-1] instanceof Function
-           ? Array.prototype.pop.call(arguments)
-           : undefined;
-
-  switch(arguments.length){
-    case 0: details = undefined;
-    break;
-    case 1: 
-    break;
-
-    default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
-          error.length = arguments.length;
-          error.min = 0;
-          error.max = 1;
-
-      throw error;
-  }
-
-  checkType('GstreamerDotDetails', 'details', details);
-
-  var params = {
-    details: details
-  };
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'getGstreamerDot', params, callback), this)
-};
-/**
- * @callback module:core/abstracts.Hub~getGstreamerDotCallback
- * @param {external:Error} error
- * @param {external:String} result
- *  The dot graph
- */
 
 
 /**
@@ -10086,7 +10044,7 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
     case 2: sourceMediaDescription = undefined;
     case 3: sinkMediaDescription = undefined;
     break;
-    case 4: 
+    case 4: console.log('All optional params are used')
     break;
 
     default:
@@ -10162,7 +10120,7 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
     case 2: sourceMediaDescription = undefined;
     case 3: sinkMediaDescription = undefined;
     break;
-    case 4: 
+    case 4: console.log('All optional params are used')
     break;
 
     default:
@@ -10220,7 +10178,7 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
   switch(arguments.length){
     case 0: details = undefined;
     break;
-    case 1: 
+    case 1: console.log('All optional params are used')
     break;
 
     default:
@@ -10281,7 +10239,7 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
     case 0: mediaType = undefined;
     case 1: description = undefined;
     break;
-    case 2: 
+    case 2: console.log('All optional params are used')
     break;
 
     default:
@@ -10345,7 +10303,7 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
     case 0: mediaType = undefined;
     case 1: description = undefined;
     break;
-    case 2: 
+    case 2: console.log('All optional params are used')
     break;
 
     default:
@@ -10402,7 +10360,7 @@ MediaElement.prototype.getStats = function(mediaType, callback){
   switch(arguments.length){
     case 0: mediaType = undefined;
     break;
-    case 1: 
+    case 1: console.log('All optional params are used')
     break;
 
     default:
@@ -10678,8 +10636,7 @@ function MediaObject(){
     var params =
     {
       object: this,
-      subscription: token.value,
-      sessionId: token.sessionId
+      subscription: token
     };
 
     this.emit('_rpc', undefined, 'unsubscribe', params, function(error)
@@ -11213,6 +11170,7 @@ MediaObject.prototype.release = function(callback){
 
         // Object was sucessfully released on the server,
         // remove it from cache and all its events
+        self.emit('release');
         Object.keys(self._events).forEach(function(event)
         {
           if(event[0] == '_'
@@ -11222,7 +11180,10 @@ MediaObject.prototype.release = function(callback){
 
           self.removeAllListeners(event);
         })
-        self.emit('release');
+
+        // Set id as null since the object don't exists anymore on the server so
+        // subsequent operations fail inmediatly
+        Object.defineProperty(self, 'id', {value: null});
 
         resolve();
       }
@@ -11281,7 +11242,15 @@ MediaObject.prototype.then = function(onFulfilled, onRejected){
       reject(error);
     };
 
-    if(self.id !== undefined)
+    if(self.id === null)
+    {
+      var error = new ReferenceError('MediaObject not found in server');
+          error.code = 40101;
+          error.object = self;
+
+      failure(error)
+    }
+    else if(self.id !== undefined)
       success(self)
     else
       self.once('_id', function(error, id)
@@ -11395,68 +11364,6 @@ inherits(SdpEndpoint, SessionEndpoint);
 //
 // Public properties
 //
-
-/**
- * Maximum audio bandwidth for receiving.
- *   Unit: kbps(kilobits per second).
- *    0: unlimited.
- *   Default value: 0
- *
- * @alias module:core/abstracts.SdpEndpoint#getMaxAudioRecvBandwidth
- *
- * @param {module:core/abstracts.SdpEndpoint~getMaxAudioRecvBandwidthCallback} [callback]
- *
- * @return {external:Promise}
- */
-SdpEndpoint.prototype.getMaxAudioRecvBandwidth = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  if(!arguments.length) callback = undefined;
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'getMaxAudioRecvBandwidth', callback), this)
-};
-/**
- * @callback module:core/abstracts.SdpEndpoint~getMaxAudioRecvBandwidthCallback
- * @param {external:Error} error
- * @param {external:Integer} result
- */
-
-/**
- * Maximum audio bandwidth for receiving.
- *   Unit: kbps(kilobits per second).
- *    0: unlimited.
- *   Default value: 0
- *
- * @alias module:core/abstracts.SdpEndpoint#setMaxAudioRecvBandwidth
- *
- * @param {external:Integer} maxAudioRecvBandwidth
- * @param {module:core/abstracts.SdpEndpoint~setMaxAudioRecvBandwidthCallback} [callback]
- *
- * @return {external:Promise}
- */
-SdpEndpoint.prototype.setMaxAudioRecvBandwidth = function(maxAudioRecvBandwidth, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  checkType('int', 'maxAudioRecvBandwidth', maxAudioRecvBandwidth, {required: true});
-
-  var params = {
-    maxAudioRecvBandwidth: maxAudioRecvBandwidth
-  };
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'setMaxAudioRecvBandwidth', params, callback), this)
-};
-/**
- * @callback module:core/abstracts.SdpEndpoint~setMaxAudioRecvBandwidthCallback
- * @param {external:Error} error
- */
 
 /**
  * Maximum video bandwidth for receiving.
@@ -13115,7 +13022,7 @@ var kurentoClient = require('kurento-client');
  *
  * @typedef core/complexTypes.GstreamerDotDetails
  *
- * @type {(SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_FULL_PARAMS|SHOW_ALL|SHOW_VERBOSE)}
+ * @type {(SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL)}
  */
 
 /**
@@ -13131,8 +13038,8 @@ function checkGstreamerDotDetails(key, value)
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
 
-  if(!value.match('SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_FULL_PARAMS|SHOW_ALL|SHOW_VERBOSE'))
-    throw SyntaxError(key+' param is not one of [SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_FULL_PARAMS|SHOW_ALL|SHOW_VERBOSE] ('+value+')');
+  if(!value.match('SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL'))
+    throw SyntaxError(key+' param is not one of [SHOW_MEDIA_TYPE|SHOW_CAPS_DETAILS|SHOW_NON_DEFAULT_PARAMS|SHOW_STATES|SHOW_ALL] ('+value+')');
 };
 
 
@@ -17303,7 +17210,7 @@ var disguise = kurentoClient.disguise;
 
 var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
-var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
+var SdpEndpoint = require('kurento-client-core').abstracts.SdpEndpoint;
 
 
 /**
@@ -17315,29 +17222,24 @@ var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
  *  module:elements.RtpEndpoint RtpEndpoint} contains paired sink and source 
  *  :rom:cls:`MediaPad` for audio and video.
  *
- * @extends module:core/abstracts.BaseRtpEndpoint
+ * @extends module:core/abstracts.SdpEndpoint
  *
  * @constructor module:elements.RtpEndpoint
  */
 function RtpEndpoint(){
   RtpEndpoint.super_.call(this);
 };
-inherits(RtpEndpoint, BaseRtpEndpoint);
+inherits(RtpEndpoint, SdpEndpoint);
 
 
 /**
  * @alias module:elements.RtpEndpoint.constructorParams
- *
- * @property {module:elements/complexTypes.SDES} [crypto]
- *  Crypto parameters
  *
  * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  */
 RtpEndpoint.constructorParams = {
-  crypto: {
-    type: 'SDES'  },
   mediaPipeline: {
     type: 'MediaPipeline',
     required: true
@@ -17347,9 +17249,9 @@ RtpEndpoint.constructorParams = {
 /**
  * @alias module:elements.RtpEndpoint.events
  *
- * @extends module:core/abstracts.BaseRtpEndpoint.events
+ * @extends module:core/abstracts.SdpEndpoint.events
  */
-RtpEndpoint.events = BaseRtpEndpoint.events;
+RtpEndpoint.events = SdpEndpoint.events;
 
 
 /**
@@ -17421,8 +17323,6 @@ function noop(error, result) {
  *
  * @constructor module:elements.WebRtcEndpoint
  *
- * @fires {@link module:elements#event:OnDataChannelClosed OnDataChannelClosed}
- * @fires {@link module:elements#event:OnDataChannelOpened OnDataChannelOpened}
  * @fires {@link module:elements#event:OnIceCandidate OnIceCandidate}
  * @fires {@link module:elements#event:OnIceComponentStateChanged OnIceComponentStateChanged}
  * @fires {@link module:elements#event:OnIceGatheringDone OnIceGatheringDone}
@@ -17649,114 +17549,6 @@ WebRtcEndpoint.prototype.addIceCandidate = function(candidate, callback){
  */
 
 /**
- * Close an opened data channel
- *
- * @alias module:elements.WebRtcEndpoint.closeDataChannel
- *
- * @param {external:Integer} channelId
- *  The channel identifier
- *
- * @param {module:elements.WebRtcEndpoint~closeDataChannelCallback} [callback]
- *
- * @return {external:Promise}
- */
-WebRtcEndpoint.prototype.closeDataChannel = function(channelId, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  checkType('int', 'channelId', channelId, {required: true});
-
-  var params = {
-    channelId: channelId
-  };
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'closeDataChannel', params, callback), this)
-};
-/**
- * @callback module:elements.WebRtcEndpoint~closeDataChannelCallback
- * @param {external:Error} error
- */
-
-/**
- * Create a new data channel if data channel are supported
- *
- * @alias module:elements.WebRtcEndpoint.createDataChannel
- *
- * @param {external:String} [label]
- *  Channel's label attribute
- *
- * @param {external:Boolean} [ordered]
- *  If the data channel should guarantee order or not
- *
- * @param {external:Integer} [maxPacketLifeTime]
- *  the length of the time window (in milliseconds) during which transmissions 
- *  and retransmissions may occur in unreliable mode
- *
- * @param {external:Integer} [maxRetransmits]
- *  maximum number of retransmissions that are attempted in unreliable mode
- *
- * @param {external:String} [protocol]
- *  the name of the sub-protocol used
- *
- * @param {module:elements.WebRtcEndpoint~createDataChannelCallback} [callback]
- *
- * @return {external:Promise}
- */
-WebRtcEndpoint.prototype.createDataChannel = function(label, ordered, maxPacketLifeTime, maxRetransmits, protocol, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  callback = arguments[arguments.length-1] instanceof Function
-           ? Array.prototype.pop.call(arguments)
-           : undefined;
-
-  switch(arguments.length){
-    case 0: label = undefined;
-    case 1: ordered = undefined;
-    case 2: maxPacketLifeTime = undefined;
-    case 3: maxRetransmits = undefined;
-    case 4: protocol = undefined;
-    break;
-    case 5: 
-    break;
-
-    default:
-      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-5]');
-          error.length = arguments.length;
-          error.min = 0;
-          error.max = 5;
-
-      throw error;
-  }
-
-  checkType('String', 'label', label);
-  checkType('boolean', 'ordered', ordered);
-  checkType('int', 'maxPacketLifeTime', maxPacketLifeTime);
-  checkType('int', 'maxRetransmits', maxRetransmits);
-  checkType('String', 'protocol', protocol);
-
-  var params = {
-    label: label,
-    ordered: ordered,
-    maxPacketLifeTime: maxPacketLifeTime,
-    maxRetransmits: maxRetransmits,
-    protocol: protocol
-  };
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'createDataChannel', params, callback), this)
-};
-/**
- * @callback module:elements.WebRtcEndpoint~createDataChannelCallback
- * @param {external:Error} error
- */
-
-/**
  * Init the gathering of ICE candidates.
  * It must be called after SdpEndpoint::generateOffer or 
  * SdpEndpoint::processOffer
@@ -17808,7 +17600,7 @@ WebRtcEndpoint.constructorParams = {
  *
  * @extends module:core/abstracts.BaseRtpEndpoint.events
  */
-WebRtcEndpoint.events = BaseRtpEndpoint.events.concat(['OnDataChannelClosed', 'OnDataChannelOpened', 'OnIceCandidate', 'OnIceComponentStateChanged', 'OnIceGatheringDone']);
+WebRtcEndpoint.events = BaseRtpEndpoint.events.concat(['OnIceCandidate', 'OnIceComponentStateChanged', 'OnIceGatheringDone']);
 
 
 /**
@@ -17998,55 +17790,6 @@ exports.HttpEndpoint = HttpEndpoint;
  * details.
  */
 
-var kurentoClient = require('kurento-client');
-
-
-
-/**
- * Describes the encryption and authentication algorithms
- *
- * @typedef elements/complexTypes.CryptoSuite
- *
- * @type {(AES_128_CM_HMAC_SHA1_32|AES_128_CM_HMAC_SHA1_80|AES_256_CM_HMAC_SHA1_32|AES_256_CM_HMAC_SHA1_80)}
- */
-
-/**
- * Checker for {@link module:elements/complexTypes.CryptoSuite}
- *
- * @memberof module:elements/complexTypes
- *
- * @param {external:String} key
- * @param {module:elements/complexTypes.CryptoSuite} value
- */
-function checkCryptoSuite(key, value)
-{
-  if(typeof value != 'string')
-    throw SyntaxError(key+' param should be a String, not '+typeof value);
-
-  if(!value.match('AES_128_CM_HMAC_SHA1_32|AES_128_CM_HMAC_SHA1_80|AES_256_CM_HMAC_SHA1_32|AES_256_CM_HMAC_SHA1_80'))
-    throw SyntaxError(key+' param is not one of [AES_128_CM_HMAC_SHA1_32|AES_128_CM_HMAC_SHA1_80|AES_256_CM_HMAC_SHA1_32|AES_256_CM_HMAC_SHA1_80] ('+value+')');
-};
-
-
-module.exports = checkCryptoSuite;
-
-},{"kurento-client":"kurento-client"}],107:[function(require,module,exports){
-/* Autogenerated with Kurento Idl */
-
-/*
- * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
- *
- * All rights reserved. This program and the accompanying materials are made
- * available under the terms of the GNU Lesser General Public License (LGPL)
- * version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
- */
-
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
@@ -18139,7 +17882,7 @@ module.exports = IceCandidate;
 
 IceCandidate.check = checkIceCandidate;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],108:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],107:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18188,7 +17931,7 @@ function checkIceComponentState(key, value)
 
 module.exports = checkIceComponentState;
 
-},{"kurento-client":"kurento-client"}],109:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],108:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18238,107 +17981,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"kurento-client":"kurento-client"}],110:[function(require,module,exports){
-/* Autogenerated with Kurento Idl */
-
-/*
- * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
- *
- * All rights reserved. This program and the accompanying materials are made
- * available under the terms of the GNU Lesser General Public License (LGPL)
- * version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
- */
-
-var inherits = require('inherits');
-
-var kurentoClient = require('kurento-client');
-
-var checkType = kurentoClient.checkType;
-var ChecktypeError = checkType.ChecktypeError;
-
-var ComplexType = require('kurento-client-core').complexTypes.ComplexType;
-
-
-/**
- * Security Descriptions for Media Streams
- *
- * @constructor module:elements/complexTypes.SDES
- *
- * @property {external:String} key
- *  The cryptographic master key. It should be 30 bytes length when AES_128_CM 
- *  cipher is used or 46 bytes length for AES_256_CM cipher), If no key is 
- *  provided a random one will be used
- * @property {module:elements/complexTypes.CryptoSuite} crypto
- *  The crypto-suite used
- */
-function SDES(sDESDict){
-  if(!(this instanceof SDES))
-    return new SDES(sDESDict)
-
-  sDESDict = sDESDict || {}
-
-  // Check sDESDict has the required fields
-  checkType('String', 'sDESDict.key', sDESDict.key);
-  checkType('CryptoSuite', 'sDESDict.crypto', sDESDict.crypto);
-
-  // Init parent class
-  SDES.super_.call(this, sDESDict)
-
-  // Set object properties
-  Object.defineProperties(this, {
-    key: {
-      writable: true,
-      enumerable: true,
-      value: sDESDict.key
-    },
-    crypto: {
-      writable: true,
-      enumerable: true,
-      value: sDESDict.crypto
-    }
-  })
-}
-inherits(SDES, ComplexType)
-
-// Private identifiers to allow re-construction of the complexType on the server
-// They need to be enumerable so JSON.stringify() can access to them
-Object.defineProperties(SDES.prototype, {
-  __module__: {
-    enumerable: true,
-    value: "kurento"
-  },
-  __type__: {
-    enumerable: true,
-    value: "SDES"
-  }
-})
-
-/**
- * Checker for {@link module:elements/complexTypes.SDES}
- *
- * @memberof module:elements/complexTypes
- *
- * @param {external:String} key
- * @param {module:elements/complexTypes.SDES} value
- */
-function checkSDES(key, value)
-{
-  if(!(value instanceof SDES))
-    throw ChecktypeError(key, SDES, value);
-};
-
-
-module.exports = SDES;
-
-SDES.check = checkSDES;
-
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],109:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18364,20 +18007,16 @@ SDES.check = checkSDES;
  * @license LGPL
  */
 
-var CryptoSuite = require('./CryptoSuite');
 var IceCandidate = require('./IceCandidate');
 var IceComponentState = require('./IceComponentState');
 var MediaProfileSpecType = require('./MediaProfileSpecType');
-var SDES = require('./SDES');
 
 
-exports.CryptoSuite = CryptoSuite;
 exports.IceCandidate = IceCandidate;
 exports.IceComponentState = IceComponentState;
 exports.MediaProfileSpecType = MediaProfileSpecType;
-exports.SDES = SDES;
 
-},{"./CryptoSuite":106,"./IceCandidate":107,"./IceComponentState":108,"./MediaProfileSpecType":109,"./SDES":110}],112:[function(require,module,exports){
+},{"./IceCandidate":106,"./IceComponentState":107,"./MediaProfileSpecType":108}],110:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18583,7 +18222,7 @@ module.exports = FaceOverlayFilter;
 
 FaceOverlayFilter.check = checkFaceOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],113:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18722,7 +18361,7 @@ module.exports = GStreamerFilter;
 
 GStreamerFilter.check = checkGStreamerFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],114:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],112:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18927,7 +18566,7 @@ module.exports = ImageOverlayFilter;
 
 ImageOverlayFilter.check = checkImageOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],115:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],113:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19017,7 +18656,7 @@ module.exports = ZBarFilter;
 
 ZBarFilter.check = checkZBarFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],116:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],114:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19093,7 +18732,7 @@ module.exports = OpenCVFilter;
 
 OpenCVFilter.check = checkOpenCVFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],117:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],115:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19124,7 +18763,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":116}],118:[function(require,module,exports){
+},{"./OpenCVFilter":114}],116:[function(require,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -19192,7 +18831,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],119:[function(require,module,exports){
+},{}],117:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -19213,7 +18852,7 @@ var JsonRpcClient  = require('./jsonrpcclient');
 
 exports.JsonRpcClient  = JsonRpcClient;
 
-},{"./jsonrpcclient":120}],120:[function(require,module,exports){
+},{"./jsonrpcclient":118}],118:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -19248,7 +18887,7 @@ function JsonRpcClient(wsUrl, onRequest, onerror)
 
 module.exports  = JsonRpcClient;
 
-},{"../..":121,"ws":125}],121:[function(require,module,exports){
+},{"../..":119,"ws":123}],119:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -20067,7 +19706,7 @@ var clients = require('./clients');
 RpcBuilder.clients = clients;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":118,"./clients":119,"./packers":124,"events":14,"inherits":"inherits"}],122:[function(require,module,exports){
+},{"./Mapper":116,"./clients":117,"./packers":122,"events":14,"inherits":"inherits"}],120:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -20171,7 +19810,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],123:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -20186,7 +19825,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],124:[function(require,module,exports){
+},{}],122:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC  = require('./XmlRPC');
 
@@ -20194,7 +19833,7 @@ var XmlRPC  = require('./XmlRPC');
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":122,"./XmlRPC":123}],125:[function(require,module,exports){
+},{"./JsonRPC":120,"./XmlRPC":121}],123:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -20239,7 +19878,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],126:[function(require,module,exports){
+},{}],124:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -20258,7 +19897,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":127,"websocket-stream":134}],127:[function(require,module,exports){
+},{"reconnect-core":125,"websocket-stream":132}],125:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -20386,7 +20025,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":128,"events":14}],128:[function(require,module,exports){
+},{"backoff":126,"events":14}],126:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20437,7 +20076,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":129,"./lib/function_call.js":130,"./lib/strategy/exponential":131,"./lib/strategy/fibonacci":132}],129:[function(require,module,exports){
+},{"./lib/backoff":127,"./lib/function_call.js":128,"./lib/strategy/exponential":129,"./lib/strategy/fibonacci":130}],127:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20523,7 +20162,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":14,"util":37}],130:[function(require,module,exports){
+},{"events":14,"util":37}],128:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20752,7 +20391,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":129,"./strategy/fibonacci":132,"events":14,"util":37}],131:[function(require,module,exports){
+},{"./backoff":127,"./strategy/fibonacci":130,"events":14,"util":37}],129:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20788,7 +20427,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":133,"util":37}],132:[function(require,module,exports){
+},{"./strategy":131,"util":37}],130:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20825,7 +20464,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":133,"util":37}],133:[function(require,module,exports){
+},{"./strategy":131,"util":37}],131:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -20925,7 +20564,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":14,"util":37}],134:[function(require,module,exports){
+},{"events":14,"util":37}],132:[function(require,module,exports){
 (function (process){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -21021,7 +20660,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,require('_process'))
-},{"_process":17,"isbuffer":135,"through":136,"ws":137}],135:[function(require,module,exports){
+},{"_process":17,"isbuffer":133,"through":134,"ws":135}],133:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -21031,7 +20670,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":9}],136:[function(require,module,exports){
+},{"buffer":9}],134:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -21143,9 +20782,9 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":17,"stream":33}],137:[function(require,module,exports){
-arguments[4][125][0].apply(exports,arguments)
-},{"dup":125}],"async":[function(require,module,exports){
+},{"_process":17,"stream":33}],135:[function(require,module,exports){
+arguments[4][123][0].apply(exports,arguments)
+},{"dup":123}],"async":[function(require,module,exports){
 (function (process,global){
 /*!
  * async
@@ -23368,7 +23007,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.1.3-dev'});
+Object.defineProperty(exports, 'version', {value: '6.1.0'});
 
 
 var HubPort = require('./HubPort');
@@ -23410,7 +23049,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.1.2-dev'});
+Object.defineProperty(exports, 'version', {value: '6.1.0'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -23439,7 +23078,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":94,"./Composite":95,"./Dispatcher":96,"./DispatcherOneToMany":97,"./HttpPostEndpoint":98,"./Mixer":99,"./PlayerEndpoint":100,"./RecorderEndpoint":101,"./RtpEndpoint":102,"./WebRtcEndpoint":103,"./abstracts":105,"./complexTypes":111}],"kurento-client-filters":[function(require,module,exports){
+},{"./AlphaBlending":94,"./Composite":95,"./Dispatcher":96,"./DispatcherOneToMany":97,"./HttpPostEndpoint":98,"./Mixer":99,"./PlayerEndpoint":100,"./RecorderEndpoint":101,"./RtpEndpoint":102,"./WebRtcEndpoint":103,"./abstracts":105,"./complexTypes":109}],"kurento-client-filters":[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -23466,7 +23105,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.1.2-dev'});
+Object.defineProperty(exports, 'version', {value: '6.1.0'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
@@ -23482,7 +23121,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":112,"./GStreamerFilter":113,"./ImageOverlayFilter":114,"./ZBarFilter":115,"./abstracts":117}],"kurento-client":[function(require,module,exports){
+},{"./FaceOverlayFilter":110,"./GStreamerFilter":111,"./ImageOverlayFilter":112,"./ZBarFilter":113,"./abstracts":115}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
