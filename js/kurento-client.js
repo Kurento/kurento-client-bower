@@ -18222,7 +18222,7 @@ var kurentoClient = require('kurento-client');
  *
  * @typedef elements/complexTypes.MediaProfileSpecType
  *
- * @type {(WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY)}
+ * @type {(WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|KURENTO_SPLIT_RECORDER)}
  */
 
 /**
@@ -18238,8 +18238,8 @@ function checkMediaProfileSpecType(key, value)
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
 
-  if(!value.match('WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY'))
-    throw SyntaxError(key+' param is not one of [WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY] ('+value+')');
+  if(!value.match('WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|KURENTO_SPLIT_RECORDER'))
+    throw SyntaxError(key+' param is not one of [WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|KURENTO_SPLIT_RECORDER] ('+value+')');
 };
 
 
