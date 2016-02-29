@@ -29776,7 +29776,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.4.0'});
+Object.defineProperty(exports, 'version', {value: '6.4.1-dev'});
 
 
 var AlphaBlending = require('./AlphaBlending');
