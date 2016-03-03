@@ -43,8 +43,17 @@ var MediaObject = require('kurento-client-core').abstracts.MediaObject;
 const MEDIA_OBJECT_TYPE_NOT_FOUND = 40100
 const MEDIA_OBJECT_NOT_FOUND = 40101
 const MEDIA_OBJECT_METHOD_NOT_FOUND = 40105
+const INVALID_SESSION = 40007
 
 const BASE_TIMEOUT = 20000;
+
+var PING_INTERVAL = 5000;
+var HEARTBEAT = 60000;
+var pingNextNum = 0;
+var enabledPings = true;
+var pingPongStarted = false;
+var pingInterval;
+var notReconnectIfNumLessThan = -1;
 
 /**
  * @function module:kurentoClient.KurentoClient~findIndex
@@ -290,6 +299,7 @@ function KurentoClient(ws_uri, options, callback) {
     configurable: true
   })
   this.on('disconnect', function () {
+    onDisconnected();
     Object.defineProperty(this, 'sessionId', {
       configurable: false,
       get: function () {
@@ -300,6 +310,24 @@ function KurentoClient(ws_uri, options, callback) {
     for (var id in objects)
       objects[id].emit('release')
   })
+
+  // Emit events
+
+  function onReconnected(sameSession) {
+    self.emit('reconnected', sameSession);
+  }
+
+  function onDisconnected() {
+    self.emit('disconnected');
+  }
+
+  function onConnectionFailed() {
+    self.emit('connectionFailed');
+  }
+
+  function onConnected() {
+    self.emit('connected');
+  }
 
   // Encode commands
 
@@ -342,11 +370,12 @@ function KurentoClient(ws_uri, options, callback) {
           'stack': {
             value: [error.toString()].concat(
               error.stack.split('\n')[1],
-              stack.split('\n').slice(2)
+              error.stack.split('\n').slice(2)
             ).join('\n')
           }
         })
-      } else if (self.sessionId !== result.sessionId)
+      } else if ((self.sessionId !== result.sessionId) && (result.value !==
+          'pong'))
         Object.defineProperty(self, 'sessionId', {
           configurable: true,
           value: result.sessionId
@@ -780,10 +809,64 @@ function KurentoClient(ws_uri, options, callback) {
     callback = (callback || noop).bind(this)
 
     //
+    // Ping
+    //
+    function enablePing() {
+      enabledPings = true;
+      if (!pingPongStarted) {
+        pingPongStarted = true;
+        pingInterval = setInterval(sendPing, HEARTBEAT);
+        sendPing();
+      }
+    }
+
+    function updateNotReconnectIfLessThan() {
+      notReconnectIfNumLessThan = pingNextNum;
+      console.log("notReconnectIfNumLessThan = " + notReconnectIfNumLessThan);
+    }
+
+    function sendPing() {
+      if (enabledPings) {
+        var params = null;
+
+        if (pingNextNum == 0 || pingNextNum == notReconnectIfNumLessThan) {
+          params = {
+            interval: PING_INTERVAL
+          };
+        }
+
+        pingNextNum++;
+
+        var request = {
+          method: 'ping',
+          params: params,
+          callback: (function (pingNum) {
+            return function (error, result) {
+              if (error) {
+                if (pingNum > notReconnectIfNumLessThan) {
+                  enabledPings = false;
+                  updateNotReconnectIfLessThan();
+                  console.log("Server did not respond to ping message " +
+                    pingNum + ".");
+                  clearInterval(pingInterval);
+                  pingPongStarted = false;
+                }
+              }
+            }
+          }(pingNextNum))
+        }
+        send(request);
+      } else {
+        console.log("Trying to send ping, but ping is not enabled");
+      }
+    }
+
+    //
     // Reconnect websockets
     //
 
     var closed = false;
+    var reconnected = false;
     var re = reconnect({
         // all options are optional
         // initialDelay: 1e3,
@@ -797,6 +880,30 @@ function KurentoClient(ws_uri, options, callback) {
           ws_stream.writable = false;
 
         rpc.transport = ws_stream;
+        enablePing();
+        if (reconnected) {
+          var params = {
+            sessionId: self.sessionId
+          };
+          var request = {
+            method: 'connect',
+            params: params,
+            callback: function (error, response) {
+              if (error) {
+                if (error.code === INVALID_SESSION) {
+                  console.log("Invalid Session")
+                  objects = {}
+                  onReconnected(false);
+                }
+              } else {
+                onReconnected(true);
+              }
+            }
+          }
+          send(request);
+        } else {
+          onConnected();
+        }
       })
       .connect(ws_uri);
 
@@ -816,6 +923,16 @@ function KurentoClient(ws_uri, options, callback) {
     };
 
     re.on('fail', this.emit.bind(this, 'disconnect'));
+
+    re.on('reconnect', function (n, delay) {
+      console.log('reconnect to server', n, delay, self.sessionId);
+      if (pingInterval != undefined) {
+        clearInterval(pingInterval);
+        pingPongStarted = false;
+      }
+
+      reconnected = true;
+    })
 
     //
     // Promise interface ("thenable")
