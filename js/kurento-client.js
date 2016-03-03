@@ -14860,6 +14860,10 @@ function noop(error, result) {
  * @extends module:core/abstracts.UriEndpoint
  *
  * @constructor module:elements.RecorderEndpoint
+ *
+ * @fires {@link module:elements#event:Paused Paused}
+ * @fires {@link module:elements#event:Recording Recording}
+ * @fires {@link module:elements#event:Stopped Stopped}
  */
 function RecorderEndpoint(){
   RecorderEndpoint.super_.call(this);
@@ -14937,7 +14941,7 @@ RecorderEndpoint.constructorParams = {
  *
  * @extends module:core/abstracts.UriEndpoint.events
  */
-RecorderEndpoint.events = UriEndpoint.events;
+RecorderEndpoint.events = UriEndpoint.events.concat(['Paused', 'Recording', 'Stopped']);
 
 
 /**
