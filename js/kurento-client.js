@@ -14889,9 +14889,8 @@ RecorderEndpoint.prototype.record = function(callback){
  *  belongs
  *
  * @property {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
- *  Choose either a {@link 
- *  module:elements.RecorderEndpoint#MediaProfileSpecType.WEBM} or a {@link 
- *  module:elements.RecorderEndpoint#MediaProfileSpecType.MP4} profile for 
+ *  Choose either one of the values defined in {@link 
+ *  module:elements.RecorderEndpoint#MediaProfileSpecType} as profile for 
  *  recording
  *
  * @property {external:Boolean} [stopOnEndOfStream]
