@@ -23,7 +23,7 @@ var extend = require('extend');
 var inherits = require('inherits');
 var reconnect = require('reconnect-ws');
 
-var checkType = require('checktype');
+var checkType = require('./checkType');
 
 var RpcBuilder = require('kurento-jsonrpc');
 var JsonRPC = RpcBuilder.packers.JsonRPC;
@@ -1147,7 +1147,7 @@ KurentoClient.getSingleton = function (ws_uri, options, callback) {
 
 module.exports = KurentoClient;
 
-},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./createPromise":5,"./disguise":6,"async":"async","checktype":17,"es6-promise":"es6-promise","events":21,"extend":22,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":114,"promisecallback":"promisecallback","reconnect-ws":136,"url":198}],2:[function(require,module,exports){
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","es6-promise":"es6-promise","events":21,"extend":22,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":114,"promisecallback":"promisecallback","reconnect-ws":136,"url":198}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
@@ -1164,7 +1164,7 @@ module.exports = KurentoClient;
 
 var async = require('async');
 
-var checkType = require('checktype');
+var checkType = require('./checkType');
 var checkParams = checkType.checkParams;
 var extend = require('extend');
 
@@ -1288,6 +1288,10 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
     var params_ = extend({}, params)
     item.constructorParams = checkParams(params_, constructor.constructorParams,
       item.type);
+
+    if (Object.keys(params_)) {
+      item.properties = params_;
+    }
 
     if (!Object.keys(item.constructorParams).length)
       delete item.constructorParams;
@@ -1416,7 +1420,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
 module.exports = MediaObjectCreator;
 
-},{"./TransactionsManager":3,"./createPromise":5,"./register":7,"async":"async","checktype":17,"extend":22}],3:[function(require,module,exports){
+},{"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./register":8,"async":"async","extend":22}],3:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -1657,6 +1661,153 @@ if (typeof kurentoClient == 'undefined')
  *
  */
 
+/**
+ * Number.isInteger() polyfill
+ * @function external:Number#isInteger
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger Number.isInteger}
+ */
+if (!Number.isInteger) {
+  Number.isInteger = function isInteger(nVal) {
+    return typeof nVal === "number" && isFinite(nVal) && nVal > -
+      9007199254740992 && nVal < 9007199254740992 && Math.floor(nVal) ===
+      nVal;
+  };
+}
+
+function ChecktypeError(key, type, value) {
+  return SyntaxError(key + ' param should be a ' + (type.name || type) +
+    ', not ' + value.constructor.name);
+}
+
+//
+// Basic types
+//
+
+function checkArray(type, key, value) {
+  if (!(value instanceof Array))
+    throw ChecktypeError(key, 'Array of ' + type, value);
+
+  value.forEach(function (item, i) {
+    checkType(type, key + '[' + i + ']', item);
+  })
+};
+
+function checkBoolean(key, value) {
+  if (typeof value != 'boolean')
+    throw ChecktypeError(key, Boolean, value);
+};
+
+function checkNumber(key, value) {
+  if (typeof value != 'number')
+    throw ChecktypeError(key, Number, value);
+};
+
+function checkInteger(key, value) {
+  if (!Number.isInteger(value))
+    throw ChecktypeError(key, 'Integer', value);
+};
+
+function checkObject(key, value) {
+  if (typeof value != 'object')
+    throw ChecktypeError(key, Object, value);
+};
+
+function checkString(key, value) {
+  if (typeof value != 'string')
+    throw ChecktypeError(key, String, value);
+};
+
+// Checker functions
+
+function checkType(type, key, value, options) {
+  options = options || {};
+
+  if (value != undefined) {
+    if (options.isArray)
+      return checkArray(type, key, value);
+
+    var checker = checkType[type];
+    if (checker) return checker(key, value);
+
+    console.warn("Could not check " + key + ", unknown type " + type);
+    //    throw TypeError("Could not check "+key+", unknown type "+type);
+  } else if (options.required)
+    throw SyntaxError(key + " param is required");
+
+};
+
+function checkParams(params, scheme, class_name) {
+  var result = {};
+
+  // check MediaObject params
+  for (var key in scheme) {
+    var value = params[key];
+
+    var s = scheme[key];
+
+    checkType(s.type, key, value, s);
+
+    if (value == undefined) continue;
+
+    result[key] = value;
+    delete params[key];
+  };
+
+  return result;
+};
+
+function checkMethodParams(callparams, method_params) {
+  var result = {};
+
+  var index = 0,
+    param;
+  for (; param = method_params[index]; index++) {
+    var key = param.name;
+    var value = callparams[index];
+
+    checkType(param.type, key, value, param);
+
+    result[key] = value;
+  }
+
+  var params = callparams.slice(index);
+  if (params.length)
+    console.warning('Unused params:', params);
+
+  return result;
+};
+
+module.exports = checkType;
+
+checkType.checkArray = checkArray;
+checkType.checkParams = checkParams;
+checkType.ChecktypeError = ChecktypeError;
+
+// Basic types
+
+checkType.boolean = checkBoolean;
+checkType.double = checkNumber;
+checkType.float = checkNumber;
+checkType.int = checkInteger;
+checkType.Object = checkObject;
+checkType.String = checkString;
+
+},{}],6:[function(require,module,exports){
+/*
+ * (C) Copyright 2014 Kurento (http://kurento.org/)
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser General Public License
+ * (LGPL) version 2.1 which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl-2.1.html
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ */
+
 var Promise = require('es6-promise').Promise;
 
 var async = require('async');
@@ -1682,7 +1833,7 @@ function createPromise(data, func, callback) {
 
 module.exports = createPromise;
 
-},{"async":"async","es6-promise":"es6-promise","promisecallback":"promisecallback"}],6:[function(require,module,exports){
+},{"async":"async","es6-promise":"es6-promise","promisecallback":"promisecallback"}],7:[function(require,module,exports){
 /*
  * (C) Copyright 2015 Kurento (http://kurento.org/)
  *
@@ -1728,8 +1879,8 @@ function disguise(target, source) {
 
 module.exports = disguise
 
-},{}],7:[function(require,module,exports){
-var checkType = require('checktype');
+},{}],8:[function(require,module,exports){
+var checkType = require('./checkType');
 
 var abstracts = {};
 var classes = {};
@@ -1839,7 +1990,7 @@ register.classes = classes;
 register.complexTypes = complexTypes;
 register.modules = modules;
 
-},{"checktype":17}],8:[function(require,module,exports){
+},{"./checkType":5}],9:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -1890,7 +2041,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":9,"./lib/function_call.js":10,"./lib/strategy/exponential":11,"./lib/strategy/fibonacci":12}],9:[function(require,module,exports){
+},{"./lib/backoff":10,"./lib/function_call.js":11,"./lib/strategy/exponential":12,"./lib/strategy/fibonacci":13}],10:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -1976,7 +2127,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":21,"util":200}],10:[function(require,module,exports){
+},{"events":21,"util":200}],11:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2205,7 +2356,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":9,"./strategy/fibonacci":12,"events":21,"util":200}],11:[function(require,module,exports){
+},{"./backoff":10,"./strategy/fibonacci":13,"events":21,"util":200}],12:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2241,7 +2392,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":13,"util":200}],12:[function(require,module,exports){
+},{"./strategy":14,"util":200}],13:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2278,7 +2429,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":13,"util":200}],13:[function(require,module,exports){
+},{"./strategy":14,"util":200}],14:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2378,7 +2529,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":21,"util":200}],14:[function(require,module,exports){
+},{"events":21,"util":200}],15:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -2504,7 +2655,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 (function (global){
 /*!
  * The buffer module from node.js, for the browser.
@@ -4056,183 +4207,12 @@ function blitBuffer (src, dst, offset, length) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"base64-js":14,"ieee754":23,"isarray":16}],16:[function(require,module,exports){
+},{"base64-js":15,"ieee754":23,"isarray":17}],17:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
-
-},{}],17:[function(require,module,exports){
-/*
- * (C) Copyright 2014 Kurento (http://kurento.org/)
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- */
-
-
-/**
- * Number.isInteger() polyfill
- * @function external:Number#isInteger
- * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger Number.isInteger}
- */
-if (!Number.isInteger) {
-  Number.isInteger = function isInteger (nVal) {
-    return typeof nVal === "number" && isFinite(nVal)
-        && nVal > -9007199254740992 && nVal < 9007199254740992
-        && Math.floor(nVal) === nVal;
-  };
-}
-
-
-function ChecktypeError(key, type, value)
-{
-  return SyntaxError(key + ' param should be a ' + (type.name || type)
-                    + ', not ' + value.constructor.name);
-}
-
-
-//
-// Basic types
-//
-
-function checkArray(type, key, value)
-{
-  if(!(value instanceof Array))
-    throw ChecktypeError(key, 'Array of '+type, value);
-
-  value.forEach(function(item, i)
-  {
-    checkType(type, key+'['+i+']', item);
-  })
-};
-
-function checkBoolean(key, value)
-{
-  if(typeof value != 'boolean')
-    throw ChecktypeError(key, Boolean, value);
-};
-
-function checkNumber(key, value)
-{
-  if(typeof value != 'number')
-    throw ChecktypeError(key, Number, value);
-};
-
-function checkInteger(key, value)
-{
-  if(!Number.isInteger(value))
-    throw ChecktypeError(key, 'Integer', value);
-};
-
-function checkObject(key, value)
-{
-  if(typeof value != 'object')
-    throw ChecktypeError(key, Object, value);
-};
-
-function checkString(key, value)
-{
-  if(typeof value != 'string')
-    throw ChecktypeError(key, String, value);
-};
-
-
-// Checker functions
-
-function checkType(type, key, value, options)
-{
-  options = options || {};
-
-  if(value != undefined)
-  {
-    if(options.isArray)
-      return checkArray(type, key, value);
-
-    var checker = checkType[type];
-    if(checker) return checker(key, value);
-
-    console.warn("Could not check "+key+", unknown type "+type);
-//    throw TypeError("Could not check "+key+", unknown type "+type);
-  }
-
-  else if(options.required)
-    throw SyntaxError(key+" param is required");
-
-};
-
-function checkParams(params, scheme, class_name)
-{
-  var result = {};
-
-  // check MediaObject params
-  for(var key in scheme)
-  {
-    var value = params[key];
-
-    var s = scheme[key];
-
-    checkType(s.type, key, value, s);
-
-    if(value == undefined) continue;
-
-    result[key] = value;
-    delete params[key];
-  };
-
-  if(Object.keys(params).length)
-    console.warn('Unused params for '+class_name+':', params);
-
-  return result;
-};
-
-function checkMethodParams(callparams, method_params)
-{
-  var result = {};
-
-  var index=0, param;
-  for(; param=method_params[index]; index++)
-  {
-    var key = param.name;
-    var value = callparams[index];
-
-    checkType(param.type, key, value, param);
-
-    result[key] = value;
-  }
-
-  var params = callparams.slice(index);
-  if(params.length)
-    console.warning('Unused params:', params);
-
-  return result;
-};
-
-
-module.exports = checkType;
-
-checkType.checkArray     = checkArray;
-checkType.checkParams    = checkParams;
-checkType.ChecktypeError = ChecktypeError;
-
-
-// Basic types
-
-checkType.boolean = checkBoolean;
-checkType.double  = checkNumber;
-checkType.float   = checkNumber;
-checkType.int     = checkInteger;
-checkType.Object  = checkObject;
-checkType.String  = checkString;
 
 },{}],18:[function(require,module,exports){
 (function (Buffer){
@@ -4944,7 +4924,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":15}],27:[function(require,module,exports){
+},{"buffer":16}],27:[function(require,module,exports){
 (function (global){
 /*! JSON v3.3.2 | http://bestiejs.github.io/json3 | Copyright 2012-2014, Kit Cambridge | http://kit.mit-license.org */
 ;(function () {
@@ -20741,7 +20721,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"_process":119,"buffer":15,"core-util-is":18,"events":21,"inherits":"inherits","isarray":25,"stream":193,"string_decoder/":194}],129:[function(require,module,exports){
+},{"_process":119,"buffer":16,"core-util-is":18,"events":21,"inherits":"inherits","isarray":25,"stream":193,"string_decoder/":194}],129:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -21343,7 +21323,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":126,"_process":119,"buffer":15,"core-util-is":18,"inherits":"inherits","stream":193}],131:[function(require,module,exports){
+},{"./_stream_duplex":126,"_process":119,"buffer":16,"core-util-is":18,"inherits":"inherits","stream":193}],131:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
 },{"./lib/_stream_passthrough.js":127}],132:[function(require,module,exports){
@@ -21490,7 +21470,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":8,"events":21}],136:[function(require,module,exports){
+},{"backoff":9,"events":21}],136:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -25937,7 +25917,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":15}],195:[function(require,module,exports){
+},{"buffer":16}],195:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -30139,7 +30119,7 @@ exports.abstracts = require('./abstracts');
 
 require('error-tojson');
 
-var checkType = require('checktype');
+var checkType = require('./checkType');
 
 var disguise = require('./disguise')
 var MediaObjectCreator = require('./MediaObjectCreator');
@@ -30173,7 +30153,7 @@ register('kurento-client-core')
 register('kurento-client-elements')
 register('kurento-client-filters')
 
-},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./disguise":6,"./register":7,"checktype":17,"error-tojson":20}],"promisecallback":[function(require,module,exports){
+},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./disguise":7,"./register":8,"error-tojson":20}],"promisecallback":[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
