@@ -7513,7 +7513,9 @@ inherits(MediaElement, MediaObject);
 //
 
 /**
- * Maximum video bandwidth for transcoding.
+ * @deprecated
+ * Deprecated due to a typo. Use maxOutputBitrate instead of this function. 
+ * Maximum video bandwidth for transcoding. 0 = unlimited.
  *   Unit: bps(bits per second).
  *   Default value: MAXINT
  *
@@ -7541,7 +7543,9 @@ MediaElement.prototype.getMaxOuputBitrate = function(callback){
  */
 
 /**
- * Maximum video bandwidth for transcoding.
+ * @deprecated
+ * Deprecated due to a typo. Use maxOutputBitrate instead of this function. 
+ * Maximum video bandwidth for transcoding. 0 = unlimited.
  *   Unit: bps(bits per second).
  *   Default value: MAXINT
  *
@@ -7573,6 +7577,68 @@ MediaElement.prototype.setMaxOuputBitrate = function(maxOuputBitrate, callback){
  */
 
 /**
+ * Maximum video bandwidth for transcoding. 0 = unlimited.
+ *   Unit: bps(bits per second).
+ *   Default value: MAXINT
+ *
+ * @alias module:core/abstracts.MediaElement#getMaxOutputBitrate
+ *
+ * @param {module:core/abstracts.MediaElement~getMaxOutputBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.getMaxOutputBitrate = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getMaxOutputBitrate', callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~getMaxOutputBitrateCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Maximum video bandwidth for transcoding. 0 = unlimited.
+ *   Unit: bps(bits per second).
+ *   Default value: MAXINT
+ *
+ * @alias module:core/abstracts.MediaElement#setMaxOutputBitrate
+ *
+ * @param {external:Integer} maxOutputBitrate
+ * @param {module:core/abstracts.MediaElement~setMaxOutputBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.setMaxOutputBitrate = function(maxOutputBitrate, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'maxOutputBitrate', maxOutputBitrate, {required: true});
+
+  var params = {
+    maxOutputBitrate: maxOutputBitrate
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setMaxOutputBitrate', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~setMaxOutputBitrateCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * @deprecated
+ * Deprecated due to a typo. Use minOutputBitrate instead of this function. 
  * Minimum video bandwidth for transcoding.
  *   Unit: bps(bits per second).
  *   Default value: 0
@@ -7601,6 +7667,8 @@ MediaElement.prototype.getMinOuputBitrate = function(callback){
  */
 
 /**
+ * @deprecated
+ * Deprecated due to a typo. Use minOutputBitrate instead of this function. 
  * Minimum video bandwidth for transcoding.
  *   Unit: bps(bits per second).
  *   Default value: 0
@@ -7629,6 +7697,66 @@ MediaElement.prototype.setMinOuputBitrate = function(minOuputBitrate, callback){
 };
 /**
  * @callback module:core/abstracts.MediaElement~setMinOuputBitrateCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Minimum video bandwidth for transcoding.
+ *   Unit: bps(bits per second).
+ *   Default value: 0
+ *
+ * @alias module:core/abstracts.MediaElement#getMinOutputBitrate
+ *
+ * @param {module:core/abstracts.MediaElement~getMinOutputBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.getMinOutputBitrate = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getMinOutputBitrate', callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~getMinOutputBitrateCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Minimum video bandwidth for transcoding.
+ *   Unit: bps(bits per second).
+ *   Default value: 0
+ *
+ * @alias module:core/abstracts.MediaElement#setMinOutputBitrate
+ *
+ * @param {external:Integer} minOutputBitrate
+ * @param {module:core/abstracts.MediaElement~setMinOutputBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.setMinOutputBitrate = function(minOutputBitrate, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  checkType('int', 'minOutputBitrate', minOutputBitrate, {required: true});
+
+  var params = {
+    minOutputBitrate: minOutputBitrate
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setMinOutputBitrate', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~setMinOutputBitrateCallback
  * @param {external:Error} error
  */
 
@@ -10996,7 +11124,7 @@ var ComplexType = require('./ComplexType');
  * @constructor module:core/complexTypes.MediaLatencyStat
  *
  * @property {external:String} name
- *  The pad name
+ *  The identifier of the media stream
  * @property {module:core/complexTypes.MediaType} type
  *  Type of media stream
  * @property {external:double} avg
