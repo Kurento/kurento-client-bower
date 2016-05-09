@@ -8609,8 +8609,41 @@ inherits(MediaObject, EventEmitter);
 //
 
 /**
- * Childs of current object, all returned objects have parent set to current 
+ * Children of current object, all returned objects have parent set to current 
  * object
+ *
+ * @alias module:core/abstracts.MediaObject#getChildren
+ *
+ * @param {module:core/abstracts.MediaObject~getChildrenCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaObject.prototype.getChildren = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getChildren', function(error, result)
+  {
+    if (error) return callback(error);
+
+    this.emit('_describe', result, callback);
+  }), this)
+};
+/**
+ * @callback module:core/abstracts.MediaObject~getChildrenCallback
+ * @param {external:Error} error
+ * @param {module:core/abstracts.MediaObject} result
+ */
+
+/**
+ * @deprecated
+ * Use children instead of this property. Children of current object, all 
+ * returned objects have parent set to current object
  *
  * @alias module:core/abstracts.MediaObject#getChilds
  *
@@ -19386,6 +19419,9 @@ var currentQueue;
 var queueIndex = -1;
 
 function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
     draining = false;
     if (currentQueue.length) {
         queue = currentQueue.concat(queue);
