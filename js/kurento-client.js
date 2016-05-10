@@ -1186,9 +1186,18 @@ var Transaction = require('./TransactionsManager').Transaction;
  * @return {module:core/abstracts.MediaObject}
  */
 function getConstructor(type, strict) {
-  var result = register.classes[type] || register.abstracts[type];
+  var result = register.classes[type.qualifiedType] || register.abstracts[type.qualifiedType] ||
+    register.classes[type.type] || register.abstracts[type.type] ||
+    register.classes[type] || register.abstracts[type];
   if (result) return result;
 
+  if (type.hierarchy != undefined) {
+    for (var i = 0; i <= type.hierarchy.length - 1; i++) {
+      var result = register.classes[type.hierarchy[i]] || register.abstracts[
+        type.hierarchy[i]];
+      if (result) return result;
+    };
+  }
   if (strict) {
     var error = new SyntaxError("Unknown type '" + type + "'")
     error.type = type
@@ -1254,11 +1263,11 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
     mediaObject.on('_describe', describe);
     mediaObject.on('_rpc', encodeRpc);
 
-    if (mediaObject instanceof register.abstracts.Hub || mediaObject instanceof register
-      .classes.MediaPipeline)
+    if (mediaObject instanceof register.abstracts['kurento.Hub'] || mediaObject instanceof register
+      .classes['kurento.MediaPipeline'])
       mediaObject.on('_create', encodeCreate);
 
-    if (mediaObject instanceof register.classes.MediaPipeline)
+    if (mediaObject instanceof register.classes['kurento.MediaPipeline'])
       mediaObject.on('_transaction', encodeTransaction);
 
     return mediaObject;
@@ -1887,7 +1896,7 @@ var classes = {};
 var complexTypes = {};
 var modules = [];
 
-function registerAbstracts(classes) {
+function registerAbstracts(classes, hierarchy) {
   for (var name in classes) {
     var constructor = classes[name]
 
@@ -1897,6 +1906,7 @@ function registerAbstracts(classes) {
 
     // Register constructor
     abstracts[name] = constructor;
+    abstracts[hierarchy + "." + name] = constructor;
   }
 }
 
@@ -1909,7 +1919,7 @@ function registerClass(name, constructor) {
   classes[name] = constructor;
 }
 
-function registerComplexTypes(types) {
+function registerComplexTypes(types, hierarchy) {
   for (var name in types) {
     var constructor = types[name]
 
@@ -1920,8 +1930,11 @@ function registerComplexTypes(types) {
 
       // Register constructor
       complexTypes[name] = constructor;
-    } else
+      complexTypes[hierarchy + "." + name] = constructor;
+    } else {
       checkType[name] = constructor;
+      checkType[hierarchy + "." + name] = constructor;
+    }
   }
 }
 
@@ -1967,17 +1980,22 @@ function register(name, constructor) {
   for (var key in constructor) {
     var value = constructor[key]
 
+    if (name === 'core' || name === 'elements' || name === 'filters')
+      name = 'kurento'
+    var hierarchy = name + "." + key;
+
     if (typeof value !== 'string')
       switch (key) {
       case 'abstracts':
-        registerAbstracts(value)
+        registerAbstracts(value, name)
         break
 
       case 'complexTypes':
-        registerComplexTypes(value)
+        registerComplexTypes(value, name)
         break
 
       default:
+        registerClass(hierarchy, value)
         registerClass(key, value)
       }
   }
