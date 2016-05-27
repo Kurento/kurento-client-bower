@@ -16413,6 +16413,11 @@ function noop(error, result) {
  *
  * @constructor module:elements.WebRtcEndpoint
  *
+ * @fires {@link module:elements#event:DataChannelClose DataChannelClose}
+ * @fires {@link module:elements#event:DataChannelOpen DataChannelOpen}
+ * @fires {@link module:elements#event:IceCandidateFound IceCandidateFound}
+ * @fires {@link module:elements#event:IceComponentStateChange IceComponentStateChange}
+ * @fires {@link module:elements#event:IceGatheringDone IceGatheringDone}
  * @fires {@link module:elements#event:NewCandidatePairSelected NewCandidatePairSelected}
  * @fires {@link module:elements#event:OnDataChannelClosed OnDataChannelClosed}
  * @fires {@link module:elements#event:OnDataChannelOpened OnDataChannelOpened}
@@ -16876,7 +16881,7 @@ WebRtcEndpoint.constructorParams = {
  *
  * @extends module:core/abstracts.BaseRtpEndpoint.events
  */
-WebRtcEndpoint.events = BaseRtpEndpoint.events.concat(['NewCandidatePairSelected', 'OnDataChannelClosed', 'OnDataChannelOpened', 'OnIceCandidate', 'OnIceComponentStateChanged', 'OnIceGatheringDone']);
+WebRtcEndpoint.events = BaseRtpEndpoint.events.concat(['DataChannelClose', 'DataChannelOpen', 'IceCandidateFound', 'IceComponentStateChange', 'IceGatheringDone', 'NewCandidatePairSelected', 'OnDataChannelClosed', 'OnDataChannelOpened', 'OnIceCandidate', 'OnIceComponentStateChanged', 'OnIceGatheringDone']);
 
 
 /**
