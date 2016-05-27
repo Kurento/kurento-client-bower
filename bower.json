@@ -1,7 +1,7 @@
 {
   "name": "kurento-client",
   "description": "Media API for the Kurento Web SDK",
-  "license": "LGPL",
+  "license": "ALv2",
   "keywords": [
     "API",
     "Kurento",
