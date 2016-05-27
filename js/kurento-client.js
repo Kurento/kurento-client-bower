@@ -6272,7 +6272,7 @@ inherits(HubPort, MediaElement);
  */
 HubPort.constructorParams = {
   hub: {
-    type: 'Hub',
+    type: 'kurento.Hub',
     required: true
   }
 };
@@ -6686,7 +6686,7 @@ inherits(PassThrough, MediaElement);
  */
 PassThrough.constructorParams = {
   mediaPipeline: {
-    type: 'MediaPipeline',
+    type: 'kurento.MediaPipeline',
     required: true
   }
 };
