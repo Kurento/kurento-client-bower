@@ -18698,7 +18698,7 @@ var DISCONNECTED = "DISCONNECTED";
 /**
  * 
  * heartbeat: interval in ms for each heartbeat message,
- * sendCloseMessage : true / false, before closing the connection, it sends a close_session message
+ * sendCloseMessage : true / false, before closing the connection, it sends a closeSession message
  * <pre>
  * ws : {
  * 	uri : URI to conntect to,
@@ -18897,7 +18897,7 @@ function JsonRpcClient(configuration) {
         enabledPings = false;
 
         if (configuration.sendCloseMessage) {
-            this.send('close_session', null, function(error, result) {
+            this.send('closeSession', null, function(error, result) {
                 if (error) {
                     console.error("Error sending close message: " + JSON.stringify(error));
                 }
@@ -18921,6 +18921,7 @@ function JsonRpcClient(configuration) {
 
 
 module.exports = JsonRpcClient;
+
 },{"../..":117,"./transports/webSocketWithReconnection":116}],115:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
