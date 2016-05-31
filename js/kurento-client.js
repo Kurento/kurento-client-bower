@@ -31241,7 +31241,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.5.0'});
+Object.defineProperty(exports, 'version', {value: '6.5.1-dev'});
 
 
 var HubPort = require('./HubPort');
