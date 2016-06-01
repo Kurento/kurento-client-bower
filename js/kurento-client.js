@@ -8650,21 +8650,37 @@ function noop(error, result) {
 
 /**
  * @classdesc
- *  <p>This is the base interface for all elements. It is used to manage 
- *  properties common to all Kurento objects:
+ *  <p>Base interface used to manage capabilities common to all Kurento 
+ *  elements. This includes both: {@link module:core/abstracts.MediaElement 
+ *  MediaElement} and {@link module:core.MediaPipeline MediaPipeline}</p>
+ *        <h4>Properties</h4>
  *        <ul>
- *          <li>ID: every object has a unique identifier based on a GUID and the
- *          <li>name: This is a free text that can be used to provide a firendly
- *          <li>tags: This is metadata that can be attached to the media 
- *          element. </li>
+ *          <li><b>id</b>: unique identifier assigned to this 
+ *          <code>MediaObject</code> at instantiation time. {@link 
+ *          module:core.MediaPipeline MediaPipeline} IDs are generated with a 
+ *          GUID followed by suffix <code>_kurento.MediaPipeline</code>. {@link 
+ *          module:core/abstracts.MediaElement MediaElement} IDs are also a GUID
+ *            <blockquote>
+ *            <dl>
+ *              <dt><i>MediaPipeline ID example</i></dt>
+ *              <dd><code>907cac3a-809a-4bbe-a93e-ae7e944c5cae_kurento.MediaPipeline</code></dd>
+ *              <dt><i>MediaElement ID example</i></dt> 
+ *              <dd><code>907cac3a-809a-4bbe-a93e-ae7e944c5cae_kurento.MediaPipeline/403da25a-805b-4cf1-8c55-f190588e6c9b_kurento.WebRtcEndpoint</code></dd>
+ *            </dl>
+ *            </blockquote>
+ *          </li>
+ *          <li><b>name</b>: free text intended to provide a friendly name for 
+ *          this <code>MediaObject</code>. Its default value is the same as the 
+ *          ID.</li>
+ *          <li><b>tags</b>: key-value pairs intended for applications to 
+ *          associate metadata to this <code>MediaObject</code> instance.</li>
  *        </ul>
- *        </p>
  *        <p>
- *        <h2>Events fired:</h2>
- *        <ul><li>ErrorEvent: In case something goes wrong. Since most errors 
- *        are asynchronous, it is recommended to suscribe to this 
- *        event.</li></ul>
- *        </p>
+ *        <h4>Events</h4>
+ *        <ul>
+ *          <li>`ErrorEvent`: reports asynchronous error events. It is 
+ *          recommended to always subscribe a listener to this event, as regular
+ *        </ul>
  *
  * @abstract
  * @extends external:EventEmitter
@@ -8780,8 +8796,7 @@ inherits(MediaObject, EventEmitter);
 //
 
 /**
- * Children of current object. All returned objects have parent set to current 
- * object
+ * children of this <code>MediaObject</code>.
  *
  * @alias module:core/abstracts.MediaObject#getChildren
  *
@@ -8813,8 +8828,7 @@ MediaObject.prototype.getChildren = function(callback){
 
 /**
  * @deprecated
- * Use children instead. Children of current object, all returned objects have 
- * parent set to current object
+ *  (Use children instead) children of this <code>MediaObject</code>.
  *
  * @alias module:core/abstracts.MediaObject#getChilds
  *
@@ -8845,7 +8859,7 @@ MediaObject.prototype.getChilds = function(callback){
  */
 
 /**
- * Number of seconds since Epoch when the element was created
+ * <code>MediaObject</code> creation time in seconds since Epoch.
  *
  * @alias module:core/abstracts.MediaObject#getCreationTime
  *
@@ -8871,9 +8885,9 @@ MediaObject.prototype.getCreationTime = function(callback){
  */
 
 /**
- * {@link module:core.MediaPipeline MediaPipeline} to which this MediaObject 
- * belongs, or the pipeline itself if invoked on a {@link 
- * module:core.MediaPipeline MediaPipeline}
+ * {@link module:core.MediaPipeline MediaPipeline} to which this 
+ * <code>MediaObject</code> belongs. It returns itself when invoked for a 
+ * pipeline object.
  *
  * @alias module:core/abstracts.MediaObject#getMediaPipeline
  *
@@ -8904,9 +8918,9 @@ MediaObject.prototype.getMediaPipeline = function(callback){
  */
 
 /**
- * Object name. This is just a comodity to simplify developers' life debugging, 
- * it is not used internally for indexing nor idenfiying the objects. By 
- * default, it's the object's id.
+ * this <code>MediaObject</code>'s name. This is just a comodity to simplify 
+ * developers' life debugging, it is not used internally for indexing nor 
+ * idenfiying the objects. By default, it's the object's ID.
  *
  * @alias module:core/abstracts.MediaObject#getName
  *
@@ -8932,9 +8946,9 @@ MediaObject.prototype.getName = function(callback){
  */
 
 /**
- * Object name. This is just a comodity to simplify developers' life debugging, 
- * it is not used internally for indexing nor idenfiying the objects. By 
- * default, it's the object's id.
+ * this <code>MediaObject</code>'s name. This is just a comodity to simplify 
+ * developers' life debugging, it is not used internally for indexing nor 
+ * idenfiying the objects. By default, it's the object's ID.
  *
  * @alias module:core/abstracts.MediaObject#setName
  *
@@ -8964,9 +8978,7 @@ MediaObject.prototype.setName = function(name, callback){
  */
 
 /**
- * parent of this media object. The type of the parent depends on the type of 
- * the element. The parent of a :rom:cls:`MediaPad` is its {@link 
- * module:core/abstracts.MediaElement MediaElement}; the parent of a {@link 
+ * parent of this <code>MediaObject</code>. The parent of a {@link 
  * module:core/abstracts.Hub Hub} or a {@link module:core/abstracts.MediaElement
  *
  * @alias module:core/abstracts.MediaObject#getParent
@@ -8998,8 +9010,7 @@ MediaObject.prototype.getParent = function(callback){
  */
 
 /**
- * This property activates or deactivates sending the element's tags in all 
- * events fired.
+ * flag activating or deactivating sending the element's tags in fired events.
  *
  * @alias module:core/abstracts.MediaObject#getSendTagsInEvents
  *
@@ -9025,8 +9036,7 @@ MediaObject.prototype.getSendTagsInEvents = function(callback){
  */
 
 /**
- * This property activates or deactivates sending the element's tags in all 
- * events fired.
+ * flag activating or deactivating sending the element's tags in fired events.
  *
  * @alias module:core/abstracts.MediaObject#setSendTagsInEvents
  *
@@ -9061,15 +9071,16 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
 //
 
 /**
- * Adds a new tag to the media object. If the tag is already present, it changes
+ * Adds a new tag to this <code>MediaObject</code>. If the tag is already 
+ * present, it changes the value.
  *
  * @alias module:core/abstracts.MediaObject.addTag
  *
  * @param {external:String} key
- *  Key of the tag.
+ *  Tag name.
  *
  * @param {external:String} value
- *  Value assoicated to the key.
+ *  Value associated to this tag.
  *
  * @param {module:core/abstracts.MediaObject~addTagCallback} [callback]
  *
@@ -9098,8 +9109,8 @@ MediaObject.prototype.addTag = function(key, value, callback){
  */
 
 /**
- * Returns the value of a certain tag. If the key is not defined, it returns a 
- * MEDIA_OBJECT_TAG_KEY_NOT_FOUND
+ * Returns the value of given tag, or MEDIA_OBJECT_TAG_KEY_NOT_FOUND if tag is 
+ * not defined.
  *
  * @alias module:core/abstracts.MediaObject.getTag
  *
@@ -9133,7 +9144,7 @@ MediaObject.prototype.getTag = function(key, callback){
  */
 
 /**
- * Returns all this MediaObject's tags.
+ * Returns all tags attached to this <code>MediaObject</code>.
  *
  * @alias module:core/abstracts.MediaObject.getTags
  *
@@ -9156,16 +9167,17 @@ MediaObject.prototype.getTags = function(callback){
  * @callback module:core/abstracts.MediaObject~getTagsCallback
  * @param {external:Error} error
  * @param {module:core/complexTypes.Tag} result
- *  An array containing all key-value pairs associated with the MediaObject.
+ *  An array containing all key-value pairs associated with this 
+ *  <code>MediaObject</code>.
  */
 
 /**
- * Removes an existing tag. If the tag was not defined before, nothing happens.
+ * Removes an existing tag. Exists silently with no error if tag is not defined.
  *
  * @alias module:core/abstracts.MediaObject.removeTag
  *
  * @param {external:String} key
- *  Key of the tag to remove
+ *  Tag name to be removed
  *
  * @param {module:core/abstracts.MediaObject~removeTagCallback} [callback]
  *
