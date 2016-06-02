@@ -1145,6 +1145,19 @@ KurentoClient.getSingleton = function (ws_uri, options, callback) {
   return disguise(promiseCallback(client, callback), client)
 }
 
+/**
+ * Get a complexType across the qualified name
+ *
+ * @function module:kurentoClient.KurentoClient#getComplexType
+ *
+ * @param {external:String} complexType - ComplexType's name
+ *
+ * @return {module:core/complexType}
+ */
+KurentoClient.getComplexType = function (complexType) {
+  return KurentoClient.register.complexTypes[complexType]
+};
+
 // Export KurentoClient
 
 module.exports = KurentoClient;
@@ -1209,7 +1222,7 @@ function getConstructor(type, strict) {
     throw error
   }
 
-  console.warn("Unknown type '" + type + "', using MediaObject instead");
+  console.warn("Unknown type '", type, "', using MediaObject instead");
   return register.abstracts.MediaObject;
 };
 
