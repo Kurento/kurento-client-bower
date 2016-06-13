@@ -1162,7 +1162,7 @@ KurentoClient.getComplexType = function (complexType) {
 
 module.exports = KurentoClient;
 
-},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","es6-promise":"es6-promise","events":23,"extend":24,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":117,"promisecallback":"promisecallback","reconnect-ws":139,"url":199}],2:[function(require,module,exports){
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","es6-promise":"es6-promise","events":24,"extend":25,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":118,"promisecallback":"promisecallback","reconnect-ws":139,"url":199}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
@@ -1446,7 +1446,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
 module.exports = MediaObjectCreator;
 
-},{"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./register":8,"async":"async","extend":24}],3:[function(require,module,exports){
+},{"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./register":8,"async":"async","extend":25}],3:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -1665,7 +1665,7 @@ TransactionsManager.TransactionNotCommitedException =
   TransactionNotCommitedException;
 TransactionsManager.TransactionRollbackException = TransactionRollbackException;
 
-},{"domain":21,"es6-promise":"es6-promise","events":23,"inherits":"inherits","promisecallback":"promisecallback"}],4:[function(require,module,exports){
+},{"domain":22,"es6-promise":"es6-promise","events":24,"inherits":"inherits","promisecallback":"promisecallback"}],4:[function(require,module,exports){
 /**
  * Loader for the kurento-client package on the browser
  */
@@ -2171,7 +2171,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":23,"util":201}],11:[function(require,module,exports){
+},{"events":24,"util":201}],11:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2400,7 +2400,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":10,"./strategy/fibonacci":13,"events":23,"util":201}],12:[function(require,module,exports){
+},{"./backoff":10,"./strategy/fibonacci":13,"events":24,"util":201}],12:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2573,7 +2573,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":23,"util":201}],15:[function(require,module,exports){
+},{"events":24,"util":201}],15:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -2700,6 +2700,543 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
 },{}],16:[function(require,module,exports){
+(function (global){
+/*! https://mths.be/punycode v1.4.1 by @mathias */
+;(function(root) {
+
+	/** Detect free variables */
+	var freeExports = typeof exports == 'object' && exports &&
+		!exports.nodeType && exports;
+	var freeModule = typeof module == 'object' && module &&
+		!module.nodeType && module;
+	var freeGlobal = typeof global == 'object' && global;
+	if (
+		freeGlobal.global === freeGlobal ||
+		freeGlobal.window === freeGlobal ||
+		freeGlobal.self === freeGlobal
+	) {
+		root = freeGlobal;
+	}
+
+	/**
+	 * The `punycode` object.
+	 * @name punycode
+	 * @type Object
+	 */
+	var punycode,
+
+	/** Highest positive signed 32-bit float value */
+	maxInt = 2147483647, // aka. 0x7FFFFFFF or 2^31-1
+
+	/** Bootstring parameters */
+	base = 36,
+	tMin = 1,
+	tMax = 26,
+	skew = 38,
+	damp = 700,
+	initialBias = 72,
+	initialN = 128, // 0x80
+	delimiter = '-', // '\x2D'
+
+	/** Regular expressions */
+	regexPunycode = /^xn--/,
+	regexNonASCII = /[^\x20-\x7E]/, // unprintable ASCII chars + non-ASCII chars
+	regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g, // RFC 3490 separators
+
+	/** Error messages */
+	errors = {
+		'overflow': 'Overflow: input needs wider integers to process',
+		'not-basic': 'Illegal input >= 0x80 (not a basic code point)',
+		'invalid-input': 'Invalid input'
+	},
+
+	/** Convenience shortcuts */
+	baseMinusTMin = base - tMin,
+	floor = Math.floor,
+	stringFromCharCode = String.fromCharCode,
+
+	/** Temporary variable */
+	key;
+
+	/*--------------------------------------------------------------------------*/
+
+	/**
+	 * A generic error utility function.
+	 * @private
+	 * @param {String} type The error type.
+	 * @returns {Error} Throws a `RangeError` with the applicable error message.
+	 */
+	function error(type) {
+		throw new RangeError(errors[type]);
+	}
+
+	/**
+	 * A generic `Array#map` utility function.
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} callback The function that gets called for every array
+	 * item.
+	 * @returns {Array} A new array of values returned by the callback function.
+	 */
+	function map(array, fn) {
+		var length = array.length;
+		var result = [];
+		while (length--) {
+			result[length] = fn(array[length]);
+		}
+		return result;
+	}
+
+	/**
+	 * A simple `Array#map`-like wrapper to work with domain name strings or email
+	 * addresses.
+	 * @private
+	 * @param {String} domain The domain name or email address.
+	 * @param {Function} callback The function that gets called for every
+	 * character.
+	 * @returns {Array} A new string of characters returned by the callback
+	 * function.
+	 */
+	function mapDomain(string, fn) {
+		var parts = string.split('@');
+		var result = '';
+		if (parts.length > 1) {
+			// In email addresses, only the domain name should be punycoded. Leave
+			// the local part (i.e. everything up to `@`) intact.
+			result = parts[0] + '@';
+			string = parts[1];
+		}
+		// Avoid `split(regex)` for IE8 compatibility. See #17.
+		string = string.replace(regexSeparators, '\x2E');
+		var labels = string.split('.');
+		var encoded = map(labels, fn).join('.');
+		return result + encoded;
+	}
+
+	/**
+	 * Creates an array containing the numeric code points of each Unicode
+	 * character in the string. While JavaScript uses UCS-2 internally,
+	 * this function will convert a pair of surrogate halves (each of which
+	 * UCS-2 exposes as separate characters) into a single code point,
+	 * matching UTF-16.
+	 * @see `punycode.ucs2.encode`
+	 * @see <https://mathiasbynens.be/notes/javascript-encoding>
+	 * @memberOf punycode.ucs2
+	 * @name decode
+	 * @param {String} string The Unicode input string (UCS-2).
+	 * @returns {Array} The new array of code points.
+	 */
+	function ucs2decode(string) {
+		var output = [],
+		    counter = 0,
+		    length = string.length,
+		    value,
+		    extra;
+		while (counter < length) {
+			value = string.charCodeAt(counter++);
+			if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
+				// high surrogate, and there is a next character
+				extra = string.charCodeAt(counter++);
+				if ((extra & 0xFC00) == 0xDC00) { // low surrogate
+					output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
+				} else {
+					// unmatched surrogate; only append this code unit, in case the next
+					// code unit is the high surrogate of a surrogate pair
+					output.push(value);
+					counter--;
+				}
+			} else {
+				output.push(value);
+			}
+		}
+		return output;
+	}
+
+	/**
+	 * Creates a string based on an array of numeric code points.
+	 * @see `punycode.ucs2.decode`
+	 * @memberOf punycode.ucs2
+	 * @name encode
+	 * @param {Array} codePoints The array of numeric code points.
+	 * @returns {String} The new Unicode string (UCS-2).
+	 */
+	function ucs2encode(array) {
+		return map(array, function(value) {
+			var output = '';
+			if (value > 0xFFFF) {
+				value -= 0x10000;
+				output += stringFromCharCode(value >>> 10 & 0x3FF | 0xD800);
+				value = 0xDC00 | value & 0x3FF;
+			}
+			output += stringFromCharCode(value);
+			return output;
+		}).join('');
+	}
+
+	/**
+	 * Converts a basic code point into a digit/integer.
+	 * @see `digitToBasic()`
+	 * @private
+	 * @param {Number} codePoint The basic numeric code point value.
+	 * @returns {Number} The numeric value of a basic code point (for use in
+	 * representing integers) in the range `0` to `base - 1`, or `base` if
+	 * the code point does not represent a value.
+	 */
+	function basicToDigit(codePoint) {
+		if (codePoint - 48 < 10) {
+			return codePoint - 22;
+		}
+		if (codePoint - 65 < 26) {
+			return codePoint - 65;
+		}
+		if (codePoint - 97 < 26) {
+			return codePoint - 97;
+		}
+		return base;
+	}
+
+	/**
+	 * Converts a digit/integer into a basic code point.
+	 * @see `basicToDigit()`
+	 * @private
+	 * @param {Number} digit The numeric value of a basic code point.
+	 * @returns {Number} The basic code point whose value (when used for
+	 * representing integers) is `digit`, which needs to be in the range
+	 * `0` to `base - 1`. If `flag` is non-zero, the uppercase form is
+	 * used; else, the lowercase form is used. The behavior is undefined
+	 * if `flag` is non-zero and `digit` has no uppercase form.
+	 */
+	function digitToBasic(digit, flag) {
+		//  0..25 map to ASCII a..z or A..Z
+		// 26..35 map to ASCII 0..9
+		return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
+	}
+
+	/**
+	 * Bias adaptation function as per section 3.4 of RFC 3492.
+	 * https://tools.ietf.org/html/rfc3492#section-3.4
+	 * @private
+	 */
+	function adapt(delta, numPoints, firstTime) {
+		var k = 0;
+		delta = firstTime ? floor(delta / damp) : delta >> 1;
+		delta += floor(delta / numPoints);
+		for (/* no initialization */; delta > baseMinusTMin * tMax >> 1; k += base) {
+			delta = floor(delta / baseMinusTMin);
+		}
+		return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
+	}
+
+	/**
+	 * Converts a Punycode string of ASCII-only symbols to a string of Unicode
+	 * symbols.
+	 * @memberOf punycode
+	 * @param {String} input The Punycode string of ASCII-only symbols.
+	 * @returns {String} The resulting string of Unicode symbols.
+	 */
+	function decode(input) {
+		// Don't use UCS-2
+		var output = [],
+		    inputLength = input.length,
+		    out,
+		    i = 0,
+		    n = initialN,
+		    bias = initialBias,
+		    basic,
+		    j,
+		    index,
+		    oldi,
+		    w,
+		    k,
+		    digit,
+		    t,
+		    /** Cached calculation results */
+		    baseMinusT;
+
+		// Handle the basic code points: let `basic` be the number of input code
+		// points before the last delimiter, or `0` if there is none, then copy
+		// the first basic code points to the output.
+
+		basic = input.lastIndexOf(delimiter);
+		if (basic < 0) {
+			basic = 0;
+		}
+
+		for (j = 0; j < basic; ++j) {
+			// if it's not a basic code point
+			if (input.charCodeAt(j) >= 0x80) {
+				error('not-basic');
+			}
+			output.push(input.charCodeAt(j));
+		}
+
+		// Main decoding loop: start just after the last delimiter if any basic code
+		// points were copied; start at the beginning otherwise.
+
+		for (index = basic > 0 ? basic + 1 : 0; index < inputLength; /* no final expression */) {
+
+			// `index` is the index of the next character to be consumed.
+			// Decode a generalized variable-length integer into `delta`,
+			// which gets added to `i`. The overflow checking is easier
+			// if we increase `i` as we go, then subtract off its starting
+			// value at the end to obtain `delta`.
+			for (oldi = i, w = 1, k = base; /* no condition */; k += base) {
+
+				if (index >= inputLength) {
+					error('invalid-input');
+				}
+
+				digit = basicToDigit(input.charCodeAt(index++));
+
+				if (digit >= base || digit > floor((maxInt - i) / w)) {
+					error('overflow');
+				}
+
+				i += digit * w;
+				t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
+
+				if (digit < t) {
+					break;
+				}
+
+				baseMinusT = base - t;
+				if (w > floor(maxInt / baseMinusT)) {
+					error('overflow');
+				}
+
+				w *= baseMinusT;
+
+			}
+
+			out = output.length + 1;
+			bias = adapt(i - oldi, out, oldi == 0);
+
+			// `i` was supposed to wrap around from `out` to `0`,
+			// incrementing `n` each time, so we'll fix that now:
+			if (floor(i / out) > maxInt - n) {
+				error('overflow');
+			}
+
+			n += floor(i / out);
+			i %= out;
+
+			// Insert `n` at position `i` of the output
+			output.splice(i++, 0, n);
+
+		}
+
+		return ucs2encode(output);
+	}
+
+	/**
+	 * Converts a string of Unicode symbols (e.g. a domain name label) to a
+	 * Punycode string of ASCII-only symbols.
+	 * @memberOf punycode
+	 * @param {String} input The string of Unicode symbols.
+	 * @returns {String} The resulting Punycode string of ASCII-only symbols.
+	 */
+	function encode(input) {
+		var n,
+		    delta,
+		    handledCPCount,
+		    basicLength,
+		    bias,
+		    j,
+		    m,
+		    q,
+		    k,
+		    t,
+		    currentValue,
+		    output = [],
+		    /** `inputLength` will hold the number of code points in `input`. */
+		    inputLength,
+		    /** Cached calculation results */
+		    handledCPCountPlusOne,
+		    baseMinusT,
+		    qMinusT;
+
+		// Convert the input in UCS-2 to Unicode
+		input = ucs2decode(input);
+
+		// Cache the length
+		inputLength = input.length;
+
+		// Initialize the state
+		n = initialN;
+		delta = 0;
+		bias = initialBias;
+
+		// Handle the basic code points
+		for (j = 0; j < inputLength; ++j) {
+			currentValue = input[j];
+			if (currentValue < 0x80) {
+				output.push(stringFromCharCode(currentValue));
+			}
+		}
+
+		handledCPCount = basicLength = output.length;
+
+		// `handledCPCount` is the number of code points that have been handled;
+		// `basicLength` is the number of basic code points.
+
+		// Finish the basic string - if it is not empty - with a delimiter
+		if (basicLength) {
+			output.push(delimiter);
+		}
+
+		// Main encoding loop:
+		while (handledCPCount < inputLength) {
+
+			// All non-basic code points < n have been handled already. Find the next
+			// larger one:
+			for (m = maxInt, j = 0; j < inputLength; ++j) {
+				currentValue = input[j];
+				if (currentValue >= n && currentValue < m) {
+					m = currentValue;
+				}
+			}
+
+			// Increase `delta` enough to advance the decoder's <n,i> state to <m,0>,
+			// but guard against overflow
+			handledCPCountPlusOne = handledCPCount + 1;
+			if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
+				error('overflow');
+			}
+
+			delta += (m - n) * handledCPCountPlusOne;
+			n = m;
+
+			for (j = 0; j < inputLength; ++j) {
+				currentValue = input[j];
+
+				if (currentValue < n && ++delta > maxInt) {
+					error('overflow');
+				}
+
+				if (currentValue == n) {
+					// Represent delta as a generalized variable-length integer
+					for (q = delta, k = base; /* no condition */; k += base) {
+						t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
+						if (q < t) {
+							break;
+						}
+						qMinusT = q - t;
+						baseMinusT = base - t;
+						output.push(
+							stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0))
+						);
+						q = floor(qMinusT / baseMinusT);
+					}
+
+					output.push(stringFromCharCode(digitToBasic(q, 0)));
+					bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
+					delta = 0;
+					++handledCPCount;
+				}
+			}
+
+			++delta;
+			++n;
+
+		}
+		return output.join('');
+	}
+
+	/**
+	 * Converts a Punycode string representing a domain name or an email address
+	 * to Unicode. Only the Punycoded parts of the input will be converted, i.e.
+	 * it doesn't matter if you call it on a string that has already been
+	 * converted to Unicode.
+	 * @memberOf punycode
+	 * @param {String} input The Punycoded domain name or email address to
+	 * convert to Unicode.
+	 * @returns {String} The Unicode representation of the given Punycode
+	 * string.
+	 */
+	function toUnicode(input) {
+		return mapDomain(input, function(string) {
+			return regexPunycode.test(string)
+				? decode(string.slice(4).toLowerCase())
+				: string;
+		});
+	}
+
+	/**
+	 * Converts a Unicode string representing a domain name or an email address to
+	 * Punycode. Only the non-ASCII parts of the domain name will be converted,
+	 * i.e. it doesn't matter if you call it with a domain that's already in
+	 * ASCII.
+	 * @memberOf punycode
+	 * @param {String} input The domain name or email address to convert, as a
+	 * Unicode string.
+	 * @returns {String} The Punycode representation of the given domain name or
+	 * email address.
+	 */
+	function toASCII(input) {
+		return mapDomain(input, function(string) {
+			return regexNonASCII.test(string)
+				? 'xn--' + encode(string)
+				: string;
+		});
+	}
+
+	/*--------------------------------------------------------------------------*/
+
+	/** Define the public API */
+	punycode = {
+		/**
+		 * A string representing the current Punycode.js version number.
+		 * @memberOf punycode
+		 * @type String
+		 */
+		'version': '1.4.1',
+		/**
+		 * An object of methods to convert from JavaScript's internal character
+		 * representation (UCS-2) to Unicode code points, and back.
+		 * @see <https://mathiasbynens.be/notes/javascript-encoding>
+		 * @memberOf punycode
+		 * @type Object
+		 */
+		'ucs2': {
+			'decode': ucs2decode,
+			'encode': ucs2encode
+		},
+		'decode': decode,
+		'encode': encode,
+		'toASCII': toASCII,
+		'toUnicode': toUnicode
+	};
+
+	/** Expose `punycode` */
+	// Some AMD build optimizers, like r.js, check for specific condition patterns
+	// like the following:
+	if (
+		typeof define == 'function' &&
+		typeof define.amd == 'object' &&
+		define.amd
+	) {
+		define('punycode', function() {
+			return punycode;
+		});
+	} else if (freeExports && freeModule) {
+		if (module.exports == freeExports) {
+			// in Node.js, io.js, or RingoJS v0.8.0+
+			freeModule.exports = punycode;
+		} else {
+			// in Narwhal or RingoJS v0.7.0-
+			for (key in punycode) {
+				punycode.hasOwnProperty(key) && (freeExports[key] = punycode[key]);
+			}
+		}
+	} else {
+		// in Rhino or a web browser
+		root.punycode = punycode;
+	}
+
+}(this));
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],17:[function(require,module,exports){
 (function (global){
 /*!
  * The buffer module from node.js, for the browser.
@@ -4251,14 +4788,14 @@ function blitBuffer (src, dst, offset, length) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"base64-js":15,"ieee754":25,"isarray":17}],17:[function(require,module,exports){
+},{"base64-js":15,"ieee754":26,"isarray":18}],18:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -4369,7 +4906,7 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":26}],19:[function(require,module,exports){
+},{"../../is-buffer/index.js":27}],20:[function(require,module,exports){
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -4539,7 +5076,7 @@ function localstorage(){
   } catch (e) {}
 }
 
-},{"./debug":20}],20:[function(require,module,exports){
+},{"./debug":21}],21:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -4738,7 +5275,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":121}],21:[function(require,module,exports){
+},{"ms":122}],22:[function(require,module,exports){
 // This file should be ES5 compatible
 /* eslint prefer-spread:0, no-var:0, prefer-reflect:0, no-magic-numbers:0 */
 'use strict'
@@ -4809,7 +5346,7 @@ module.exports = (function () {
 	return domain
 }).call(this)
 
-},{"events":23}],22:[function(require,module,exports){
+},{"events":24}],23:[function(require,module,exports){
 Object.defineProperty(Error.prototype, 'toJSON', {
     value: function () {
         var alt = {};
@@ -4823,7 +5360,7 @@ Object.defineProperty(Error.prototype, 'toJSON', {
     configurable: true
 });
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5126,7 +5663,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 var hasOwn = Object.prototype.hasOwnProperty;
 var toStr = Object.prototype.toString;
 var undefined;
@@ -5217,7 +5754,7 @@ module.exports = function extend() {
 };
 
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -5303,7 +5840,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /**
  * Determine if an object is Buffer
  *
@@ -5322,12 +5859,12 @@ module.exports = function (obj) {
     ))
 }
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 module.exports = isBuffer;
@@ -5337,7 +5874,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":16}],29:[function(require,module,exports){
+},{"buffer":17}],30:[function(require,module,exports){
 (function (global){
 /*! JSON v3.3.2 | http://bestiejs.github.io/json3 | Copyright 2012-2014, Kit Cambridge | http://kit.mit-license.org */
 ;(function () {
@@ -6243,7 +6780,7 @@ function isBuffer (o) {
 }).call(this);
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -6331,7 +6868,7 @@ module.exports = HubPort;
 
 HubPort.check = checkHubPort;
 
-},{"./abstracts/MediaElement":37,"inherits":"inherits","kurento-client":"kurento-client"}],31:[function(require,module,exports){
+},{"./abstracts/MediaElement":38,"inherits":"inherits","kurento-client":"kurento-client"}],32:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -6661,7 +7198,7 @@ module.exports = MediaPipeline;
 
 MediaPipeline.check = checkMediaPipeline;
 
-},{"./abstracts/MediaObject":38,"inherits":"inherits","kurento-client":"kurento-client"}],32:[function(require,module,exports){
+},{"./abstracts/MediaObject":39,"inherits":"inherits","kurento-client":"kurento-client"}],33:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -6749,7 +7286,7 @@ module.exports = PassThrough;
 
 PassThrough.check = checkPassThrough;
 
-},{"./abstracts/MediaElement":37,"inherits":"inherits","kurento-client":"kurento-client"}],33:[function(require,module,exports){
+},{"./abstracts/MediaElement":38,"inherits":"inherits","kurento-client":"kurento-client"}],34:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -7193,7 +7730,7 @@ module.exports = BaseRtpEndpoint;
 
 BaseRtpEndpoint.check = checkBaseRtpEndpoint;
 
-},{"./SdpEndpoint":39,"inherits":"inherits","kurento-client":"kurento-client"}],34:[function(require,module,exports){
+},{"./SdpEndpoint":40,"inherits":"inherits","kurento-client":"kurento-client"}],35:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -7280,7 +7817,7 @@ module.exports = Endpoint;
 
 Endpoint.check = checkEndpoint;
 
-},{"./MediaElement":37,"inherits":"inherits","kurento-client":"kurento-client"}],35:[function(require,module,exports){
+},{"./MediaElement":38,"inherits":"inherits","kurento-client":"kurento-client"}],36:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -7360,7 +7897,7 @@ module.exports = Filter;
 
 Filter.check = checkFilter;
 
-},{"./MediaElement":37,"inherits":"inherits","kurento-client":"kurento-client"}],36:[function(require,module,exports){
+},{"./MediaElement":38,"inherits":"inherits","kurento-client":"kurento-client"}],37:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -7550,7 +8087,7 @@ module.exports = Hub;
 
 Hub.check = checkHub;
 
-},{"../HubPort":30,"./MediaObject":38,"inherits":"inherits","kurento-client":"kurento-client"}],37:[function(require,module,exports){
+},{"../HubPort":31,"./MediaObject":39,"inherits":"inherits","kurento-client":"kurento-client"}],38:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -8616,7 +9153,7 @@ module.exports = MediaElement;
 
 MediaElement.check = checkMediaElement;
 
-},{"./MediaObject":38,"async":"async","inherits":"inherits","kurento-client":"kurento-client","promisecallback":"promisecallback"}],38:[function(require,module,exports){
+},{"./MediaObject":39,"async":"async","inherits":"inherits","kurento-client":"kurento-client","promisecallback":"promisecallback"}],39:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9449,7 +9986,7 @@ module.exports = MediaObject;
 
 MediaObject.check = checkMediaObject;
 
-},{"es6-promise":"es6-promise","events":23,"inherits":"inherits","kurento-client":"kurento-client","promisecallback":"promisecallback"}],39:[function(require,module,exports){
+},{"es6-promise":"es6-promise","events":24,"inherits":"inherits","kurento-client":"kurento-client","promisecallback":"promisecallback"}],40:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -9880,7 +10417,7 @@ module.exports = SdpEndpoint;
 
 SdpEndpoint.check = checkSdpEndpoint;
 
-},{"./SessionEndpoint":41,"inherits":"inherits","kurento-client":"kurento-client"}],40:[function(require,module,exports){
+},{"./SessionEndpoint":42,"inherits":"inherits","kurento-client":"kurento-client"}],41:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10125,7 +10662,7 @@ module.exports = ServerManager;
 
 ServerManager.check = checkServerManager;
 
-},{"./MediaObject":38,"inherits":"inherits","kurento-client":"kurento-client"}],41:[function(require,module,exports){
+},{"./MediaObject":39,"inherits":"inherits","kurento-client":"kurento-client"}],42:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10207,7 +10744,7 @@ module.exports = SessionEndpoint;
 
 SessionEndpoint.check = checkSessionEndpoint;
 
-},{"./Endpoint":34,"inherits":"inherits","kurento-client":"kurento-client"}],42:[function(require,module,exports){
+},{"./Endpoint":35,"inherits":"inherits","kurento-client":"kurento-client"}],43:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10382,7 +10919,7 @@ module.exports = UriEndpoint;
 
 UriEndpoint.check = checkUriEndpoint;
 
-},{"./Endpoint":34,"inherits":"inherits","kurento-client":"kurento-client"}],43:[function(require,module,exports){
+},{"./Endpoint":35,"inherits":"inherits","kurento-client":"kurento-client"}],44:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10433,7 +10970,7 @@ exports.ServerManager = ServerManager;
 exports.SessionEndpoint = SessionEndpoint;
 exports.UriEndpoint = UriEndpoint;
 
-},{"./BaseRtpEndpoint":33,"./Endpoint":34,"./Filter":35,"./Hub":36,"./MediaElement":37,"./MediaObject":38,"./SdpEndpoint":39,"./ServerManager":40,"./SessionEndpoint":41,"./UriEndpoint":42}],44:[function(require,module,exports){
+},{"./BaseRtpEndpoint":34,"./Endpoint":35,"./Filter":36,"./Hub":37,"./MediaElement":38,"./MediaObject":39,"./SdpEndpoint":40,"./ServerManager":41,"./SessionEndpoint":42,"./UriEndpoint":43}],45:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10533,7 +11070,7 @@ module.exports = AudioCaps;
 
 AudioCaps.check = checkAudioCaps;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],45:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],46:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10584,7 +11121,7 @@ function checkAudioCodec(key, value)
 
 module.exports = checkAudioCodec;
 
-},{"kurento-client":"kurento-client"}],46:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],47:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10685,7 +11222,7 @@ module.exports = CodecConfiguration;
 
 CodecConfiguration.check = checkCodecConfiguration;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],47:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],48:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10750,7 +11287,7 @@ module.exports = ComplexType;
 
 ComplexType.check = checkComplexType;
 
-},{"kurento-client":"kurento-client"}],48:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],49:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10801,7 +11338,7 @@ function checkConnectionState(key, value)
 
 module.exports = checkConnectionState;
 
-},{"kurento-client":"kurento-client"}],49:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],50:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -10923,7 +11460,7 @@ module.exports = ElementConnectionData;
 
 ElementConnectionData.check = checkElementConnectionData;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],50:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],51:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11036,7 +11573,7 @@ module.exports = ElementStats;
 
 ElementStats.check = checkElementStats;
 
-},{"./Stats":79,"inherits":"inherits","kurento-client":"kurento-client"}],51:[function(require,module,exports){
+},{"./Stats":80,"inherits":"inherits","kurento-client":"kurento-client"}],52:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11149,7 +11686,7 @@ module.exports = EndpointStats;
 
 EndpointStats.check = checkEndpointStats;
 
-},{"./ElementStats":50,"inherits":"inherits","kurento-client":"kurento-client"}],52:[function(require,module,exports){
+},{"./ElementStats":51,"inherits":"inherits","kurento-client":"kurento-client"}],53:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11201,7 +11738,7 @@ function checkFilterType(key, value)
 
 module.exports = checkFilterType;
 
-},{"kurento-client":"kurento-client"}],53:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],54:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11302,7 +11839,7 @@ module.exports = Fraction;
 
 Fraction.check = checkFraction;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],54:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],55:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11353,7 +11890,7 @@ function checkGstreamerDotDetails(key, value)
 
 module.exports = checkGstreamerDotDetails;
 
-},{"kurento-client":"kurento-client"}],55:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],56:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11404,7 +11941,7 @@ function checkMediaFlowState(key, value)
 
 module.exports = checkMediaFlowState;
 
-},{"kurento-client":"kurento-client"}],56:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],57:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11512,7 +12049,7 @@ module.exports = MediaLatencyStat;
 
 MediaLatencyStat.check = checkMediaLatencyStat;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],57:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],58:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11563,7 +12100,7 @@ function checkMediaState(key, value)
 
 module.exports = checkMediaState;
 
-},{"kurento-client":"kurento-client"}],58:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],59:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11615,7 +12152,7 @@ function checkMediaType(key, value)
 
 module.exports = checkMediaType;
 
-},{"kurento-client":"kurento-client"}],59:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],60:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11731,7 +12268,7 @@ module.exports = ModuleInfo;
 
 ModuleInfo.check = checkModuleInfo;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],60:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],61:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11847,7 +12384,7 @@ module.exports = RTCCertificateStats;
 
 RTCCertificateStats.check = checkRTCCertificateStats;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],61:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],62:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -11973,7 +12510,7 @@ module.exports = RTCCodec;
 
 RTCCodec.check = checkRTCCodec;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],62:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],63:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12024,7 +12561,7 @@ function checkRTCDataChannelState(key, value)
 
 module.exports = checkRTCDataChannelState;
 
-},{"kurento-client":"kurento-client"}],63:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],64:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12176,7 +12713,7 @@ module.exports = RTCDataChannelStats;
 
 RTCDataChannelStats.check = checkRTCDataChannelStats;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],64:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],65:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12313,7 +12850,7 @@ module.exports = RTCIceCandidateAttributes;
 
 RTCIceCandidateAttributes.check = checkRTCIceCandidateAttributes;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],65:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],66:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12513,7 +13050,7 @@ module.exports = RTCIceCandidatePairStats;
 
 RTCIceCandidatePairStats.check = checkRTCIceCandidatePairStats;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],66:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],67:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12624,7 +13161,7 @@ module.exports = RTCInboundRTPStreamStats;
 
 RTCInboundRTPStreamStats.check = checkRTCInboundRTPStreamStats;
 
-},{"./RTCRTPStreamStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],67:[function(require,module,exports){
+},{"./RTCRTPStreamStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],68:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12726,7 +13263,7 @@ module.exports = RTCMediaStreamStats;
 
 RTCMediaStreamStats.check = checkRTCMediaStreamStats;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],68:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],69:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12932,7 +13469,7 @@ module.exports = RTCMediaStreamTrackStats;
 
 RTCMediaStreamTrackStats.check = checkRTCMediaStreamTrackStats;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],69:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],70:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13052,7 +13589,7 @@ module.exports = RTCOutboundRTPStreamStats;
 
 RTCOutboundRTPStreamStats.check = checkRTCOutboundRTPStreamStats;
 
-},{"./RTCRTPStreamStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],70:[function(require,module,exports){
+},{"./RTCRTPStreamStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],71:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13154,7 +13691,7 @@ module.exports = RTCPeerConnectionStats;
 
 RTCPeerConnectionStats.check = checkRTCPeerConnectionStats;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],71:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],72:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13351,7 +13888,7 @@ module.exports = RTCRTPStreamStats;
 
 RTCRTPStreamStats.check = checkRTCRTPStreamStats;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],72:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],73:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13437,7 +13974,7 @@ module.exports = RTCStats;
 
 RTCStats.check = checkRTCStats;
 
-},{"./Stats":79,"inherits":"inherits","kurento-client":"kurento-client"}],73:[function(require,module,exports){
+},{"./Stats":80,"inherits":"inherits","kurento-client":"kurento-client"}],74:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13489,7 +14026,7 @@ function checkRTCStatsIceCandidatePairState(key, value)
 
 module.exports = checkRTCStatsIceCandidatePairState;
 
-},{"kurento-client":"kurento-client"}],74:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],75:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13540,7 +14077,7 @@ function checkRTCStatsIceCandidateType(key, value)
 
 module.exports = checkRTCStatsIceCandidateType;
 
-},{"kurento-client":"kurento-client"}],75:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],76:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13688,7 +14225,7 @@ module.exports = RTCTransportStats;
 
 RTCTransportStats.check = checkRTCTransportStats;
 
-},{"./RTCStats":72,"inherits":"inherits","kurento-client":"kurento-client"}],76:[function(require,module,exports){
+},{"./RTCStats":73,"inherits":"inherits","kurento-client":"kurento-client"}],77:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13850,7 +14387,7 @@ module.exports = RembParams;
 
 RembParams.check = checkRembParams;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],77:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],78:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13966,7 +14503,7 @@ module.exports = ServerInfo;
 
 ServerInfo.check = checkServerInfo;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],78:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],79:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14017,7 +14554,7 @@ function checkServerType(key, value)
 
 module.exports = checkServerType;
 
-},{"kurento-client":"kurento-client"}],79:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],80:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14126,7 +14663,7 @@ module.exports = Stats;
 
 Stats.check = checkStats;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],80:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],81:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14177,7 +14714,7 @@ function checkStatsType(key, value)
 
 module.exports = checkStatsType;
 
-},{"kurento-client":"kurento-client"}],81:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],82:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14277,7 +14814,7 @@ module.exports = Tag;
 
 Tag.check = checkTag;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],82:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],83:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14377,7 +14914,7 @@ module.exports = VideoCaps;
 
 VideoCaps.check = checkVideoCaps;
 
-},{"./ComplexType":47,"inherits":"inherits","kurento-client":"kurento-client"}],83:[function(require,module,exports){
+},{"./ComplexType":48,"inherits":"inherits","kurento-client":"kurento-client"}],84:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14428,7 +14965,7 @@ function checkVideoCodec(key, value)
 
 module.exports = checkVideoCodec;
 
-},{"kurento-client":"kurento-client"}],84:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],85:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14541,7 +15078,7 @@ exports.Tag = Tag;
 exports.VideoCaps = VideoCaps;
 exports.VideoCodec = VideoCodec;
 
-},{"./AudioCaps":44,"./AudioCodec":45,"./CodecConfiguration":46,"./ComplexType":47,"./ConnectionState":48,"./ElementConnectionData":49,"./ElementStats":50,"./EndpointStats":51,"./FilterType":52,"./Fraction":53,"./GstreamerDotDetails":54,"./MediaFlowState":55,"./MediaLatencyStat":56,"./MediaState":57,"./MediaType":58,"./ModuleInfo":59,"./RTCCertificateStats":60,"./RTCCodec":61,"./RTCDataChannelState":62,"./RTCDataChannelStats":63,"./RTCIceCandidateAttributes":64,"./RTCIceCandidatePairStats":65,"./RTCInboundRTPStreamStats":66,"./RTCMediaStreamStats":67,"./RTCMediaStreamTrackStats":68,"./RTCOutboundRTPStreamStats":69,"./RTCPeerConnectionStats":70,"./RTCRTPStreamStats":71,"./RTCStats":72,"./RTCStatsIceCandidatePairState":73,"./RTCStatsIceCandidateType":74,"./RTCTransportStats":75,"./RembParams":76,"./ServerInfo":77,"./ServerType":78,"./Stats":79,"./StatsType":80,"./Tag":81,"./VideoCaps":82,"./VideoCodec":83}],85:[function(require,module,exports){
+},{"./AudioCaps":45,"./AudioCodec":46,"./CodecConfiguration":47,"./ComplexType":48,"./ConnectionState":49,"./ElementConnectionData":50,"./ElementStats":51,"./EndpointStats":52,"./FilterType":53,"./Fraction":54,"./GstreamerDotDetails":55,"./MediaFlowState":56,"./MediaLatencyStat":57,"./MediaState":58,"./MediaType":59,"./ModuleInfo":60,"./RTCCertificateStats":61,"./RTCCodec":62,"./RTCDataChannelState":63,"./RTCDataChannelStats":64,"./RTCIceCandidateAttributes":65,"./RTCIceCandidatePairStats":66,"./RTCInboundRTPStreamStats":67,"./RTCMediaStreamStats":68,"./RTCMediaStreamTrackStats":69,"./RTCOutboundRTPStreamStats":70,"./RTCPeerConnectionStats":71,"./RTCRTPStreamStats":72,"./RTCStats":73,"./RTCStatsIceCandidatePairState":74,"./RTCStatsIceCandidateType":75,"./RTCTransportStats":76,"./RembParams":77,"./ServerInfo":78,"./ServerType":79,"./Stats":80,"./StatsType":81,"./Tag":82,"./VideoCaps":83,"./VideoCodec":84}],86:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14744,7 +15281,7 @@ module.exports = AlphaBlending;
 
 AlphaBlending.check = checkAlphaBlending;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],86:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],87:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14835,7 +15372,7 @@ module.exports = Composite;
 
 Composite.check = checkComposite;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],87:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],88:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14977,7 +15514,7 @@ module.exports = Dispatcher;
 
 Dispatcher.check = checkDispatcher;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],88:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],89:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15139,7 +15676,7 @@ module.exports = DispatcherOneToMany;
 
 DispatcherOneToMany.check = checkDispatcherOneToMany;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],89:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],90:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15246,7 +15783,7 @@ module.exports = HttpPostEndpoint;
 
 HttpPostEndpoint.check = checkHttpPostEndpoint;
 
-},{"./abstracts/HttpEndpoint":95,"inherits":"inherits","kurento-client":"kurento-client"}],90:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":96,"inherits":"inherits","kurento-client":"kurento-client"}],91:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15434,7 +15971,7 @@ module.exports = Mixer;
 
 Mixer.check = checkMixer;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],91:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],92:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15730,7 +16267,7 @@ module.exports = PlayerEndpoint;
 
 PlayerEndpoint.check = checkPlayerEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],92:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],93:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16006,7 +16543,7 @@ module.exports = RecorderEndpoint;
 
 RecorderEndpoint.check = checkRecorderEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],93:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],94:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16192,7 +16729,7 @@ module.exports = RtpEndpoint;
 
 RtpEndpoint.check = checkRtpEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],94:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],95:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16280,9 +16817,6 @@ function noop(error, result) {
  *        </ul>
  *        </p>
  *        <p>
- *        TODO: Comentar que se puede hacer Vanilla ICE o Trickle ICE
- *        </p>
- *        <p>
  *        SDPs are sent without ICE candidates, following the Trickle ICE 
  *        optimization. Once the SDP negotiation is completed, both peers 
  *        proceed with the ICE discovery process, intended to set up a 
@@ -16298,7 +16832,7 @@ function noop(error, result) {
  *        the media session can start. The harvesting process in Kurento, begins
  *        </p>
  *        <p>
- *        It’s important to keep in mind that WebRTC connection is an 
+ *        It's important to keep in mind that WebRTC connection is an 
  *        asynchronous process, when designing interactions between different 
  *        MediaElements. For example, it would be pointless to start recording 
  *        before media is flowing. In order to be notified of state changes, the
@@ -16391,7 +16925,7 @@ function noop(error, result) {
  *        <p>
  *        DataChannels allow other media elements that make use of the DataPad, 
  *        to send arbitrary data. For instance, if there is a filter that 
- *        publishes event information, it’ll be sent to the remote peer through 
+ *        publishes event information, it'll be sent to the remote peer through 
  *        the channel. There is no API available for programmers to make use of 
  *        this feature in the WebRtcElement. DataChannels can be configured to 
  *        provide the following:
@@ -16416,21 +16950,28 @@ function noop(error, result) {
  *        disabled by default. If this is the case, they can be created invoking
  *        <ul>
  *          <li>
- *            `label`: assigns a label to the DataChannel. This can help 
- *            identify each possible channel separately.
+ *            <code>label</code>: assigns a label to the DataChannel. This can 
+ *            help identify each possible channel separately.
  *          </li>
  *          <li>
- *            `ordered`: specifies if the DataChannel guarantees order, which is
+ *            <code>ordered</code>: specifies if the DataChannel guarantees 
+ *            order, which is the default mode. If maxPacketLifetime and 
+ *            maxRetransmits have not been set, this enables reliable mode.
  *          </li>
  *          <li>
- *            `maxPacketLifeTime`: The time window in milliseconds, during which
+ *            <code>maxPacketLifeTime</code>: The time window in milliseconds, 
+ *            during which transmissions and retransmissions may take place in 
+ *            unreliable mode. This forces unreliable mode, even if “ordered” 
+ *            has been activated.
  *          </li>
  *          <li>
- *            `maxRetransmits`: maximum number of retransmissions that are 
- *            attempted in unreliable mode. This forces unreliable mode, even if
+ *            <code>maxRetransmits</code>: maximum number of retransmissions 
+ *            that are attempted in unreliable mode. This forces unreliable 
+ *            mode, even if “ordered” has been activated.
  *          </li>
  *          <li>
- *            `Protocol`: Name of the subprotocol used for data communication.
+ *            <code>Protocol</code>: Name of the subprotocol used for data 
+ *            communication.
  *          </li>
  *        </ul>
  *
@@ -16928,7 +17469,7 @@ module.exports = WebRtcEndpoint;
 
 WebRtcEndpoint.check = checkWebRtcEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],95:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],96:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17050,7 +17591,7 @@ module.exports = HttpEndpoint;
 
 HttpEndpoint.check = checkHttpEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],96:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],97:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17083,7 +17624,7 @@ var HttpEndpoint = require('./HttpEndpoint');
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":95}],97:[function(require,module,exports){
+},{"./HttpEndpoint":96}],98:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17134,7 +17675,7 @@ function checkCryptoSuite(key, value)
 
 module.exports = checkCryptoSuite;
 
-},{"kurento-client":"kurento-client"}],98:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],99:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17245,7 +17786,7 @@ module.exports = IceCandidate;
 
 IceCandidate.check = checkIceCandidate;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],99:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],100:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17361,7 +17902,7 @@ module.exports = IceCandidatePair;
 
 IceCandidatePair.check = checkIceCandidatePair;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],100:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],101:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17412,7 +17953,7 @@ function checkIceComponentState(key, value)
 
 module.exports = checkIceComponentState;
 
-},{"kurento-client":"kurento-client"}],101:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],102:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17520,7 +18061,7 @@ module.exports = IceConnection;
 
 IceConnection.check = checkIceConnection;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],102:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],103:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17572,7 +18113,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"kurento-client":"kurento-client"}],103:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],104:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17673,7 +18214,7 @@ module.exports = SDES;
 
 SDES.check = checkSDES;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],104:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],105:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17788,7 +18329,7 @@ module.exports = VideoInfo;
 
 VideoInfo.check = checkVideoInfo;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],105:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],106:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17835,7 +18376,7 @@ exports.MediaProfileSpecType = MediaProfileSpecType;
 exports.SDES = SDES;
 exports.VideoInfo = VideoInfo;
 
-},{"./CryptoSuite":97,"./IceCandidate":98,"./IceCandidatePair":99,"./IceComponentState":100,"./IceConnection":101,"./MediaProfileSpecType":102,"./SDES":103,"./VideoInfo":104}],106:[function(require,module,exports){
+},{"./CryptoSuite":98,"./IceCandidate":99,"./IceCandidatePair":100,"./IceComponentState":101,"./IceConnection":102,"./MediaProfileSpecType":103,"./SDES":104,"./VideoInfo":105}],107:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18043,7 +18584,7 @@ module.exports = FaceOverlayFilter;
 
 FaceOverlayFilter.check = checkFaceOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],107:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],108:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18184,7 +18725,7 @@ module.exports = GStreamerFilter;
 
 GStreamerFilter.check = checkGStreamerFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],108:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18391,7 +18932,7 @@ module.exports = ImageOverlayFilter;
 
 ImageOverlayFilter.check = checkImageOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18483,7 +19024,7 @@ module.exports = ZBarFilter;
 
 ZBarFilter.check = checkZBarFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18561,7 +19102,7 @@ module.exports = OpenCVFilter;
 
 OpenCVFilter.check = checkOpenCVFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],112:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18594,7 +19135,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":110}],112:[function(require,module,exports){
+},{"./OpenCVFilter":111}],113:[function(require,module,exports){
 function Mapper()
 {
   var sources = {};
@@ -18662,7 +19203,7 @@ Mapper.prototype.pop = function(id, source)
 
 module.exports = Mapper;
 
-},{}],113:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -18684,7 +19225,7 @@ var JsonRpcClient  = require('./jsonrpcclient');
 
 
 exports.JsonRpcClient  = JsonRpcClient;
-},{"./jsonrpcclient":114}],114:[function(require,module,exports){
+},{"./jsonrpcclient":115}],115:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -18947,7 +19488,7 @@ function JsonRpcClient(configuration) {
 
 module.exports = JsonRpcClient;
 
-},{"../..":117,"./transports/webSocketWithReconnection":116}],115:[function(require,module,exports){
+},{"../..":118,"./transports/webSocketWithReconnection":117}],116:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -18969,7 +19510,7 @@ var WebSocketWithReconnection  = require('./webSocketWithReconnection');
 
 
 exports.WebSocketWithReconnection  = WebSocketWithReconnection;
-},{"./webSocketWithReconnection":116}],116:[function(require,module,exports){
+},{"./webSocketWithReconnection":117}],117:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
@@ -19193,7 +19734,7 @@ function WebSocketWithReconnection(config) {
 }
 
 module.exports = WebSocketWithReconnection;
-},{"sockjs-client":141,"ws":203}],117:[function(require,module,exports){
+},{"sockjs-client":141,"ws":203}],118:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -20016,7 +20557,7 @@ RpcBuilder.clients = clients;
 RpcBuilder.clients.transports = transports;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":112,"./clients":113,"./clients/transports":115,"./packers":120,"events":23,"inherits":"inherits"}],118:[function(require,module,exports){
+},{"./Mapper":113,"./clients":114,"./clients/transports":116,"./packers":121,"events":24,"inherits":"inherits"}],119:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -20120,7 +20661,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],119:[function(require,module,exports){
+},{}],120:[function(require,module,exports){
 function pack(message)
 {
   throw new TypeError("Not yet implemented");
@@ -20135,7 +20676,7 @@ function unpack(message)
 exports.pack   = pack;
 exports.unpack = unpack;
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC  = require('./XmlRPC');
 
@@ -20143,7 +20684,7 @@ var XmlRPC  = require('./XmlRPC');
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
-},{"./JsonRPC":118,"./XmlRPC":119}],121:[function(require,module,exports){
+},{"./JsonRPC":119,"./XmlRPC":120}],122:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -20270,7 +20811,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],122:[function(require,module,exports){
+},{}],123:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -20371,543 +20912,6 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],123:[function(require,module,exports){
-(function (global){
-/*! https://mths.be/punycode v1.4.1 by @mathias */
-;(function(root) {
-
-	/** Detect free variables */
-	var freeExports = typeof exports == 'object' && exports &&
-		!exports.nodeType && exports;
-	var freeModule = typeof module == 'object' && module &&
-		!module.nodeType && module;
-	var freeGlobal = typeof global == 'object' && global;
-	if (
-		freeGlobal.global === freeGlobal ||
-		freeGlobal.window === freeGlobal ||
-		freeGlobal.self === freeGlobal
-	) {
-		root = freeGlobal;
-	}
-
-	/**
-	 * The `punycode` object.
-	 * @name punycode
-	 * @type Object
-	 */
-	var punycode,
-
-	/** Highest positive signed 32-bit float value */
-	maxInt = 2147483647, // aka. 0x7FFFFFFF or 2^31-1
-
-	/** Bootstring parameters */
-	base = 36,
-	tMin = 1,
-	tMax = 26,
-	skew = 38,
-	damp = 700,
-	initialBias = 72,
-	initialN = 128, // 0x80
-	delimiter = '-', // '\x2D'
-
-	/** Regular expressions */
-	regexPunycode = /^xn--/,
-	regexNonASCII = /[^\x20-\x7E]/, // unprintable ASCII chars + non-ASCII chars
-	regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g, // RFC 3490 separators
-
-	/** Error messages */
-	errors = {
-		'overflow': 'Overflow: input needs wider integers to process',
-		'not-basic': 'Illegal input >= 0x80 (not a basic code point)',
-		'invalid-input': 'Invalid input'
-	},
-
-	/** Convenience shortcuts */
-	baseMinusTMin = base - tMin,
-	floor = Math.floor,
-	stringFromCharCode = String.fromCharCode,
-
-	/** Temporary variable */
-	key;
-
-	/*--------------------------------------------------------------------------*/
-
-	/**
-	 * A generic error utility function.
-	 * @private
-	 * @param {String} type The error type.
-	 * @returns {Error} Throws a `RangeError` with the applicable error message.
-	 */
-	function error(type) {
-		throw new RangeError(errors[type]);
-	}
-
-	/**
-	 * A generic `Array#map` utility function.
-	 * @private
-	 * @param {Array} array The array to iterate over.
-	 * @param {Function} callback The function that gets called for every array
-	 * item.
-	 * @returns {Array} A new array of values returned by the callback function.
-	 */
-	function map(array, fn) {
-		var length = array.length;
-		var result = [];
-		while (length--) {
-			result[length] = fn(array[length]);
-		}
-		return result;
-	}
-
-	/**
-	 * A simple `Array#map`-like wrapper to work with domain name strings or email
-	 * addresses.
-	 * @private
-	 * @param {String} domain The domain name or email address.
-	 * @param {Function} callback The function that gets called for every
-	 * character.
-	 * @returns {Array} A new string of characters returned by the callback
-	 * function.
-	 */
-	function mapDomain(string, fn) {
-		var parts = string.split('@');
-		var result = '';
-		if (parts.length > 1) {
-			// In email addresses, only the domain name should be punycoded. Leave
-			// the local part (i.e. everything up to `@`) intact.
-			result = parts[0] + '@';
-			string = parts[1];
-		}
-		// Avoid `split(regex)` for IE8 compatibility. See #17.
-		string = string.replace(regexSeparators, '\x2E');
-		var labels = string.split('.');
-		var encoded = map(labels, fn).join('.');
-		return result + encoded;
-	}
-
-	/**
-	 * Creates an array containing the numeric code points of each Unicode
-	 * character in the string. While JavaScript uses UCS-2 internally,
-	 * this function will convert a pair of surrogate halves (each of which
-	 * UCS-2 exposes as separate characters) into a single code point,
-	 * matching UTF-16.
-	 * @see `punycode.ucs2.encode`
-	 * @see <https://mathiasbynens.be/notes/javascript-encoding>
-	 * @memberOf punycode.ucs2
-	 * @name decode
-	 * @param {String} string The Unicode input string (UCS-2).
-	 * @returns {Array} The new array of code points.
-	 */
-	function ucs2decode(string) {
-		var output = [],
-		    counter = 0,
-		    length = string.length,
-		    value,
-		    extra;
-		while (counter < length) {
-			value = string.charCodeAt(counter++);
-			if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
-				// high surrogate, and there is a next character
-				extra = string.charCodeAt(counter++);
-				if ((extra & 0xFC00) == 0xDC00) { // low surrogate
-					output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
-				} else {
-					// unmatched surrogate; only append this code unit, in case the next
-					// code unit is the high surrogate of a surrogate pair
-					output.push(value);
-					counter--;
-				}
-			} else {
-				output.push(value);
-			}
-		}
-		return output;
-	}
-
-	/**
-	 * Creates a string based on an array of numeric code points.
-	 * @see `punycode.ucs2.decode`
-	 * @memberOf punycode.ucs2
-	 * @name encode
-	 * @param {Array} codePoints The array of numeric code points.
-	 * @returns {String} The new Unicode string (UCS-2).
-	 */
-	function ucs2encode(array) {
-		return map(array, function(value) {
-			var output = '';
-			if (value > 0xFFFF) {
-				value -= 0x10000;
-				output += stringFromCharCode(value >>> 10 & 0x3FF | 0xD800);
-				value = 0xDC00 | value & 0x3FF;
-			}
-			output += stringFromCharCode(value);
-			return output;
-		}).join('');
-	}
-
-	/**
-	 * Converts a basic code point into a digit/integer.
-	 * @see `digitToBasic()`
-	 * @private
-	 * @param {Number} codePoint The basic numeric code point value.
-	 * @returns {Number} The numeric value of a basic code point (for use in
-	 * representing integers) in the range `0` to `base - 1`, or `base` if
-	 * the code point does not represent a value.
-	 */
-	function basicToDigit(codePoint) {
-		if (codePoint - 48 < 10) {
-			return codePoint - 22;
-		}
-		if (codePoint - 65 < 26) {
-			return codePoint - 65;
-		}
-		if (codePoint - 97 < 26) {
-			return codePoint - 97;
-		}
-		return base;
-	}
-
-	/**
-	 * Converts a digit/integer into a basic code point.
-	 * @see `basicToDigit()`
-	 * @private
-	 * @param {Number} digit The numeric value of a basic code point.
-	 * @returns {Number} The basic code point whose value (when used for
-	 * representing integers) is `digit`, which needs to be in the range
-	 * `0` to `base - 1`. If `flag` is non-zero, the uppercase form is
-	 * used; else, the lowercase form is used. The behavior is undefined
-	 * if `flag` is non-zero and `digit` has no uppercase form.
-	 */
-	function digitToBasic(digit, flag) {
-		//  0..25 map to ASCII a..z or A..Z
-		// 26..35 map to ASCII 0..9
-		return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
-	}
-
-	/**
-	 * Bias adaptation function as per section 3.4 of RFC 3492.
-	 * https://tools.ietf.org/html/rfc3492#section-3.4
-	 * @private
-	 */
-	function adapt(delta, numPoints, firstTime) {
-		var k = 0;
-		delta = firstTime ? floor(delta / damp) : delta >> 1;
-		delta += floor(delta / numPoints);
-		for (/* no initialization */; delta > baseMinusTMin * tMax >> 1; k += base) {
-			delta = floor(delta / baseMinusTMin);
-		}
-		return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
-	}
-
-	/**
-	 * Converts a Punycode string of ASCII-only symbols to a string of Unicode
-	 * symbols.
-	 * @memberOf punycode
-	 * @param {String} input The Punycode string of ASCII-only symbols.
-	 * @returns {String} The resulting string of Unicode symbols.
-	 */
-	function decode(input) {
-		// Don't use UCS-2
-		var output = [],
-		    inputLength = input.length,
-		    out,
-		    i = 0,
-		    n = initialN,
-		    bias = initialBias,
-		    basic,
-		    j,
-		    index,
-		    oldi,
-		    w,
-		    k,
-		    digit,
-		    t,
-		    /** Cached calculation results */
-		    baseMinusT;
-
-		// Handle the basic code points: let `basic` be the number of input code
-		// points before the last delimiter, or `0` if there is none, then copy
-		// the first basic code points to the output.
-
-		basic = input.lastIndexOf(delimiter);
-		if (basic < 0) {
-			basic = 0;
-		}
-
-		for (j = 0; j < basic; ++j) {
-			// if it's not a basic code point
-			if (input.charCodeAt(j) >= 0x80) {
-				error('not-basic');
-			}
-			output.push(input.charCodeAt(j));
-		}
-
-		// Main decoding loop: start just after the last delimiter if any basic code
-		// points were copied; start at the beginning otherwise.
-
-		for (index = basic > 0 ? basic + 1 : 0; index < inputLength; /* no final expression */) {
-
-			// `index` is the index of the next character to be consumed.
-			// Decode a generalized variable-length integer into `delta`,
-			// which gets added to `i`. The overflow checking is easier
-			// if we increase `i` as we go, then subtract off its starting
-			// value at the end to obtain `delta`.
-			for (oldi = i, w = 1, k = base; /* no condition */; k += base) {
-
-				if (index >= inputLength) {
-					error('invalid-input');
-				}
-
-				digit = basicToDigit(input.charCodeAt(index++));
-
-				if (digit >= base || digit > floor((maxInt - i) / w)) {
-					error('overflow');
-				}
-
-				i += digit * w;
-				t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
-
-				if (digit < t) {
-					break;
-				}
-
-				baseMinusT = base - t;
-				if (w > floor(maxInt / baseMinusT)) {
-					error('overflow');
-				}
-
-				w *= baseMinusT;
-
-			}
-
-			out = output.length + 1;
-			bias = adapt(i - oldi, out, oldi == 0);
-
-			// `i` was supposed to wrap around from `out` to `0`,
-			// incrementing `n` each time, so we'll fix that now:
-			if (floor(i / out) > maxInt - n) {
-				error('overflow');
-			}
-
-			n += floor(i / out);
-			i %= out;
-
-			// Insert `n` at position `i` of the output
-			output.splice(i++, 0, n);
-
-		}
-
-		return ucs2encode(output);
-	}
-
-	/**
-	 * Converts a string of Unicode symbols (e.g. a domain name label) to a
-	 * Punycode string of ASCII-only symbols.
-	 * @memberOf punycode
-	 * @param {String} input The string of Unicode symbols.
-	 * @returns {String} The resulting Punycode string of ASCII-only symbols.
-	 */
-	function encode(input) {
-		var n,
-		    delta,
-		    handledCPCount,
-		    basicLength,
-		    bias,
-		    j,
-		    m,
-		    q,
-		    k,
-		    t,
-		    currentValue,
-		    output = [],
-		    /** `inputLength` will hold the number of code points in `input`. */
-		    inputLength,
-		    /** Cached calculation results */
-		    handledCPCountPlusOne,
-		    baseMinusT,
-		    qMinusT;
-
-		// Convert the input in UCS-2 to Unicode
-		input = ucs2decode(input);
-
-		// Cache the length
-		inputLength = input.length;
-
-		// Initialize the state
-		n = initialN;
-		delta = 0;
-		bias = initialBias;
-
-		// Handle the basic code points
-		for (j = 0; j < inputLength; ++j) {
-			currentValue = input[j];
-			if (currentValue < 0x80) {
-				output.push(stringFromCharCode(currentValue));
-			}
-		}
-
-		handledCPCount = basicLength = output.length;
-
-		// `handledCPCount` is the number of code points that have been handled;
-		// `basicLength` is the number of basic code points.
-
-		// Finish the basic string - if it is not empty - with a delimiter
-		if (basicLength) {
-			output.push(delimiter);
-		}
-
-		// Main encoding loop:
-		while (handledCPCount < inputLength) {
-
-			// All non-basic code points < n have been handled already. Find the next
-			// larger one:
-			for (m = maxInt, j = 0; j < inputLength; ++j) {
-				currentValue = input[j];
-				if (currentValue >= n && currentValue < m) {
-					m = currentValue;
-				}
-			}
-
-			// Increase `delta` enough to advance the decoder's <n,i> state to <m,0>,
-			// but guard against overflow
-			handledCPCountPlusOne = handledCPCount + 1;
-			if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
-				error('overflow');
-			}
-
-			delta += (m - n) * handledCPCountPlusOne;
-			n = m;
-
-			for (j = 0; j < inputLength; ++j) {
-				currentValue = input[j];
-
-				if (currentValue < n && ++delta > maxInt) {
-					error('overflow');
-				}
-
-				if (currentValue == n) {
-					// Represent delta as a generalized variable-length integer
-					for (q = delta, k = base; /* no condition */; k += base) {
-						t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
-						if (q < t) {
-							break;
-						}
-						qMinusT = q - t;
-						baseMinusT = base - t;
-						output.push(
-							stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0))
-						);
-						q = floor(qMinusT / baseMinusT);
-					}
-
-					output.push(stringFromCharCode(digitToBasic(q, 0)));
-					bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
-					delta = 0;
-					++handledCPCount;
-				}
-			}
-
-			++delta;
-			++n;
-
-		}
-		return output.join('');
-	}
-
-	/**
-	 * Converts a Punycode string representing a domain name or an email address
-	 * to Unicode. Only the Punycoded parts of the input will be converted, i.e.
-	 * it doesn't matter if you call it on a string that has already been
-	 * converted to Unicode.
-	 * @memberOf punycode
-	 * @param {String} input The Punycoded domain name or email address to
-	 * convert to Unicode.
-	 * @returns {String} The Unicode representation of the given Punycode
-	 * string.
-	 */
-	function toUnicode(input) {
-		return mapDomain(input, function(string) {
-			return regexPunycode.test(string)
-				? decode(string.slice(4).toLowerCase())
-				: string;
-		});
-	}
-
-	/**
-	 * Converts a Unicode string representing a domain name or an email address to
-	 * Punycode. Only the non-ASCII parts of the domain name will be converted,
-	 * i.e. it doesn't matter if you call it with a domain that's already in
-	 * ASCII.
-	 * @memberOf punycode
-	 * @param {String} input The domain name or email address to convert, as a
-	 * Unicode string.
-	 * @returns {String} The Punycode representation of the given domain name or
-	 * email address.
-	 */
-	function toASCII(input) {
-		return mapDomain(input, function(string) {
-			return regexNonASCII.test(string)
-				? 'xn--' + encode(string)
-				: string;
-		});
-	}
-
-	/*--------------------------------------------------------------------------*/
-
-	/** Define the public API */
-	punycode = {
-		/**
-		 * A string representing the current Punycode.js version number.
-		 * @memberOf punycode
-		 * @type String
-		 */
-		'version': '1.4.1',
-		/**
-		 * An object of methods to convert from JavaScript's internal character
-		 * representation (UCS-2) to Unicode code points, and back.
-		 * @see <https://mathiasbynens.be/notes/javascript-encoding>
-		 * @memberOf punycode
-		 * @type Object
-		 */
-		'ucs2': {
-			'decode': ucs2decode,
-			'encode': ucs2encode
-		},
-		'decode': decode,
-		'encode': encode,
-		'toASCII': toASCII,
-		'toUnicode': toUnicode
-	};
-
-	/** Expose `punycode` */
-	// Some AMD build optimizers, like r.js, check for specific condition patterns
-	// like the following:
-	if (
-		typeof define == 'function' &&
-		typeof define.amd == 'object' &&
-		define.amd
-	) {
-		define('punycode', function() {
-			return punycode;
-		});
-	} else if (freeExports && freeModule) {
-		if (module.exports == freeExports) {
-			// in Node.js, io.js, or RingoJS v0.8.0+
-			freeModule.exports = punycode;
-		} else {
-			// in Narwhal or RingoJS v0.7.0-
-			for (key in punycode) {
-				punycode.hasOwnProperty(key) && (freeExports[key] = punycode[key]);
-			}
-		}
-	} else {
-		// in Rhino or a web browser
-		root.punycode = punycode;
-	}
-
-}(this));
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],124:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -21246,7 +21250,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_readable":131,"./_stream_writable":133,"_process":122,"core-util-is":18,"inherits":"inherits"}],130:[function(require,module,exports){
+},{"./_stream_readable":131,"./_stream_writable":133,"_process":123,"core-util-is":19,"inherits":"inherits"}],130:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -21294,7 +21298,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":132,"core-util-is":18,"inherits":"inherits"}],131:[function(require,module,exports){
+},{"./_stream_transform":132,"core-util-is":19,"inherits":"inherits"}],131:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -22280,7 +22284,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"_process":122,"buffer":16,"core-util-is":18,"events":23,"inherits":"inherits","isarray":27,"stream":194,"string_decoder/":195}],132:[function(require,module,exports){
+},{"_process":123,"buffer":17,"core-util-is":19,"events":24,"inherits":"inherits","isarray":28,"stream":194,"string_decoder/":195}],132:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -22492,7 +22496,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":129,"core-util-is":18,"inherits":"inherits"}],133:[function(require,module,exports){
+},{"./_stream_duplex":129,"core-util-is":19,"inherits":"inherits"}],133:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -22882,7 +22886,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":129,"_process":122,"buffer":16,"core-util-is":18,"inherits":"inherits","stream":194}],134:[function(require,module,exports){
+},{"./_stream_duplex":129,"_process":123,"buffer":17,"core-util-is":19,"inherits":"inherits","stream":194}],134:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
 },{"./lib/_stream_passthrough.js":130}],135:[function(require,module,exports){
@@ -22900,7 +22904,7 @@ if (!process.browser && process.env.READABLE_STREAM === 'disable') {
 }
 
 }).call(this,require('_process'))
-},{"./lib/_stream_duplex.js":129,"./lib/_stream_passthrough.js":130,"./lib/_stream_readable.js":131,"./lib/_stream_transform.js":132,"./lib/_stream_writable.js":133,"_process":122,"stream":194}],136:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":129,"./lib/_stream_passthrough.js":130,"./lib/_stream_readable.js":131,"./lib/_stream_transform.js":132,"./lib/_stream_writable.js":133,"_process":123,"stream":194}],136:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
 },{"./lib/_stream_transform.js":132}],137:[function(require,module,exports){
@@ -23034,7 +23038,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":9,"events":23}],139:[function(require,module,exports){
+},{"backoff":9,"events":24}],139:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -23319,7 +23323,7 @@ FacadeJS.prototype._close = function() {
 
 module.exports = FacadeJS;
 
-},{"./utils/iframe":187,"json3":29}],148:[function(require,module,exports){
+},{"./utils/iframe":187,"json3":30}],148:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -23425,7 +23429,7 @@ module.exports = function(SockJS, availableTransports) {
 };
 
 }).call(this,require('_process'))
-},{"./facade":147,"./info-iframe-receiver":150,"./location":153,"./utils/event":186,"./utils/iframe":187,"./utils/url":192,"_process":122,"debug":19,"json3":29}],149:[function(require,module,exports){
+},{"./facade":147,"./info-iframe-receiver":150,"./location":153,"./utils/event":186,"./utils/iframe":187,"./utils/url":192,"_process":123,"debug":20,"json3":30}],149:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -23478,7 +23482,7 @@ InfoAjax.prototype.close = function() {
 module.exports = InfoAjax;
 
 }).call(this,require('_process'))
-},{"./utils/object":189,"_process":122,"debug":19,"events":143,"inherits":"inherits","json3":29}],150:[function(require,module,exports){
+},{"./utils/object":189,"_process":123,"debug":20,"events":143,"inherits":"inherits","json3":30}],150:[function(require,module,exports){
 'use strict';
 
 var inherits = require('inherits')
@@ -23513,7 +23517,7 @@ InfoReceiverIframe.prototype.close = function() {
 
 module.exports = InfoReceiverIframe;
 
-},{"./info-ajax":149,"./transport/sender/xhr-local":177,"events":143,"inherits":"inherits","json3":29}],151:[function(require,module,exports){
+},{"./info-ajax":149,"./transport/sender/xhr-local":177,"events":143,"inherits":"inherits","json3":30}],151:[function(require,module,exports){
 (function (process,global){
 'use strict';
 
@@ -23586,7 +23590,7 @@ InfoIframe.prototype.close = function() {
 module.exports = InfoIframe;
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./info-iframe-receiver":150,"./transport/iframe":162,"./utils/event":186,"_process":122,"debug":19,"events":143,"inherits":"inherits","json3":29}],152:[function(require,module,exports){
+},{"./info-iframe-receiver":150,"./transport/iframe":162,"./utils/event":186,"_process":123,"debug":20,"events":143,"inherits":"inherits","json3":30}],152:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -23679,7 +23683,7 @@ InfoReceiver.timeout = 8000;
 module.exports = InfoReceiver;
 
 }).call(this,require('_process'))
-},{"./info-ajax":149,"./info-iframe":151,"./transport/sender/xdr":174,"./transport/sender/xhr-cors":175,"./transport/sender/xhr-fake":176,"./transport/sender/xhr-local":177,"./utils/url":192,"_process":122,"debug":19,"events":143,"inherits":"inherits"}],153:[function(require,module,exports){
+},{"./info-ajax":149,"./info-iframe":151,"./transport/sender/xdr":174,"./transport/sender/xhr-cors":175,"./transport/sender/xhr-fake":176,"./transport/sender/xhr-local":177,"./utils/url":192,"_process":123,"debug":20,"events":143,"inherits":"inherits"}],153:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -24078,7 +24082,7 @@ module.exports = function(availableTransports) {
 };
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./event/close":142,"./event/event":144,"./event/eventtarget":145,"./event/trans-message":146,"./iframe-bootstrap":148,"./info-receiver":152,"./location":153,"./shims":155,"./utils/browser":184,"./utils/escape":185,"./utils/event":186,"./utils/log":188,"./utils/object":189,"./utils/random":190,"./utils/transport":191,"./utils/url":192,"./version":193,"_process":122,"debug":19,"inherits":"inherits","json3":29,"url-parse":197}],155:[function(require,module,exports){
+},{"./event/close":142,"./event/event":144,"./event/eventtarget":145,"./event/trans-message":146,"./iframe-bootstrap":148,"./info-receiver":152,"./location":153,"./shims":155,"./utils/browser":184,"./utils/escape":185,"./utils/event":186,"./utils/log":188,"./utils/object":189,"./utils/random":190,"./utils/transport":191,"./utils/url":192,"./version":193,"_process":123,"debug":20,"inherits":"inherits","json3":30,"url-parse":197}],155:[function(require,module,exports){
 /* eslint-disable */
 /* jscs: disable */
 'use strict';
@@ -24770,7 +24774,7 @@ AbstractXHRObject.supportsCORS = cors;
 module.exports = AbstractXHRObject;
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../../utils/event":186,"../../utils/url":192,"_process":122,"debug":19,"events":143,"inherits":"inherits"}],158:[function(require,module,exports){
+},{"../../utils/event":186,"../../utils/url":192,"_process":123,"debug":20,"events":143,"inherits":"inherits"}],158:[function(require,module,exports){
 (function (global){
 module.exports = global.EventSource;
 
@@ -24988,7 +24992,7 @@ IframeTransport.roundTrips = 2;
 module.exports = IframeTransport;
 
 }).call(this,require('_process'))
-},{"../utils/event":186,"../utils/iframe":187,"../utils/random":190,"../utils/url":192,"../version":193,"_process":122,"debug":19,"events":143,"inherits":"inherits","json3":29}],163:[function(require,module,exports){
+},{"../utils/event":186,"../utils/iframe":187,"../utils/random":190,"../utils/url":192,"../version":193,"_process":123,"debug":20,"events":143,"inherits":"inherits","json3":30}],163:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -25079,7 +25083,7 @@ inherits(AjaxBasedTransport, SenderReceiver);
 module.exports = AjaxBasedTransport;
 
 }).call(this,require('_process'))
-},{"../../utils/url":192,"./sender-receiver":168,"_process":122,"debug":19,"inherits":"inherits"}],165:[function(require,module,exports){
+},{"../../utils/url":192,"./sender-receiver":168,"_process":123,"debug":20,"inherits":"inherits"}],165:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25170,7 +25174,7 @@ BufferedSender.prototype.stop = function() {
 module.exports = BufferedSender;
 
 }).call(this,require('_process'))
-},{"_process":122,"debug":19,"events":143,"inherits":"inherits"}],166:[function(require,module,exports){
+},{"_process":123,"debug":20,"events":143,"inherits":"inherits"}],166:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -25268,7 +25272,7 @@ Polling.prototype.abort = function() {
 module.exports = Polling;
 
 }).call(this,require('_process'))
-},{"_process":122,"debug":19,"events":143,"inherits":"inherits"}],168:[function(require,module,exports){
+},{"_process":123,"debug":20,"events":143,"inherits":"inherits"}],168:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25317,7 +25321,7 @@ SenderReceiver.prototype.close = function() {
 module.exports = SenderReceiver;
 
 }).call(this,require('_process'))
-},{"../../utils/url":192,"./buffered-sender":165,"./polling":167,"_process":122,"debug":19,"inherits":"inherits"}],169:[function(require,module,exports){
+},{"../../utils/url":192,"./buffered-sender":165,"./polling":167,"_process":123,"debug":20,"inherits":"inherits"}],169:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25384,7 +25388,7 @@ EventSourceReceiver.prototype._close = function(reason) {
 module.exports = EventSourceReceiver;
 
 }).call(this,require('_process'))
-},{"_process":122,"debug":19,"events":143,"eventsource":158,"inherits":"inherits"}],170:[function(require,module,exports){
+},{"_process":123,"debug":20,"events":143,"eventsource":158,"inherits":"inherits"}],170:[function(require,module,exports){
 (function (process,global){
 'use strict';
 
@@ -25475,7 +25479,7 @@ HtmlfileReceiver.enabled = HtmlfileReceiver.htmlfileEnabled || iframeUtils.ifram
 module.exports = HtmlfileReceiver;
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../../utils/iframe":187,"../../utils/random":190,"../../utils/url":192,"_process":122,"debug":19,"events":143,"inherits":"inherits"}],171:[function(require,module,exports){
+},{"../../utils/iframe":187,"../../utils/random":190,"../../utils/url":192,"_process":123,"debug":20,"events":143,"inherits":"inherits"}],171:[function(require,module,exports){
 (function (process,global){
 'use strict';
 
@@ -25662,7 +25666,7 @@ JsonpReceiver.prototype._createScript = function(url) {
 module.exports = JsonpReceiver;
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../../utils/browser":184,"../../utils/iframe":187,"../../utils/random":190,"../../utils/url":192,"_process":122,"debug":19,"events":143,"inherits":"inherits"}],172:[function(require,module,exports){
+},{"../../utils/browser":184,"../../utils/iframe":187,"../../utils/random":190,"../../utils/url":192,"_process":123,"debug":20,"events":143,"inherits":"inherits"}],172:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25736,7 +25740,7 @@ XhrReceiver.prototype.abort = function() {
 module.exports = XhrReceiver;
 
 }).call(this,require('_process'))
-},{"_process":122,"debug":19,"events":143,"inherits":"inherits"}],173:[function(require,module,exports){
+},{"_process":123,"debug":20,"events":143,"inherits":"inherits"}],173:[function(require,module,exports){
 (function (process,global){
 'use strict';
 
@@ -25839,7 +25843,7 @@ module.exports = function(url, payload, callback) {
 };
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../../utils/random":190,"../../utils/url":192,"_process":122,"debug":19}],174:[function(require,module,exports){
+},{"../../utils/random":190,"../../utils/url":192,"_process":123,"debug":20}],174:[function(require,module,exports){
 (function (process,global){
 'use strict';
 
@@ -25946,7 +25950,7 @@ XDRObject.enabled = !!(global.XDomainRequest && browser.hasDomain());
 module.exports = XDRObject;
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../../utils/browser":184,"../../utils/event":186,"../../utils/url":192,"_process":122,"debug":19,"events":143,"inherits":"inherits"}],175:[function(require,module,exports){
+},{"../../utils/browser":184,"../../utils/event":186,"../../utils/url":192,"_process":123,"debug":20,"events":143,"inherits":"inherits"}],175:[function(require,module,exports){
 'use strict';
 
 var inherits = require('inherits')
@@ -26110,7 +26114,7 @@ WebSocketTransport.roundTrips = 2;
 module.exports = WebSocketTransport;
 
 }).call(this,require('_process'))
-},{"../utils/event":186,"../utils/url":192,"./driver/websocket":159,"_process":122,"debug":19,"events":143,"inherits":"inherits"}],179:[function(require,module,exports){
+},{"../utils/event":186,"../utils/url":192,"./driver/websocket":159,"_process":123,"debug":20,"events":143,"inherits":"inherits"}],179:[function(require,module,exports){
 'use strict';
 
 var inherits = require('inherits')
@@ -26352,7 +26356,7 @@ module.exports = {
   }
 };
 
-},{"json3":29}],186:[function(require,module,exports){
+},{"json3":30}],186:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -26620,7 +26624,7 @@ if (global.document) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./browser":184,"./event":186,"_process":122,"debug":19,"json3":29}],188:[function(require,module,exports){
+},{"./browser":184,"./event":186,"_process":123,"debug":20,"json3":30}],188:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -26753,7 +26757,7 @@ module.exports = function(availableTransports) {
 };
 
 }).call(this,require('_process'))
-},{"_process":122,"debug":19}],192:[function(require,module,exports){
+},{"_process":123,"debug":20}],192:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -26804,7 +26808,7 @@ module.exports = {
 };
 
 }).call(this,require('_process'))
-},{"_process":122,"debug":19,"url-parse":197}],193:[function(require,module,exports){
+},{"_process":123,"debug":20,"url-parse":197}],193:[function(require,module,exports){
 module.exports = '1.1.1';
 
 },{}],194:[function(require,module,exports){
@@ -26936,7 +26940,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":23,"inherits":"inherits","readable-stream/duplex.js":128,"readable-stream/passthrough.js":134,"readable-stream/readable.js":135,"readable-stream/transform.js":136,"readable-stream/writable.js":137}],195:[function(require,module,exports){
+},{"events":24,"inherits":"inherits","readable-stream/duplex.js":128,"readable-stream/passthrough.js":134,"readable-stream/readable.js":135,"readable-stream/transform.js":136,"readable-stream/writable.js":137}],195:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -27159,7 +27163,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":16}],196:[function(require,module,exports){
+},{"buffer":17}],196:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -27271,7 +27275,7 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":122,"stream":194}],197:[function(require,module,exports){
+},{"_process":123,"stream":194}],197:[function(require,module,exports){
 'use strict';
 
 var required = require('requires-port')
@@ -28308,7 +28312,7 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":123,"querystring":126}],200:[function(require,module,exports){
+},{"punycode":16,"querystring":126}],200:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
@@ -28905,7 +28909,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":200,"_process":122,"inherits":"inherits"}],202:[function(require,module,exports){
+},{"./support/isBuffer":200,"_process":123,"inherits":"inherits"}],202:[function(require,module,exports){
 (function (process){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -29001,7 +29005,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this,require('_process'))
-},{"_process":122,"isbuffer":28,"through":196,"ws":203}],203:[function(require,module,exports){
+},{"_process":123,"isbuffer":29,"through":196,"ws":203}],203:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -30241,7 +30245,7 @@ if (WebSocket) ws.prototype = WebSocket.prototype;
 }());
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":122}],"es6-promise":[function(require,module,exports){
+},{"_process":123}],"es6-promise":[function(require,module,exports){
 (function (process,global){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
@@ -31204,7 +31208,7 @@ if (WebSocket) ws.prototype = WebSocket.prototype;
 
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":122}],"inherits":[function(require,module,exports){
+},{"_process":123}],"inherits":[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -31273,7 +31277,7 @@ exports.PassThrough = PassThrough;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./HubPort":30,"./MediaPipeline":31,"./PassThrough":32,"./abstracts":43,"./complexTypes":84}],"kurento-client-elements":[function(require,module,exports){
+},{"./HubPort":31,"./MediaPipeline":32,"./PassThrough":33,"./abstracts":44,"./complexTypes":85}],"kurento-client-elements":[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -31331,7 +31335,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":85,"./Composite":86,"./Dispatcher":87,"./DispatcherOneToMany":88,"./HttpPostEndpoint":89,"./Mixer":90,"./PlayerEndpoint":91,"./RecorderEndpoint":92,"./RtpEndpoint":93,"./WebRtcEndpoint":94,"./abstracts":96,"./complexTypes":105}],"kurento-client-filters":[function(require,module,exports){
+},{"./AlphaBlending":86,"./Composite":87,"./Dispatcher":88,"./DispatcherOneToMany":89,"./HttpPostEndpoint":90,"./Mixer":91,"./PlayerEndpoint":92,"./RecorderEndpoint":93,"./RtpEndpoint":94,"./WebRtcEndpoint":95,"./abstracts":97,"./complexTypes":106}],"kurento-client-filters":[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -31376,7 +31380,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":106,"./GStreamerFilter":107,"./ImageOverlayFilter":108,"./ZBarFilter":109,"./abstracts":111}],"kurento-client":[function(require,module,exports){
+},{"./FaceOverlayFilter":107,"./GStreamerFilter":108,"./ImageOverlayFilter":109,"./ZBarFilter":110,"./abstracts":112}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
@@ -31439,7 +31443,7 @@ register('kurento-client-core')
 register('kurento-client-elements')
 register('kurento-client-filters')
 
-},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./disguise":7,"./register":8,"error-tojson":22}],"promisecallback":[function(require,module,exports){
+},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./disguise":7,"./register":8,"error-tojson":23}],"promisecallback":[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
