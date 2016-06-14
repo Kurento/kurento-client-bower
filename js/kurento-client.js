@@ -18893,6 +18893,12 @@ FaceOverlayFilter.prototype.unsetOverlayedImage = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -19019,6 +19025,12 @@ GStreamerFilter.prototype.getCommand = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
