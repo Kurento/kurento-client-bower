@@ -15873,6 +15873,12 @@ DispatcherOneToMany.prototype.removeSource = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -16388,6 +16394,12 @@ PlayerEndpoint.prototype.getPosition = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -16445,6 +16457,12 @@ PlayerEndpoint.prototype.getVideoInfo = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -16479,6 +16497,12 @@ PlayerEndpoint.prototype.play = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -16720,6 +16744,12 @@ RecorderEndpoint.prototype.record = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -16745,6 +16775,12 @@ RecorderEndpoint.prototype.stopAndWait = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -17299,6 +17335,12 @@ WebRtcEndpoint.prototype.getICECandidatePairs = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -17325,6 +17367,12 @@ WebRtcEndpoint.prototype.getIceConnectionState = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -17351,6 +17399,12 @@ WebRtcEndpoint.prototype.getStunServerAddress = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -17407,6 +17461,12 @@ WebRtcEndpoint.prototype.getStunServerPort = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -17466,6 +17526,12 @@ WebRtcEndpoint.prototype.getTurnUrl = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -17694,6 +17760,12 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -17827,6 +17899,12 @@ HttpEndpoint.prototype.getUrl = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
