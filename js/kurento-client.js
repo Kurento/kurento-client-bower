@@ -7029,6 +7029,12 @@ MediaPipeline.prototype.getLatencyStats = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -7424,6 +7430,12 @@ BaseRtpEndpoint.prototype.getConnectionState = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -7451,6 +7463,12 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -7512,6 +7530,12 @@ BaseRtpEndpoint.prototype.getMediaState = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -7539,6 +7563,12 @@ BaseRtpEndpoint.prototype.getMinVideoRecvBandwidth = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -7597,6 +7627,12 @@ BaseRtpEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -7654,6 +7690,12 @@ BaseRtpEndpoint.prototype.getRembParams = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -8026,6 +8068,12 @@ Hub.prototype.createHubPort = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -8199,6 +8247,12 @@ MediaElement.prototype.getMaxOuputBitrate = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -8261,6 +8315,12 @@ MediaElement.prototype.getMaxOutputBitrate = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -8323,6 +8383,12 @@ MediaElement.prototype.getMinOuputBitrate = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -8385,6 +8451,12 @@ MediaElement.prototype.getMinOutputBitrate = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -9359,16 +9431,39 @@ MediaObject.prototype.getChildren = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
 
-  return disguise(this._invoke(transaction, 'getChildren', function(error, result)
-  {
-    if (error) return callback(error);
+  if (usePromise) {
+    var self = this;
 
-    this.emit('_describe', result, callback);
-  }), this)
+    var promise = new Promise(function(resolve, reject) {
+
+      function callback2(error, values) {
+        resolve(values)
+      }
+
+     self._invoke(transaction, 'getChildren', function(error, result) {
+        if (error) return callback(error);
+
+        self.emit('_describe', result, callback2);
+      })
+    });
+    return promise;
+  } else {
+    return disguise(this._invoke(transaction, 'getChildren', function(error, result) {
+      if (error) return callback(error);
+
+      this.emit('_describe', result, callback);
+    }), this)
+  }
 };
 /**
  * @callback module:core/abstracts.MediaObject~getChildrenCallback
@@ -9391,16 +9486,39 @@ MediaObject.prototype.getChilds = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
 
-  return disguise(this._invoke(transaction, 'getChilds', function(error, result)
-  {
-    if (error) return callback(error);
+  if (usePromise) {
+    var self = this;
 
-    this.emit('_describe', result, callback);
-  }), this)
+    var promise = new Promise(function(resolve, reject) {
+
+      function callback2(error, values) {
+        resolve(values)
+      }
+
+     self._invoke(transaction, 'getChilds', function(error, result) {
+        if (error) return callback(error);
+
+        self.emit('_describe', result, callback2);
+      })
+    });
+    return promise;
+  } else {
+    return disguise(this._invoke(transaction, 'getChilds', function(error, result) {
+      if (error) return callback(error);
+
+      this.emit('_describe', result, callback);
+    }), this)
+  }
 };
 /**
  * @callback module:core/abstracts.MediaObject~getChildsCallback
@@ -9422,6 +9540,12 @@ MediaObject.prototype.getCreationTime = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -9450,16 +9574,39 @@ MediaObject.prototype.getMediaPipeline = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
 
-  return disguise(this._invoke(transaction, 'getMediaPipeline', function(error, result)
-  {
-    if (error) return callback(error);
+  if (usePromise) {
+    var self = this;
 
-    this.emit('_describe', result, callback);
-  }), this)
+    var promise = new Promise(function(resolve, reject) {
+
+      function callback2(error, values) {
+        resolve(values)
+      }
+
+     self._invoke(transaction, 'getMediaPipeline', function(error, result) {
+        if (error) return callback(error);
+
+        self.emit('_describe', result, callback2);
+      })
+    });
+    return promise;
+  } else {
+    return disguise(this._invoke(transaction, 'getMediaPipeline', function(error, result) {
+      if (error) return callback(error);
+
+      this.emit('_describe', result, callback);
+    }), this)
+  }
 };
 /**
  * @callback module:core/abstracts.MediaObject~getMediaPipelineCallback
@@ -9483,6 +9630,12 @@ MediaObject.prototype.getName = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -9542,16 +9695,39 @@ MediaObject.prototype.getParent = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
 
-  return disguise(this._invoke(transaction, 'getParent', function(error, result)
-  {
-    if (error) return callback(error);
+  if (usePromise) {
+    var self = this;
 
-    this.emit('_describe', result, callback);
-  }), this)
+    var promise = new Promise(function(resolve, reject) {
+
+      function callback2(error, values) {
+        resolve(values)
+      }
+
+     self._invoke(transaction, 'getParent', function(error, result) {
+        if (error) return callback(error);
+
+        self.emit('_describe', result, callback2);
+      })
+    });
+    return promise;
+  } else {
+    return disguise(this._invoke(transaction, 'getParent', function(error, result) {
+      if (error) return callback(error);
+
+      this.emit('_describe', result, callback);
+    }), this)
+  }
 };
 /**
  * @callback module:core/abstracts.MediaObject~getParentCallback
@@ -9573,6 +9749,12 @@ MediaObject.prototype.getSendTagsInEvents = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -9707,6 +9889,12 @@ MediaObject.prototype.getTags = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -9839,6 +10027,12 @@ MediaObject.prototype.release = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10068,6 +10262,12 @@ SdpEndpoint.prototype.getMaxAudioRecvBandwidth = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10127,6 +10327,12 @@ SdpEndpoint.prototype.getMaxVideoRecvBandwidth = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10201,6 +10407,12 @@ SdpEndpoint.prototype.generateOffer = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10241,6 +10453,12 @@ SdpEndpoint.prototype.getLocalSessionDescriptor = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10269,6 +10487,12 @@ SdpEndpoint.prototype.getRemoteSessionDescriptor = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10494,6 +10718,12 @@ ServerManager.prototype.getInfo = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10520,6 +10750,12 @@ ServerManager.prototype.getMetadata = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10546,16 +10782,39 @@ ServerManager.prototype.getPipelines = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
 
-  return disguise(this._invoke(transaction, 'getPipelines', function(error, result)
-  {
-    if (error) return callback(error);
+  if (usePromise) {
+    var self = this;
 
-    this.emit('_describe', result, callback);
-  }), this)
+    var promise = new Promise(function(resolve, reject) {
+
+      function callback2(error, values) {
+        resolve(values)
+      }
+
+     self._invoke(transaction, 'getPipelines', function(error, result) {
+        if (error) return callback(error);
+
+        self.emit('_describe', result, callback2);
+      })
+    });
+    return promise;
+  } else {
+    return disguise(this._invoke(transaction, 'getPipelines', function(error, result) {
+      if (error) return callback(error);
+
+      this.emit('_describe', result, callback);
+    }), this)
+  }
 };
 /**
  * @callback module:core/abstracts.ServerManager~getPipelinesCallback
@@ -10577,6 +10836,12 @@ ServerManager.prototype.getSessions = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10818,6 +11083,12 @@ UriEndpoint.prototype.getUri = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10849,6 +11120,12 @@ UriEndpoint.prototype.pause = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -10874,6 +11151,12 @@ UriEndpoint.prototype.stop = function(callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
   if(!arguments.length) callback = undefined;
 
   callback = (callback || noop).bind(this)
@@ -20816,10 +21099,30 @@ function plural(ms, n, name) {
 
 var process = module.exports = {};
 
-// cached from whatever global is present so that test runners that stub it don't break things.
-var cachedSetTimeout = setTimeout;
-var cachedClearTimeout = clearTimeout;
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
 
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+(function () {
+  try {
+    cachedSetTimeout = setTimeout;
+  } catch (e) {
+    cachedSetTimeout = function () {
+      throw new Error('setTimeout is not defined');
+    }
+  }
+  try {
+    cachedClearTimeout = clearTimeout;
+  } catch (e) {
+    cachedClearTimeout = function () {
+      throw new Error('clearTimeout is not defined');
+    }
+  }
+} ())
 var queue = [];
 var draining = false;
 var currentQueue;
