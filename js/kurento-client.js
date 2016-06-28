@@ -10893,6 +10893,39 @@ ServerManager.prototype.getKmd = function(moduleName, callback){
  *  The kmd file
  */
 
+/**
+ * Returns the amount of memory that the server is using in KiB
+ *
+ * @alias module:core/abstracts.ServerManager.getUsedMemory
+ *
+ * @param {module:core/abstracts.ServerManager~getUsedMemoryCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+ServerManager.prototype.getUsedMemory = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getUsedMemory', callback), this)
+};
+/**
+ * @callback module:core/abstracts.ServerManager~getUsedMemoryCallback
+ * @param {external:Error} error
+ * @param {external:int64} result
+ *  The amount of KiB of memory being used
+ */
+
 
 /**
  * @alias module:core/abstracts.ServerManager.constructorParams
