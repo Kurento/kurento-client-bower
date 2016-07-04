@@ -17140,30 +17140,33 @@ function noop(error, result) {
  *        negotiation process, where one of the peers (the offerer) sends an 
  *        offer, while the other peer (the offeree) responds with an answer. 
  *        This endpoint can function in both situations
- *        <ul style='list-style-type:circle'>
+ *        <ul>
  *          <li>
  *            As offerer: The negotiation process is initiated by the media 
  *            server
- *            <ul>
- *              <li>KMS generates the SDP offer through the generateOffer 
- *              method. This offer must then be sent to the remote peer (the 
- *              offeree) through the signaling channel, for processing.</li>
- *              <li>The remote peer process the Offer, and generates an Answer 
- *              to this offer. The Answer is sent back to the media server.</li>
- *              <li>Upon receiving the Answer, the endpoint must invoke the 
- *              processAnswer method.</li>
+ *            <ul style='list-style-type:circle'>
+ *              <li>KMS generates the SDP offer through the 
+ *              <code>generateOffer</code> method. This <i>offer</i> must then 
+ *              be sent to the remote peer (the offeree) through the signaling 
+ *              channel, for processing.</li>
+ *              <li>The remote peer process the <i>offer</i>, and generates an 
+ *              <i>answer</i> to this <i>offer</i>. The <i>answer</i> is sent 
+ *              back to the media server.</li>
+ *              <li>Upon receiving the <i>answer</i>, the endpoint must invoke 
+ *              the <code>processAnswer</code> method.</li>
  *            </ul>
  *          </li>
  *          <li>
  *            As offeree: The negotiation process is initiated by the remote 
  *            peer
  *            <ul>
- *              <li>The remote peer, acting as offerer, generates an SDP offer 
- *              and sends it to the WebRTC endpoint in Kurento.</li>
- *              <li>The endpoint will process the Offer invoking the 
- *              processOffer method. The result of this method will be a string,
- *              <li>The SDP Answer must be sent back to the offerer, so it can 
- *              be processed.</li>
+ *              <li>The remote peer, acting as offerer, generates an SDP 
+ *              <i>offer</i> and sends it to the WebRTC endpoint in 
+ *              Kurento.</li>
+ *              <li>The endpoint will process the <i>offer</i> invoking the 
+ *              <code>processOffer</code> method. The result of this method will
+ *              <li>The SDP <i>answer</i> must be sent back to the offerer, so 
+ *              it can be processed.</li>
  *            </ul>
  *          </li>
  *        </ul>
@@ -17188,46 +17191,49 @@ function noop(error, result) {
  *        asynchronous process, when designing interactions between different 
  *        MediaElements. For example, it would be pointless to start recording 
  *        before media is flowing. In order to be notified of state changes, the
- *        <ul style='list-style-type:circle'>
+ *        <ul>
  *          <li>
- *            OnIceComponentStateChanged: This event informs only about changes 
- *            in the ICE connection state. Possible values are:
- *            <ul>
- *              <li>DISCONNECTED: No activity scheduled</li>
- *              <li>GATHERING: Gathering local candidates</li>
- *              <li>CONNECTING: Establishing connectivity</li>
- *              <li>CONNECTED: At least one working candidate pair</li>
- *              <li>READY: ICE concluded, candidate pair selection is now 
- *              final</li>
- *              <li>FAILED: Connectivity checks have been completed, but media 
- *              connection was not established</li>
+ *            <code>IceComponentStateChange</code>: This event informs only 
+ *            about changes in the ICE connection state. Possible values are:
+ *            <ul style='list-style-type:circle'>
+ *              <li><code>DISCONNECTED</code>: No activity scheduled</li>
+ *              <li><code>GATHERING</code>: Gathering local candidates</li>
+ *              <li><code>CONNECTING</code>: Establishing connectivity</li>
+ *              <li><code>CONNECTED</code>: At least one working candidate 
+ *              pair</li>
+ *              <li><code>READY</code>: ICE concluded, candidate pair selection 
+ *              is now final</li>
+ *              <li><code>FAILED</code>: Connectivity checks have been 
+ *              completed, but media connection was not established</li>
  *            </ul>
  *            The transitions between states are covered in RFC5245.
  *            It could be said that it's network-only, as it only takes into 
  *            account the state of the network connection, ignoring other higher
  *          </li>
  *          <li>
- *            OnIceCandidate: Raised when a new candidate is discovered. ICE 
- *            candidates must be sent to the remote peer of the connection. 
- *            Failing to do so for some or all of the candidates might render 
- *            the connection unusable.
+ *            <code>IceCandidateFound</code>: Raised when a new candidate is 
+ *            discovered. ICE candidates must be sent to the remote peer of the 
+ *            connection. Failing to do so for some or all of the candidates 
+ *            might render the connection unusable.
  *          </li>
  *          <li>
- *            OnIceGatheringDone: Raised when the ICE harvesting process is 
- *            completed. This means that all candidates have already been 
- *            discovered.
+ *            <code>IceGatheringDone</code>: Raised when the ICE harvesting 
+ *            process is completed. This means that all candidates have already 
+ *            been discovered.
  *          </li>
  *          <li>
- *            NewCandidatePairSelected: Raised when a new ICE candidate pair 
- *            gets selected. The pair contains both local and remote candidates 
- *            being used for a component. This event can be raised during a 
- *            media session, if a new pair of candidates with higher priority in
+ *            <code>NewCandidatePairSelected</code>: Raised when a new ICE 
+ *            candidate pair gets selected. The pair contains both local and 
+ *            remote candidates being used for a component. This event can be 
+ *            raised during a media session, if a new pair of candidates with 
+ *            higher priority in the link are found.
  *          </li>
  *          <li>
- *            OnDataChannelOpened: Raised when a data channel is open.
+ *            <code>DataChannelOpen</code>: Raised when a data channel is open.
  *          </li>
  *          <li>
- *            OnDataChannelClosed: Raised when a data channel is closed.
+ *            <code>DataChannelClose</code>: Raised when a data channel is 
+ *            closed.
  *          </li>
  *        </ul>
  *        </p>
@@ -17240,12 +17246,12 @@ function noop(error, result) {
  *        </p>
  *        <p>
  *        The default bandwidth range of the endpoint is 100kbps-500kbps, but it
- *        <ul style='list-style-type:circle'>
+ *        <ul>
  *          <li>
  *            Input bandwidth control mechanism: Configuration interval used to 
  *            inform remote peer the range of bitrates that can be pushed into 
  *            this WebRtcEndpoint object.
- *            <ul>
+ *            <ul style='list-style-type:circle'>
  *              <li>
  *                setMin/MaxVideoRecvBandwidth: sets Min/Max bitrate limits 
  *                expected for received video stream.
@@ -17260,7 +17266,7 @@ function noop(error, result) {
  *          </li>
  *          <li>
  *            Output bandwidth control mechanism: Configuration interval used to
- *            <ul>
+ *            <ul style='list-style-type:circle'>
  *              <li>
  *                setMin/MaxVideoSendBandwidth: sets Min/Max bitrate limits  for
  *              </li>
@@ -17291,10 +17297,7 @@ function noop(error, result) {
  *        </ul>
  *        Unreliable, out-of-order delivery is equivalent to raw UDP semantics. 
  *        The message may make it, or it may not, and order is not important. 
- *        However, the channel can be configured to be `partially reliable` by 
- *        specifying the maximum number of retransmissions or setting a time 
- *        limit for retransmissions: the WebRTC stack will handle the 
- *        acknowledgments and timeouts.
+ *        However, the channel can be configured to be <i>partially reliable</i>
  *        </p>
  *        <p>
  *        The possibility to create DataChannels in a WebRtcEndpoint must be 
@@ -17302,8 +17305,8 @@ function noop(error, result) {
  *        disabled by default. If this is the case, they can be created invoking
  *        <ul>
  *          <li>
- *            <code>label</code>: assigns a label to the DataChannel. This can 
- *            help identify each possible channel separately.
+ *           <code>label</code>: assigns a label to the DataChannel. This can 
+ *           help identify each possible channel separately.
  *          </li>
  *          <li>
  *            <code>ordered</code>: specifies if the DataChannel guarantees 
@@ -17313,13 +17316,13 @@ function noop(error, result) {
  *          <li>
  *            <code>maxPacketLifeTime</code>: The time window in milliseconds, 
  *            during which transmissions and retransmissions may take place in 
- *            unreliable mode. This forces unreliable mode, even if “ordered” 
- *            has been activated.
+ *            unreliable mode. This forces unreliable mode, even if 
+ *            <code>ordered</code> has been activated.
  *          </li>
  *          <li>
  *            <code>maxRetransmits</code>: maximum number of retransmissions 
  *            that are attempted in unreliable mode. This forces unreliable 
- *            mode, even if “ordered” has been activated.
+ *            mode, even if <code>ordered</code> has been activated.
  *          </li>
  *          <li>
  *            <code>Protocol</code>: Name of the subprotocol used for data 
@@ -17354,7 +17357,7 @@ inherits(WebRtcEndpoint, BaseRtpEndpoint);
 //
 
 /**
- * The ICE candidate pair (local and remote candidates) used by the ice library 
+ * the ICE candidate pair (local and remote candidates) used by the ice library 
  * for each stream.
  *
  * @alias module:elements.WebRtcEndpoint#getICECandidatePairs
@@ -17387,7 +17390,7 @@ WebRtcEndpoint.prototype.getICECandidatePairs = function(callback){
  */
 
 /**
- * The ICE connection state for all the connections.
+ * the ICE connection state for all the connections.
  *
  * @alias module:elements.WebRtcEndpoint#getIceConnectionState
  *
@@ -17419,7 +17422,7 @@ WebRtcEndpoint.prototype.getIceConnectionState = function(callback){
  */
 
 /**
- * Address of the STUN server (Only IP address are supported)
+ * address of the STUN server (Only IP address are supported)
  *
  * @alias module:elements.WebRtcEndpoint#getStunServerAddress
  *
@@ -17451,7 +17454,7 @@ WebRtcEndpoint.prototype.getStunServerAddress = function(callback){
  */
 
 /**
- * Address of the STUN server (Only IP address are supported)
+ * address of the STUN server (Only IP address are supported)
  *
  * @alias module:elements.WebRtcEndpoint#setStunServerAddress
  *
@@ -17481,7 +17484,7 @@ WebRtcEndpoint.prototype.setStunServerAddress = function(stunServerAddress, call
  */
 
 /**
- * Port of the STUN server
+ * port of the STUN server
  *
  * @alias module:elements.WebRtcEndpoint#getStunServerPort
  *
@@ -17513,7 +17516,7 @@ WebRtcEndpoint.prototype.getStunServerPort = function(callback){
  */
 
 /**
- * Port of the STUN server
+ * port of the STUN server
  *
  * @alias module:elements.WebRtcEndpoint#setStunServerPort
  *
@@ -17544,9 +17547,7 @@ WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
 
 /**
  * TURN server URL with this format: 
- * 'user:password@address:port(?transport=[udp|tcp|tls])'.
- * 'address' must be an IP (not a domain).
- * 'transport' is optional (UDP by default).
+ * <code>user:password@address:port(?transport=[udp|tcp|tls])</code>.</br><code>address</code>
  *
  * @alias module:elements.WebRtcEndpoint#getTurnUrl
  *
@@ -17579,9 +17580,7 @@ WebRtcEndpoint.prototype.getTurnUrl = function(callback){
 
 /**
  * TURN server URL with this format: 
- * 'user:password@address:port(?transport=[udp|tcp|tls])'.
- * 'address' must be an IP (not a domain).
- * 'transport' is optional (UDP by default).
+ * <code>user:password@address:port(?transport=[udp|tcp|tls])</code>.</br><code>address</code>
  *
  * @alias module:elements.WebRtcEndpoint#setTurnUrl
  *
@@ -17708,14 +17707,15 @@ WebRtcEndpoint.prototype.closeDataChannel = function(channelId, callback){
  *
  * @param {external:Integer} [maxPacketLifeTime]
  *  The time window (in milliseconds) during which transmissions and 
- *  retransmissions may take place in unreliable mode.
- *                <hr/><b>Note</b> This forces unreliable mode, even if ordered 
- *                has been activated
+ *  retransmissions may take place in unreliable mode.</br>
+ *                <hr/><b>Note</b> This forces unreliable mode, even if 
+ *                <code>ordered</code> has been activated
  *
  * @param {external:Integer} [maxRetransmits]
- *  maximum number of retransmissions that are attempted in unreliable mode.
- *                <hr/><b>Note</b> This forces unreliable mode, even if ordered 
- *                has been activated
+ *  maximum number of retransmissions that are attempted in unreliable 
+ *  mode.</br>
+ *                <hr/><b>Note</b> This forces unreliable mode, even if 
+ *                <code>ordered</code> has been activated
  *
  * @param {external:String} [protocol]
  *  Name of the subprotocol used for data communication
@@ -17776,11 +17776,9 @@ WebRtcEndpoint.prototype.createDataChannel = function(label, ordered, maxPacketL
  */
 
 /**
- * Start the gathering of ICE candidates.
- * It must be called after SdpEndpoint::generateOffer or 
- * SdpEndpoint::processOffer for Trickle ICE. If invoked before generating or 
- * processing an SDP offer, the candidates gathered will be added to the SDP 
- * processed.
+ * Start the gathering of ICE candidates.</br>It must be called after 
+ * SdpEndpoint::generateOffer or SdpEndpoint::processOffer for Trickle ICE. If 
+ * invoked before generating or processing an SDP offer, the candidates gathered
  *
  * @alias module:elements.WebRtcEndpoint.gatherCandidates
  *
