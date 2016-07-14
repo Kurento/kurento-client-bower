@@ -17270,10 +17270,6 @@ function noop(error, result) {
  *              <li>
  *                setMin/MaxVideoSendBandwidth: sets Min/Max bitrate limits  for
  *              </li>
- *              <li>
- *                setMin/MaxAudioSendBandwidth: sets Min/Max bitrate limits for 
- *                audio sent to remote peer.
- *              </li>
  *            </ul>
  *          </li>
  *        </ul>
