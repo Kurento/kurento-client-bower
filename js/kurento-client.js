@@ -5841,22 +5841,26 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 }
 
 },{}],27:[function(require,module,exports){
-/**
- * Determine if an object is Buffer
+/*!
+ * Determine if an object is a Buffer
  *
- * Author:   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
- * License:  MIT
- *
- * `npm install is-buffer`
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
  */
 
+// The _isBuffer check is for Safari 5-7 support, because it's missing
+// Object.prototype.constructor. Remove this eventually
 module.exports = function (obj) {
-  return !!(obj != null &&
-    (obj._isBuffer || // For Safari 5-7 (missing Object.prototype.constructor)
-      (obj.constructor &&
-      typeof obj.constructor.isBuffer === 'function' &&
-      obj.constructor.isBuffer(obj))
-    ))
+  return obj != null && (isBuffer(obj) || isSlowBuffer(obj) || !!obj._isBuffer)
+}
+
+function isBuffer (obj) {
+  return !!obj.constructor && typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
+}
+
+// For Node v0.10 support. Remove this eventually.
+function isSlowBuffer (obj) {
+  return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
 }
 
 },{}],28:[function(require,module,exports){
@@ -18535,11 +18539,11 @@ var kurentoClient = require('kurento-client');
 
 /**
  * Media Profile.
- * Currently WEBM and MP4 are supported.
+ * Currently WEBM, MP4 and JPEG are supported.
  *
  * @typedef elements/complexTypes.MediaProfileSpecType
  *
- * @type {(WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|KURENTO_SPLIT_RECORDER)}
+ * @type {(WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|JPEG_VIDEO_ONLY|KURENTO_SPLIT_RECORDER)}
  */
 
 /**
@@ -18555,8 +18559,8 @@ function checkMediaProfileSpecType(key, value)
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
 
-  if(!value.match('WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|KURENTO_SPLIT_RECORDER'))
-    throw SyntaxError(key+' param is not one of [WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|KURENTO_SPLIT_RECORDER] ('+value+')');
+  if(!value.match('WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|JPEG_VIDEO_ONLY|KURENTO_SPLIT_RECORDER'))
+    throw SyntaxError(key+' param is not one of [WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|JPEG_VIDEO_ONLY|KURENTO_SPLIT_RECORDER] ('+value+')');
 };
 
 
@@ -21304,17 +21308,45 @@ var cachedClearTimeout;
 } ())
 function runTimeout(fun) {
     if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
         return setTimeout(fun, 0);
-    } else {
-        return cachedSetTimeout.call(null, fun, 0);
     }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
 }
 function runClearTimeout(marker) {
     if (cachedClearTimeout === clearTimeout) {
-        clearTimeout(marker);
-    } else {
-        cachedClearTimeout.call(null, marker);
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
     }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
 }
 var queue = [];
 var draining = false;
@@ -21600,7 +21632,7 @@ var has = Object.prototype.hasOwnProperty;
  * @api public
  */
 function querystring(query) {
-  var parser = /([^=?&]+)=([^&]*)/g
+  var parser = /([^=?&]+)=?([^&]*)/g
     , result = {}
     , part;
 
@@ -27778,7 +27810,7 @@ var required = require('requires-port')
   , lolcation = require('./lolcation')
   , qs = require('querystringify')
   , relativere = /^\/(?!\/)/
-  , protocolre = /^([a-z0-9.+-]+:)?(\/\/)?(.*)$/i; // actual protocol is first match
+  , protocolre = /^([a-z][a-z0-9.+-]*:)?(\/\/)?([\S\s]*)/i;
 
 /**
  * These are the parse instructions for the URL parsers, it informs the parser
@@ -27798,7 +27830,7 @@ var instructions = [
   ['/', 'pathname'],                    // Extract from the back.
   ['@', 'auth', 1],                     // Extract from the front.
   [NaN, 'host', undefined, 1, 1],       // Set left over value.
-  [/\:(\d+)$/, 'port'],                 // RegExp the back.
+  [/:(\d+)$/, 'port'],                  // RegExp the back.
   [NaN, 'hostname', undefined, 1, 1]    // Set left over.
 ];
 
@@ -27815,10 +27847,11 @@ var instructions = [
   *
   * @param  {String} address   URL we want to extract from.
   * @return {ProtocolExtract}  Extracted information
-  * @private
+  * @api private
   */
 function extractProtocol(address) {
   var match = protocolre.exec(address);
+
   return {
     protocol: match[1] ? match[1].toLowerCase() : '',
     slashes: !!match[2],
@@ -27829,7 +27862,7 @@ function extractProtocol(address) {
 /**
  * The actual URL instance. Instead of returning an object we've opted-in to
  * create an actual constructor as it's much more memory efficient and
- * faster and it pleases my CDO.
+ * faster and it pleases my OCD.
  *
  * @constructor
  * @param {String} address URL we want to parse.
@@ -27846,6 +27879,7 @@ function URL(address, location, parser) {
     , parse, instruction, index, key
     , type = typeof location
     , url = this
+    , extracted
     , i = 0;
 
   //
@@ -27870,8 +27904,10 @@ function URL(address, location, parser) {
 
   location = lolcation(location);
 
+  //
   // extract protocol information before running the instructions
-  var extracted = extractProtocol(address);
+  //
+  extracted = extractProtocol(address);
   url.protocol = extracted.protocol || location.protocol || '';
   url.slashes = extracted.slashes || location.slashes;
   address = extracted.rest;
@@ -27939,6 +27975,7 @@ function URL(address, location, parser) {
   //
   // The href is just the compiled result.
   //
+  url.origin = url.protocol && url.host && url.protocol !== 'file:' ? url.protocol +'//'+ url.host : 'null';
   url.href = url.toString();
 }
 
@@ -27946,7 +27983,7 @@ function URL(address, location, parser) {
  * This is convenience method for changing properties in the URL instance to
  * insure that they all propagate correctly.
  *
- * @param {String} prop          Property we need to adjust.
+ * @param {String} part          Property we need to adjust.
  * @param {Mixed} value          The newly assigned value.
  * @param {Boolean|Function} fn  When setting the query, it will be the function used to parse
  *                               the query.
@@ -27981,19 +28018,32 @@ URL.prototype.set = function set(part, value, fn) {
   } else if ('host' === part) {
     url[part] = value;
 
-    if (/\:\d+/.test(value)) {
+    if (/:\d+$/.test(value)) {
       value = value.split(':');
-      url.hostname = value[0];
-      url.port = value[1];
+      url.port = value.pop();
+      url.hostname = value.join(':');
+    } else {
+      url.hostname = value;
+      url.port = '';
     }
   } else if ('protocol' === part) {
-    url.protocol = value;
+    url.protocol = value.toLowerCase();
     url.slashes = !fn;
   } else {
     url[part] = value;
   }
 
+  for (var i = 0; i < instructions.length; i++) {
+    var ins = instructions[i];
+
+    if (ins[4]) {
+      url[ins[1]] = url[ins[1]].toLowerCase();
+    }
+  }
+
+  url.origin = url.protocol && url.host && url.protocol !== 'file:' ? url.protocol +'//'+ url.host : 'null';
   url.href = url.toString();
+
   return url;
 };
 
@@ -28021,10 +28071,7 @@ URL.prototype.toString = function toString(stringify) {
     result += '@';
   }
 
-  result += url.hostname;
-  if (url.port) result += ':'+ url.port;
-
-  result += url.pathname;
+  result += url.host + url.pathname;
 
   query = 'object' === typeof url.query ? stringify(url.query) : url.query;
   if (query) result += '?' !== query.charAt(0) ? '?'+ query : query;
@@ -28036,10 +28083,12 @@ URL.prototype.toString = function toString(stringify) {
 
 //
 // Expose the URL parser and some additional properties that might be useful for
-// others.
+// others or testing.
 //
-URL.qs = qs;
+URL.extractProtocol = extractProtocol;
 URL.location = lolcation;
+URL.qs = qs;
+
 module.exports = URL;
 
 },{"./lolcation":199,"querystringify":128,"requires-port":141}],199:[function(require,module,exports){
