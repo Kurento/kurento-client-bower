@@ -19937,7 +19937,9 @@ function JsonRpcClient(configuration) {
         rpc.encode(method, params, function(error, result) {
             if (error) {
                 try {
-                    console.error("ERROR:" + error.message + " in Request: method:" + method + " params:" + JSON.stringify(params));
+                    console.error("ERROR:" + error.message + " in Request: method:" +
+                        method + " params:" + JSON.stringify(params) + " request:" +
+                        error.request);
                     if (error.data) {
                         console.error("ERROR DATA:" + JSON.stringify(error.data));
                     }
@@ -19962,21 +19964,23 @@ function JsonRpcClient(configuration) {
     function sendPing() {
         if (enabledPings) {
             var params = null;
-
             if (pingNextNum == 0 || pingNextNum == notReconnectIfNumLessThan) {
                 params = {
                     interval: configuration.heartbeat || PING_INTERVAL
                 };
             }
-
             pingNextNum++;
+
             self.send('ping', params, (function(pingNum) {
                 return function(error, result) {
                     if (error) {
+                        console.log("Error in ping request #" + pingNum + " (" +
+                            error.message + ")");
                         if (pingNum > notReconnectIfNumLessThan) {
                             enabledPings = false;
                             updateNotReconnectIfLessThan();
-                            console.log("Server did not respond to ping message " + pingNum + ". Reconnecting... ");
+                            console.log("Server did not respond to ping message #" +
+                                pingNum + ". Reconnecting... ");
                             ws.reconnectWs();
                         }
                     }
