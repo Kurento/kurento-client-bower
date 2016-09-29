@@ -19904,7 +19904,8 @@ function JsonRpcClient(configuration) {
     console.log('Connecting websocket to URI: ' + wsConfig.uri);
 
     var rpcBuilderOptions = {
-        request_timeout: configuration.rpc.requestTimeout
+        request_timeout: configuration.rpc.requestTimeout,
+        ping_request_timeout: configuration.rpc.heartbeatRequestTimeout
     };
 
     var rpc = new RpcBuilder(RpcBuilder.packers.JsonRPC, rpcBuilderOptions, ws,
@@ -19953,8 +19954,9 @@ function JsonRpcClient(configuration) {
     }
 
     function updateNotReconnectIfLessThan() {
+        console.log("notReconnectIfNumLessThan = " + pingNextNum + ' (old=' +
+            notReconnectIfNumLessThan + ')');
         notReconnectIfNumLessThan = pingNextNum;
-        console.log("notReconnectIfNumLessThan = " + notReconnectIfNumLessThan);
     }
 
     function sendPing() {
@@ -19963,7 +19965,7 @@ function JsonRpcClient(configuration) {
 
             if (pingNextNum == 0 || pingNextNum == notReconnectIfNumLessThan) {
                 params = {
-                    interval: PING_INTERVAL
+                    interval: configuration.heartbeat || PING_INTERVAL
                 };
             }
 
@@ -20136,7 +20138,7 @@ function WebSocketWithReconnection(config) {
     var reconnectionOnClose = function() {
         if (ws.readyState === CLOSED) {
             if (closing) {
-                console.log("Connection Closed by user");
+                console.log("Connection closed by user");
             } else {
                 console.log("Connection closed unexpectecly. Reconnecting...");
                 reconnectInNewUri(MAX_RETRIES, 1);
@@ -20149,7 +20151,7 @@ function WebSocketWithReconnection(config) {
     ws.onclose = reconnectionOnClose;
 
     function reconnectInNewUri(maxRetries, numRetries) {
-        console.log("reconnectInNewUri");
+        console.log("reconnectInNewUri (attempt #" + numRetries + ", max=" + maxRetries + ")");
 
         if (numRetries === 1) {
             if (reconnecting) {
@@ -20189,8 +20191,9 @@ function WebSocketWithReconnection(config) {
 
     // TODO Test retries. How to force not connection?
     function reconnect(maxRetries, numRetries, reconnectWsUri) {
+        console.log("Reconnection attempt #" + numRetries);
 
-        console.log("Trying to reconnect " + numRetries + " times");
+        wsUri = reconnectWsUri || wsUri;
 
         var newWs;
         if (useSockJS) {
@@ -20200,8 +20203,8 @@ function WebSocketWithReconnection(config) {
         }
 
         newWs.onopen = function() {
-            console.log("Reconnected in " + numRetries + " retries...");
-            logConnected(newWs, reconnectWsUri);
+            console.log("Reconnected after " + numRetries + " attempts...");
+            logConnected(newWs, wsUri);
             reconnecting = false;
             registerMessageHandler();
             if (config.onreconnected()) {
@@ -20549,9 +20552,10 @@ function RpcBuilder(packer, options, transport, onRequest)
   this.setTransport(transport);
 
 
-  var request_timeout    = options.request_timeout    || BASE_TIMEOUT;
-  var response_timeout   = options.response_timeout   || BASE_TIMEOUT;
-  var duplicates_timeout = options.duplicates_timeout || BASE_TIMEOUT;
+  var request_timeout      = options.request_timeout      || BASE_TIMEOUT;
+  var ping_request_timeout = options.ping_request_timeout || request_timeout;
+  var response_timeout     = options.response_timeout     || BASE_TIMEOUT;
+  var duplicates_timeout   = options.duplicates_timeout   || BASE_TIMEOUT;
 
 
   var requestID = 0;
@@ -20905,8 +20909,8 @@ function RpcBuilder(packer, options, transport, onRequest)
 
       function sendRequest(transport)
       {
-        request.timeout = setTimeout(timeout,
-                                     request_timeout*Math.pow(2, retried++));
+        var rt = (method === 'ping' ? ping_request_timeout : request_timeout);
+        request.timeout = setTimeout(timeout, rt*Math.pow(2, retried++));
         message2Key[message] = {id: id, dest: dest};
         requests.set(request, id, dest);
 
