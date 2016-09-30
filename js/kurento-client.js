@@ -32106,7 +32106,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.6.1'});
+Object.defineProperty(exports, 'version', {value: '6.6.2-dev'});
 
 
 var HubPort = require('./HubPort');
@@ -32208,7 +32208,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.6.1'});
+Object.defineProperty(exports, 'version', {value: '6.6.2-dev'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
