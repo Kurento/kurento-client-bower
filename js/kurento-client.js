@@ -20197,6 +20197,8 @@ function WebSocketWithReconnection(config) {
     function reconnect(maxRetries, numRetries, reconnectWsUri) {
         console.log("Reconnection attempt #" + numRetries);
 
+        ws.close();
+
         wsUri = reconnectWsUri || wsUri;
 
         var newWs;
