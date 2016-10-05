@@ -26109,8 +26109,8 @@ BaseRtpEndpoint.prototype.getMediaState = function(callback){
  */
 
 /**
- * Minimum bandwidth announced for video reception, in kbps. The default value 
- * is 100 kbps. 0 is considered unconstrained.
+ * Minimum bandwidth announced for video reception, in kbps. The default and 
+ * absolute minimum value is 30 kbps, even if a lower value is set.
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#getMinVideoRecvBandwidth
  *
@@ -26142,8 +26142,8 @@ BaseRtpEndpoint.prototype.getMinVideoRecvBandwidth = function(callback){
  */
 
 /**
- * Minimum bandwidth announced for video reception, in kbps. The default value 
- * is 100 kbps. 0 is considered unconstrained.
+ * Minimum bandwidth announced for video reception, in kbps. The default and 
+ * absolute minimum value is 30 kbps, even if a lower value is set.
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#setMinVideoRecvBandwidth
  *
