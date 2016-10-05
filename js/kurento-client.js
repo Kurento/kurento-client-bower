@@ -38903,7 +38903,6 @@ function unpack(message)
   var result = message;
 
   if(typeof message === 'string' || message instanceof String) {
-    console.info('PARSING JSON MESSAGE');
     result = JSON.parse(message);
   }
 
