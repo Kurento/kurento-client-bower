@@ -38714,9 +38714,8 @@ function WebSocketWithReconnection(config) {
     };
 
     ws.onerror = function(error) {
-        console.error("Could not connect to " + wsUri + ". onerror will be invoked if defined. Error is " + error);
+        console.error("Could not connect to " + wsUri + " (invoking onerror if defined)", error);
         if (config.onerror) {
-            console.log("onerror defined: invoking! ");
             config.onerror(error);
         }
     };
@@ -53236,7 +53235,7 @@ function URL(address, location, parser) {
   //
   // Extract protocol information before running the instructions.
   //
-  extracted = extractProtocol(address);
+  extracted = extractProtocol(address || '');
   relative = !extracted.protocol && !extracted.slashes;
   url.slashes = extracted.slashes || relative && location.slashes;
   url.protocol = extracted.protocol || location.protocol || '';
@@ -53345,8 +53344,8 @@ function URL(address, location, parser) {
  */
 URL.prototype.set = function set(part, value, fn) {
   var url = this;
-  
-  switch(part) {
+
+  switch (part) {
     case 'query':
       if ('string' === typeof value && value.length) {
         value = (fn || qs.parse)(value);
@@ -53399,7 +53398,6 @@ URL.prototype.set = function set(part, value, fn) {
 
     default:
       url[part] = value;
-      break;
   }
 
   for (var i = 0; i < rules.length; i++) {
