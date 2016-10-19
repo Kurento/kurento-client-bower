@@ -38366,6 +38366,8 @@ var RECONNECTING = 'RECONNECTING';
 var CONNECTED = 'CONNECTED';
 var DISCONNECTED = 'DISCONNECTED';
 
+var Logger = console;
+
 /**
  *
  * heartbeat: interval in ms for each heartbeat message,
@@ -38412,9 +38414,9 @@ function JsonRpcClient(configuration) {
     }
 
     wsConfig.onreconnecting = function() {
-        console.log("--------- ONRECONNECTING -----------");
+        Logger.info("--------- ONRECONNECTING -----------");
         if (status === RECONNECTING) {
-            console.error("Websocket already in RECONNECTING state when receiving a new ONRECONNECTING message. Ignoring it");
+            Logger.error("Websocket already in RECONNECTING state when receiving a new ONRECONNECTING message. Ignoring it");
             return;
         }
 
@@ -38425,9 +38427,9 @@ function JsonRpcClient(configuration) {
     }
 
     wsConfig.onreconnected = function() {
-        console.log("--------- ONRECONNECTED -----------");
+        Logger.info("--------- ONRECONNECTED -----------");
         if (status === CONNECTED) {
-            console.error("Websocket already in CONNECTED state when receiving a new ONRECONNECTED message. Ignoring it");
+            Logger.error("Websocket already in CONNECTED state when receiving a new ONRECONNECTED message. Ignoring it");
             return;
         }
         status = CONNECTED;
@@ -38442,9 +38444,9 @@ function JsonRpcClient(configuration) {
     }
 
     wsConfig.onconnected = function() {
-        console.log("--------- ONCONNECTED -----------");
+        Logger.info("--------- ONCONNECTED -----------");
         if (status === CONNECTED) {
-            console.error("Websocket already in CONNECTED state when receiving a new ONCONNECTED message. Ignoring it");
+            Logger.error("Websocket already in CONNECTED state when receiving a new ONCONNECTED message. Ignoring it");
             return;
         }
         status = CONNECTED;
@@ -38458,7 +38460,7 @@ function JsonRpcClient(configuration) {
     }
 
     wsConfig.onerror = function(error) {
-        console.log("--------- ONERROR -----------");
+        Logger.info("--------- ONERROR -----------");
 
         status = DISCONNECTED;
 
@@ -38469,7 +38471,7 @@ function JsonRpcClient(configuration) {
 
     var ws = new WebSocketWithReconnection(wsConfig);
 
-    console.log('Connecting websocket to URI: ' + wsConfig.uri);
+    Logger.info('Connecting websocket to URI: ' + wsConfig.uri);
 
     var rpcBuilderOptions = {
         request_timeout: configuration.rpc.requestTimeout,
@@ -38479,25 +38481,25 @@ function JsonRpcClient(configuration) {
     var rpc = new RpcBuilder(RpcBuilder.packers.JsonRPC, rpcBuilderOptions, ws,
         function(request) {
 
-            console.log('Received request: ' + JSON.stringify(request));
+            Logger.trace('Received request: ' + JSON.stringify(request));
 
             try {
                 var func = configuration.rpc[request.method];
 
                 if (func === undefined) {
-                    console.error("Method " + request.method + " not registered in client");
+                    Logger.error("Method " + request.method + " not registered in client");
                 } else {
                     func(request.params, request);
                 }
             } catch (err) {
-                console.error('Exception processing request: ' + JSON.stringify(request));
-                console.error(err);
+                Logger.error('Exception processing request: ' + JSON.stringify(request));
+                Logger.error(err);
             }
         });
 
     this.send = function(method, params, callback) {
         if (method !== 'ping') {
-            console.log('Request: method:' + method + " params:" + JSON.stringify(params));
+            Logger.trace('Request: method:' + method + " params:" + JSON.stringify(params));
         }
 
         var requestTime = Date.now();
@@ -38505,18 +38507,18 @@ function JsonRpcClient(configuration) {
         rpc.encode(method, params, function(error, result) {
             if (error) {
                 try {
-                    console.error("ERROR:" + error.message + " in Request: method:" +
+                    Logger.error("ERROR:" + error.message + " in Request: method:" +
                         method + " params:" + JSON.stringify(params) + " request:" +
                         error.request);
                     if (error.data) {
-                        console.error("ERROR DATA:" + JSON.stringify(error.data));
+                        Logger.error("ERROR DATA:" + JSON.stringify(error.data));
                     }
                 } catch (e) {}
                 error.requestTime = requestTime;
             }
             if (callback) {
                 if (result != undefined && result.value !== 'pong') {
-                    console.log('Response: ' + JSON.stringify(result));
+                    Logger.trace('Response: ' + JSON.stringify(result));
                 }
                 callback(error, result);
             }
@@ -38524,7 +38526,7 @@ function JsonRpcClient(configuration) {
     }
 
     function updateNotReconnectIfLessThan() {
-        console.log("notReconnectIfNumLessThan = " + pingNextNum + ' (old=' +
+        Logger.info("notReconnectIfNumLessThan = " + pingNextNum + ' (old=' +
             notReconnectIfNumLessThan + ')');
         notReconnectIfNumLessThan = pingNextNum;
     }
@@ -38542,12 +38544,12 @@ function JsonRpcClient(configuration) {
             self.send('ping', params, (function(pingNum) {
                 return function(error, result) {
                     if (error) {
-                        console.log("Error in ping request #" + pingNum + " (" +
+                        Logger.info("Error in ping request #" + pingNum + " (" +
                             error.message + ")");
                         if (pingNum > notReconnectIfNumLessThan) {
                             enabledPings = false;
                             updateNotReconnectIfLessThan();
-                            console.log("Server did not respond to ping message #" +
+                            Logger.info("Server did not respond to ping message #" +
                                 pingNum + ". Reconnecting... ");
                             ws.reconnectWs();
                         }
@@ -38555,7 +38557,7 @@ function JsonRpcClient(configuration) {
                 }
             })(pingNextNum));
         } else {
-            console.log("Trying to send ping, but ping is not enabled");
+            Logger.info("Trying to send ping, but ping is not enabled");
         }
     }
 
@@ -38565,7 +38567,7 @@ function JsonRpcClient(configuration) {
     */
     function usePing() {
         if (!pingPongStarted) {
-            console.log("Starting ping (if configured)")
+            Logger.info("Starting ping (if configured)")
             pingPongStarted = true;
 
             if (configuration.heartbeat != undefined) {
@@ -38576,20 +38578,20 @@ function JsonRpcClient(configuration) {
     }
 
     this.close = function() {
-        console.log("Closing jsonRpcClient explicitly by client");
+        Logger.info("Closing jsonRpcClient explicitly by client");
 
         if (pingInterval != undefined) {
-            console.log("Clearing ping interval");
+            Logger.info("Clearing ping interval");
             clearInterval(pingInterval);
         }
         pingPongStarted = false;
         enabledPings = false;
 
         if (configuration.sendCloseMessage) {
-            console.log("Sending close message")
+            Logger.info("Sending close message")
             this.send('closeSession', null, function(error, result) {
                 if (error) {
-                    console.error("Error sending close message: " + JSON.stringify(error));
+                    Logger.error("Error sending close message: " + JSON.stringify(error));
                 }
                 ws.close();
             });
@@ -38714,7 +38716,7 @@ function WebSocketWithReconnection(config) {
     };
 
     ws.onerror = function(error) {
-        console.error("Could not connect to " + wsUri + " (invoking onerror if defined)", error);
+        Logger.error("Could not connect to " + wsUri + " (invoking onerror if defined)", error);
         if (config.onerror) {
             config.onerror(error);
         }
@@ -38722,34 +38724,33 @@ function WebSocketWithReconnection(config) {
 
     function logConnected(ws, wsUri) {
         try {
-            console.log("WebSocket connected to " + wsUri);
+            Logger.info("WebSocket connected to " + wsUri);
         } catch (e) {
-            console.error(e);
+            Logger.error(e);
         }
     }
 
     var reconnectionOnClose = function() {
         if (ws.readyState === CLOSED) {
             if (closing) {
-                console.log("Connection closed by user");
+                Logger.info("Connection closed by user");
             } else {
-                console.log("Connection closed unexpectecly. Reconnecting...");
+                Logger.info("Connection closed unexpectecly. Reconnecting...");
                 reconnectToSameUri(MAX_RETRIES, 1);
             }
         } else {
-            console.log("Close callback from previous websocket. Ignoring it");
+            Logger.info("Close callback from previous websocket. Ignoring it");
         }
     };
 
     ws.onclose = reconnectionOnClose;
 
     function reconnectToSameUri(maxRetries, numRetries) {
-        console.log("reconnectToSameUri (attempt #" + numRetries + ", max=" + maxRetries + ")");
+        Logger.info("reconnectToSameUri (attempt #" + numRetries + ", max=" + maxRetries + ")");
 
         if (numRetries === 1) {
             if (reconnecting) {
-                console
-                    .warn("Trying to reconnectToNewUri when reconnecting... Ignoring this reconnection.")
+                Logger.warn("Trying to reconnectToNewUri when reconnecting... Ignoring this reconnection.")
                 return;
             } else {
                 reconnecting = true;
@@ -38768,7 +38769,7 @@ function WebSocketWithReconnection(config) {
                 config.newWsUriOnReconnection(function(error, newWsUri) {
 
                     if (error) {
-                        console.log(error);
+                        Logger.info(error);
                         setTimeout(function() {
                             reconnectToSameUri(maxRetries, numRetries + 1);
                         }, RETRY_TIME_MS);
@@ -38784,7 +38785,7 @@ function WebSocketWithReconnection(config) {
 
     // TODO Test retries. How to force not connection?
     function reconnectToNewUri(maxRetries, numRetries, reconnectWsUri) {
-        console.log("Reconnection attempt #" + numRetries);
+        Logger.info("Reconnection attempt #" + numRetries);
 
         ws.close();
 
@@ -38798,7 +38799,7 @@ function WebSocketWithReconnection(config) {
         }
 
         newWs.onopen = function() {
-            console.log("Reconnected after " + numRetries + " attempts...");
+            Logger.info("Reconnected after " + numRetries + " attempts...");
             logConnected(newWs, wsUri);
             reconnecting = false;
             registerMessageHandler();
@@ -38810,7 +38811,7 @@ function WebSocketWithReconnection(config) {
         };
 
         var onErrorOrClose = function(error) {
-            console.log("Reconnection error: ", error);
+            Logger.warn("Reconnection error: ", error);
 
             if (numRetries === maxRetries) {
                 if (config.ondisconnect) {
@@ -38836,17 +38837,17 @@ function WebSocketWithReconnection(config) {
 
     // This method is only for testing
     this.forceClose = function(millis) {
-        console.log("Testing: Force WebSocket close");
+        Logger.info("Testing: Force WebSocket close");
 
         if (millis) {
-            console.log("Testing: Change wsUri for " + millis + " millis to simulate net failure");
+            Logger.info("Testing: Change wsUri for " + millis + " millis to simulate net failure");
             var goodWsUri = wsUri;
             wsUri = "wss://21.234.12.34.4:443/";
 
             forcingDisconnection = true;
 
             setTimeout(function() {
-                console.log("Testing: Recover good wsUri " + goodWsUri);
+                Logger.info("Testing: Recover good wsUri " + goodWsUri);
                 wsUri = goodWsUri;
 
                 forcingDisconnection = false;
@@ -38858,7 +38859,7 @@ function WebSocketWithReconnection(config) {
     };
 
     this.reconnectWs = function() {
-        console.log("reconnectWs");
+        Logger.debug("reconnectWs");
         reconnectToSameUri(MAX_RETRIES, 1, wsUri);
     };
 
