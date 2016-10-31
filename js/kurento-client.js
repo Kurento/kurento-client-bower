@@ -1851,8 +1851,6 @@ function createPromise(data, func, callback) {
 module.exports = createPromise;
 
 },{"./disguise":7,"async":"async","promisecallback":"promisecallback"}],7:[function(require,module,exports){
-'use strict'
-
 /**
  * Generic `Promise.catch()` method
  *
