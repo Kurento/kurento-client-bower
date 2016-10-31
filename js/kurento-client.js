@@ -18,8 +18,6 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 var EventEmitter = require('events').EventEmitter;
 var url = require('url');
 
-var Promise = require('es6-promise').Promise;
-
 var async = require('async');
 var extend = require('extend');
 var inherits = require('inherits');
@@ -84,10 +82,11 @@ function findIndex(list, predicate) {
 function serializeParams(params) {
   for (var key in params) {
     var param = params[key];
-    if (param instanceof MediaObject) {
-      var id = param.id;
-
-      if (id !== undefined) params[key] = id;
+    if (param instanceof MediaObject || (param && (params.object !== undefined ||
+        params.hub !== undefined || params.sink !== undefined))) {
+      if (param && param.id != null) {
+        params[key] = param.id;
+      }
     }
   };
 
@@ -949,50 +948,40 @@ function KurentoClient(ws_uri, options, callback) {
      * @return {external:Promise}
      */
     this.then = function (onFulfilled, onRejected) {
-      var promise = new Promise(function (resolve, reject) {
-        function success() {
-          re.removeListener('fail', failure);
+      if (re.connected)
+        var promise = Promise.resolve(disguise.unthenable(this))
+      else if (!re.reconnect)
+        var promise = Promise.reject(new Error('Connection error'))
+      else {
+        var self = this
 
-          var result;
+        var promise = new Promise(function (resolve, reject) {
+          function success() {
+            re.removeListener('fail', failure);
 
-          if (onFulfilled)
-            try {
-              result = onFulfilled.call(self, self);
-            } catch (exception) {
-              if (!onRejected)
-                console.trace('Uncaugh exception', exception)
+            resolve(disguise.unthenable(self));
+          };
 
-              return reject(exception);
-            }
+          function failure() {
+            re.removeListener('connection', success);
 
-          resolve(result);
-        };
+            reject(new Error('Connection error'));
+          };
 
-        function failure() {
-          re.removeListener('connection', success);
-
-          var result = new Error('Connection error');
-
-          if (onRejected)
-            try {
-              result = onRejected.call(self, result);
-            } catch (exception) {
-              return reject(exception);
-            } else
-              console.trace('Uncaugh exception', result)
-
-          reject(result);
-        };
-
-        if (re.connected)
-          success()
-        else if (!re.reconnect)
-          failure()
-        else {
           re.once('connection', success);
           re.once('fail', failure);
-        }
-      });
+        });
+
+      }
+
+      promise = promise.then(onFulfilled ? onFulfilled.bind(this) :
+        function (result) {
+          return Promise.resolve(result)
+        },
+        onRejected ? onRejected.bind(this) :
+        function (error) {
+          return Promise.reject(error)
+        });
 
       return disguise(promise, this)
     };
@@ -1162,7 +1151,7 @@ KurentoClient.getComplexType = function (complexType) {
 
 module.exports = KurentoClient;
 
-},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","es6-promise":"es6-promise","events":109,"extend":105,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":226,"promisecallback":"promisecallback","reconnect-ws":267,"url":123}],2:[function(require,module,exports){
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","events":109,"extend":105,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":226,"promisecallback":"promisecallback","reconnect-ws":267,"url":123}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
@@ -1480,8 +1469,6 @@ var Domain = require('domain').Domain || (function () {
   return FakeDomain;
 })();
 
-var Promise = require('es6-promise').Promise;
-
 var promiseCallback = require('promisecallback');
 
 function onerror(error) {
@@ -1665,7 +1652,7 @@ TransactionsManager.TransactionNotCommitedException =
   TransactionNotCommitedException;
 TransactionsManager.TransactionRollbackException = TransactionRollbackException;
 
-},{"domain":85,"es6-promise":"es6-promise","events":109,"inherits":"inherits","promisecallback":"promisecallback"}],4:[function(require,module,exports){
+},{"domain":85,"events":109,"inherits":"inherits","promisecallback":"promisecallback"}],4:[function(require,module,exports){
 /**
  * Loader for the kurento-client package on the browser
  */
@@ -1840,18 +1827,16 @@ checkType.String = checkString;
  *
  */
 
-var Promise = require('es6-promise').Promise;
-
 var async = require('async');
-
+var disguise = require('./disguise')
 var promiseCallback = require('promisecallback');
 
 function createPromise(data, func, callback) {
   var promise = new Promise(function (resolve, reject) {
     function callback2(error, result) {
       if (error) return reject(error);
-
-      resolve(result);
+      //resolve(result)
+      resolve(disguise.unthenable(result));
     };
 
     if (data instanceof Array)
@@ -1865,53 +1850,135 @@ function createPromise(data, func, callback) {
 
 module.exports = createPromise;
 
-},{"async":"async","es6-promise":"es6-promise","promisecallback":"promisecallback"}],7:[function(require,module,exports){
-/*
- * (C) Copyright 2015 Kurento (http://kurento.org/)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+},{"./disguise":7,"async":"async","promisecallback":"promisecallback"}],7:[function(require,module,exports){
+'use strict'
 
-/*
+/**
+ * Generic `Promise.catch()` method
+ *
+ * It delegate its functionality on the `then()` of the object where it's
+ * applied, both directly or on its class definition prototype
+ *
+ * @param {Function} [onRejected]
+ *
+ * @return {Promise}
+ */
+function promiseCatch(onRejected) {
+  return this.then(null, onRejected)
+}
+
+//
+// Public API
+//
+
+/**
  * Disguise an object giving it the appearance of another
  *
- * Add bind'ed functions and properties to an object delegating the actions and
- * updates to the source one so it can act as another one while retaining its
- * original personality (i.e. duplicates and instanceof are preserved)
+ * Add bind'ed functions and properties to a `target` object delegating the
+ * actions and attributes updates to the `source` one while retaining its
+ * original personality (i.e. duplicates and `instanceof` are preserved)
+ *
+ * @param {Object} target - the object to be disguised
+ * @param {Object} source - the object where to fetch its methods and attributes
+ * @param {Object} [unthenable] - the returned object should not be a thenable
+ *
+ * @return {Object} `target` disguised
  */
-function disguise(target, source) {
+function disguise(target, source, unthenable) {
+  if (source == null || target === source) return target
+
   for (var key in source) {
     if (target[key] !== undefined) continue
+    if (unthenable && (key === 'then' || key === 'catch')) continue
 
     if (typeof source[key] === 'function')
-      Object.defineProperty(target, key, {
-        value: source[key].bind(source)
-      })
+      var descriptor = {
+        value: source[key]
+      }
     else
-      Object.defineProperty(target, key, {
+      var descriptor = {
         get: function () {
           return source[key]
         },
         set: function (value) {
           source[key] = value
         }
-      })
-  }
+      }
 
+    descriptor.enumerable = true
+
+    Object.defineProperty(target, key, descriptor)
+  }
   return target
 }
 
-module.exports = disguise
+/**
+ * Disguise a thenable object
+ *
+ * If available, `target.then()` gets replaced by a method that exec the
+ * `onFulfilled` and `onRejected` callbacks using `source` as `this` object, and
+ * return the Promise returned by the original `target.then()` method already
+ * disguised. It also add a `target.catch()` method pointing to the newly added
+ * `target.then()`, being it previously available or not.
+ *
+ * @param {thenable} target - the object to be disguised
+ * @param {Object} source - the object where to fetch its methods and attributes
+ *
+ * @return {thenable} `target` disguised
+ */
+function disguiseThenable(target, source) {
+  if (target === source) return target
+
+  if (target.then instanceof Function) {
+    var target_then = target.then
+
+    function then(onFulfilled, onRejected) {
+      if (onFulfilled != null) onFulfilled = onFulfilled.bind(target)
+      if (onRejected != null) onRejected = onRejected.bind(target)
+
+      var promise = target_then.call(target, onFulfilled, onRejected)
+
+      return disguiseThenable(promise, source)
+    }
+
+    Object.defineProperties(target, {
+      then: {
+        value: then
+      },
+      catch: {
+        value: promiseCatch
+      }
+    })
+  }
+
+  return disguise(target, source)
+}
+
+/**
+ * Return a copy of the input object without `.then()` and `.catch()`
+ *
+ * @param {thenable} input
+ *
+ * @return {Object} unthenabled input object
+ */
+function unthenable(input) {
+  var output = Object.assign({}, input)
+  delete output.then
+  if (input !== undefined)
+    output.constructor = input.constructor
+
+  if (input && input.then instanceof Function) return disguise(output, input,
+    true)
+
+  // `input` is not thenable
+  return input
+}
+
+disguiseThenable.disguise = disguise
+disguiseThenable.disguiseThenable = disguiseThenable
+disguiseThenable.unthenable = unthenable
+
+module.exports = disguiseThenable
 
 },{}],8:[function(require,module,exports){
 var checkType = require('./checkType');
