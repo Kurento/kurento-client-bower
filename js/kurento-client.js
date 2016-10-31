@@ -25085,7 +25085,9 @@ MediaPipeline.prototype.setLatencyStats = function(latencyStats, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('boolean', 'latencyStats', latencyStats, {required: true});
+  //  
+  // checkType('boolean', 'latencyStats', latencyStats, {required: true});
+  //  
 
   var params = {
     latencyStats: latencyStats
@@ -25142,7 +25144,9 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
       throw error;
   }
 
-  checkType('GstreamerDotDetails', 'details', details);
+  //  
+  // checkType('GstreamerDotDetails', 'details', details);
+  //  
 
   var params = {
     details: details
@@ -25520,7 +25524,9 @@ BaseRtpEndpoint.prototype.setMaxVideoSendBandwidth = function(maxVideoSendBandwi
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'maxVideoSendBandwidth', maxVideoSendBandwidth, {required: true});
+  //  
+  // checkType('int', 'maxVideoSendBandwidth', maxVideoSendBandwidth, {required: true});
+  //  
 
   var params = {
     maxVideoSendBandwidth: maxVideoSendBandwidth
@@ -25620,7 +25626,9 @@ BaseRtpEndpoint.prototype.setMinVideoRecvBandwidth = function(minVideoRecvBandwi
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'minVideoRecvBandwidth', minVideoRecvBandwidth, {required: true});
+  //  
+  // checkType('int', 'minVideoRecvBandwidth', minVideoRecvBandwidth, {required: true});
+  //  
 
   var params = {
     minVideoRecvBandwidth: minVideoRecvBandwidth
@@ -25684,7 +25692,9 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'minVideoSendBandwidth', minVideoSendBandwidth, {required: true});
+  //  
+  // checkType('int', 'minVideoSendBandwidth', minVideoSendBandwidth, {required: true});
+  //  
 
   var params = {
     minVideoSendBandwidth: minVideoSendBandwidth
@@ -25746,7 +25756,9 @@ BaseRtpEndpoint.prototype.setRembParams = function(rembParams, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('RembParams', 'rembParams', rembParams, {required: true});
+  //  
+  // checkType('RembParams', 'rembParams', rembParams, {required: true});
+  //  
 
   var params = {
     rembParams: rembParams
@@ -26061,7 +26073,9 @@ Hub.prototype.getGstreamerDot = function(details, callback){
       throw error;
   }
 
-  checkType('GstreamerDotDetails', 'details', details);
+  //  
+  // checkType('GstreamerDotDetails', 'details', details);
+  //  
 
   var params = {
     details: details
@@ -26307,7 +26321,9 @@ MediaElement.prototype.setMaxOuputBitrate = function(maxOuputBitrate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'maxOuputBitrate', maxOuputBitrate, {required: true});
+  //  
+  // checkType('int', 'maxOuputBitrate', maxOuputBitrate, {required: true});
+  //  
 
   var params = {
     maxOuputBitrate: maxOuputBitrate
@@ -26373,7 +26389,9 @@ MediaElement.prototype.setMaxOutputBitrate = function(maxOutputBitrate, callback
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'maxOutputBitrate', maxOutputBitrate, {required: true});
+  //  
+  // checkType('int', 'maxOutputBitrate', maxOutputBitrate, {required: true});
+  //  
 
   var params = {
     maxOutputBitrate: maxOutputBitrate
@@ -26443,7 +26461,9 @@ MediaElement.prototype.setMinOuputBitrate = function(minOuputBitrate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'minOuputBitrate', minOuputBitrate, {required: true});
+  //  
+  // checkType('int', 'minOuputBitrate', minOuputBitrate, {required: true});
+  //  
 
   var params = {
     minOuputBitrate: minOuputBitrate
@@ -26509,7 +26529,9 @@ MediaElement.prototype.setMinOutputBitrate = function(minOutputBitrate, callback
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'minOutputBitrate', minOutputBitrate, {required: true});
+  //  
+  // checkType('int', 'minOutputBitrate', minOutputBitrate, {required: true});
+  //  
 
   var params = {
     minOutputBitrate: minOutputBitrate
@@ -26647,10 +26669,15 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
       throw error;
   }
 
-  checkType('MediaElement', 'sink', sink, {required: true});
-  checkType('MediaType', 'mediaType', mediaType);
-  checkType('String', 'sourceMediaDescription', sourceMediaDescription);
-  checkType('String', 'sinkMediaDescription', sinkMediaDescription);
+  //  
+  // checkType('MediaElement', 'sink', sink, {required: true});
+  //  
+  // checkType('MediaType', 'mediaType', mediaType);
+  //  
+  // checkType('String', 'sourceMediaDescription', sourceMediaDescription);
+  //  
+  // checkType('String', 'sinkMediaDescription', sinkMediaDescription);
+  //  
 
   var params = {
     sink: sink,
@@ -26721,10 +26748,15 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
       throw error;
   }
 
-  checkType('MediaElement', 'sink', sink, {required: true});
-  checkType('MediaType', 'mediaType', mediaType);
-  checkType('String', 'sourceMediaDescription', sourceMediaDescription);
-  checkType('String', 'sinkMediaDescription', sinkMediaDescription);
+  //  
+  // checkType('MediaElement', 'sink', sink, {required: true});
+  //  
+  // checkType('MediaType', 'mediaType', mediaType);
+  //  
+  // checkType('String', 'sourceMediaDescription', sourceMediaDescription);
+  //  
+  // checkType('String', 'sinkMediaDescription', sinkMediaDescription);
+  //  
 
   var params = {
     sink: sink,
@@ -26787,7 +26819,9 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
       throw error;
   }
 
-  checkType('GstreamerDotDetails', 'details', details);
+  //  
+  // checkType('GstreamerDotDetails', 'details', details);
+  //  
 
   var params = {
     details: details
@@ -26850,8 +26884,11 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
       throw error;
   }
 
-  checkType('MediaType', 'mediaType', mediaType);
-  checkType('String', 'description', description);
+  //  
+  // checkType('MediaType', 'mediaType', mediaType);
+  //  
+  // checkType('String', 'description', description);
+  //  
 
   var params = {
     mediaType: mediaType,
@@ -26916,8 +26953,11 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
       throw error;
   }
 
-  checkType('MediaType', 'mediaType', mediaType);
-  checkType('String', 'description', description);
+  //  
+  // checkType('MediaType', 'mediaType', mediaType);
+  //  
+  // checkType('String', 'description', description);
+  //  
 
   var params = {
     mediaType: mediaType,
@@ -26973,7 +27013,9 @@ MediaElement.prototype.getStats = function(mediaType, callback){
       throw error;
   }
 
-  checkType('MediaType', 'mediaType', mediaType);
+  //  
+  // checkType('MediaType', 'mediaType', mediaType);
+  //  
 
   var params = {
     mediaType: mediaType
@@ -27036,8 +27078,11 @@ MediaElement.prototype.isMediaFlowingIn = function(mediaType, sinkMediaDescripti
       throw error;
   }
 
-  checkType('MediaType', 'mediaType', mediaType, {required: true});
-  checkType('String', 'sinkMediaDescription', sinkMediaDescription);
+  //  
+  // checkType('MediaType', 'mediaType', mediaType, {required: true});
+  //  
+  // checkType('String', 'sinkMediaDescription', sinkMediaDescription);
+  //  
 
   var params = {
     mediaType: mediaType,
@@ -27096,8 +27141,11 @@ MediaElement.prototype.isMediaFlowingOut = function(mediaType, sourceMediaDescri
       throw error;
   }
 
-  checkType('MediaType', 'mediaType', mediaType, {required: true});
-  checkType('String', 'sourceMediaDescription', sourceMediaDescription);
+  //  
+  // checkType('MediaType', 'mediaType', mediaType, {required: true});
+  //  
+  // checkType('String', 'sourceMediaDescription', sourceMediaDescription);
+  //  
 
   var params = {
     mediaType: mediaType,
@@ -27132,7 +27180,9 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('AudioCaps', 'caps', caps, {required: true});
+  //  
+  // checkType('AudioCaps', 'caps', caps, {required: true});
+  //  
 
   var params = {
     caps: caps
@@ -27167,7 +27217,9 @@ MediaElement.prototype.setOutputBitrate = function(bitrate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'bitrate', bitrate, {required: true});
+  //  
+  // checkType('int', 'bitrate', bitrate, {required: true});
+  //  
 
   var params = {
     bitrate: bitrate
@@ -27199,7 +27251,9 @@ MediaElement.prototype.setVideoFormat = function(caps, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('VideoCaps', 'caps', caps, {required: true});
+  //  
+  // checkType('VideoCaps', 'caps', caps, {required: true});
+  //  
 
   var params = {
     caps: caps
@@ -27278,8 +27332,6 @@ var ChecktypeError = checkType.ChecktypeError;
 
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
-
-var Promise = require('es6-promise').Promise;
 
 var promiseCallback = require('promisecallback');
 
@@ -27688,7 +27740,9 @@ MediaObject.prototype.setName = function(name, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'name', name, {required: true});
+  //  
+  // checkType('String', 'name', name, {required: true});
+  //  
 
   var params = {
     name: name
@@ -27805,7 +27859,9 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('boolean', 'sendTagsInEvents', sendTagsInEvents, {required: true});
+  //  
+  // checkType('boolean', 'sendTagsInEvents', sendTagsInEvents, {required: true});
+  //  
 
   var params = {
     sendTagsInEvents: sendTagsInEvents
@@ -27846,8 +27902,11 @@ MediaObject.prototype.addTag = function(key, value, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'key', key, {required: true});
-  checkType('String', 'value', value, {required: true});
+  //  
+  // checkType('String', 'key', key, {required: true});
+  //  
+  // checkType('String', 'value', value, {required: true});
+  //  
 
   var params = {
     key: key,
@@ -27881,7 +27940,9 @@ MediaObject.prototype.getTag = function(key, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'key', key, {required: true});
+  //  
+  // checkType('String', 'key', key, {required: true});
+  //  
 
   var params = {
     key: key
@@ -27949,7 +28010,9 @@ MediaObject.prototype.removeTag = function(key, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'key', key, {required: true});
+  //  
+  // checkType('String', 'key', key, {required: true});
+  //  
 
   var params = {
     key: key
@@ -27981,6 +28044,7 @@ function throwRpcNotReady()
  */
 Object.defineProperty(MediaObject.prototype, '_invoke',
 {
+  enumerable: true,
   value: function(transaction, method, params, callback){
     var self = this;
 
@@ -28203,7 +28267,7 @@ module.exports = MediaObject;
 
 MediaObject.check = checkMediaObject;
 
-},{"es6-promise":"es6-promise","events":109,"inherits":"inherits","kurento-client":"kurento-client","promisecallback":"promisecallback"}],146:[function(require,module,exports){
+},{"events":109,"inherits":"inherits","kurento-client":"kurento-client","promisecallback":"promisecallback"}],146:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -28319,7 +28383,9 @@ SdpEndpoint.prototype.setMaxAudioRecvBandwidth = function(maxAudioRecvBandwidth,
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'maxAudioRecvBandwidth', maxAudioRecvBandwidth, {required: true});
+  //  
+  // checkType('int', 'maxAudioRecvBandwidth', maxAudioRecvBandwidth, {required: true});
+  //  
 
   var params = {
     maxAudioRecvBandwidth: maxAudioRecvBandwidth
@@ -28385,7 +28451,9 @@ SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth,
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'maxVideoRecvBandwidth', maxVideoRecvBandwidth, {required: true});
+  //  
+  // checkType('int', 'maxVideoRecvBandwidth', maxVideoRecvBandwidth, {required: true});
+  //  
 
   var params = {
     maxVideoRecvBandwidth: maxVideoRecvBandwidth
@@ -28565,7 +28633,9 @@ SdpEndpoint.prototype.processAnswer = function(answer, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'answer', answer, {required: true});
+  //  
+  // checkType('String', 'answer', answer, {required: true});
+  //  
 
   var params = {
     answer: answer
@@ -28613,7 +28683,9 @@ SdpEndpoint.prototype.processOffer = function(offer, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'offer', offer, {required: true});
+  //  
+  // checkType('String', 'offer', offer, {required: true});
+  //  
 
   var params = {
     offer: offer
@@ -28899,7 +28971,9 @@ ServerManager.prototype.getKmd = function(moduleName, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'moduleName', moduleName, {required: true});
+  //  
+  // checkType('String', 'moduleName', moduleName, {required: true});
+  //  
 
   var params = {
     moduleName: moduleName
@@ -29389,8 +29463,11 @@ function AudioCaps(audioCapsDict){
   audioCapsDict = audioCapsDict || {}
 
   // Check audioCapsDict has the required fields
-  checkType('AudioCodec', 'audioCapsDict.codec', audioCapsDict.codec, {required: true});
-  checkType('int', 'audioCapsDict.bitrate', audioCapsDict.bitrate, {required: true});
+  // 
+  // checkType('AudioCodec', 'audioCapsDict.codec', audioCapsDict.codec, {required: true});
+  //  
+  // checkType('int', 'audioCapsDict.bitrate', audioCapsDict.bitrate, {required: true});
+  //  
 
   // Init parent class
   AudioCaps.super_.call(this, audioCapsDict)
@@ -29541,8 +29618,11 @@ function CodecConfiguration(codecConfigurationDict){
   codecConfigurationDict = codecConfigurationDict || {}
 
   // Check codecConfigurationDict has the required fields
-  checkType('String', 'codecConfigurationDict.name', codecConfigurationDict.name, {required: true});
-  checkType('String', 'codecConfigurationDict.properties', codecConfigurationDict.properties);
+  // 
+  // checkType('String', 'codecConfigurationDict.name', codecConfigurationDict.name, {required: true});
+  //  
+  // checkType('String', 'codecConfigurationDict.properties', codecConfigurationDict.properties);
+  //  
 
   // Init parent class
   CodecConfiguration.super_.call(this, codecConfigurationDict)
@@ -29761,11 +29841,17 @@ function ElementConnectionData(elementConnectionDataDict){
   elementConnectionDataDict = elementConnectionDataDict || {}
 
   // Check elementConnectionDataDict has the required fields
-  checkType('MediaElement', 'elementConnectionDataDict.source', elementConnectionDataDict.source, {required: true});
-  checkType('MediaElement', 'elementConnectionDataDict.sink', elementConnectionDataDict.sink, {required: true});
-  checkType('MediaType', 'elementConnectionDataDict.type', elementConnectionDataDict.type, {required: true});
-  checkType('String', 'elementConnectionDataDict.sourceDescription', elementConnectionDataDict.sourceDescription, {required: true});
-  checkType('String', 'elementConnectionDataDict.sinkDescription', elementConnectionDataDict.sinkDescription, {required: true});
+  // 
+  // checkType('MediaElement', 'elementConnectionDataDict.source', elementConnectionDataDict.source, {required: true});
+  //  
+  // checkType('MediaElement', 'elementConnectionDataDict.sink', elementConnectionDataDict.sink, {required: true});
+  //  
+  // checkType('MediaType', 'elementConnectionDataDict.type', elementConnectionDataDict.type, {required: true});
+  //  
+  // checkType('String', 'elementConnectionDataDict.sourceDescription', elementConnectionDataDict.sourceDescription, {required: true});
+  //  
+  // checkType('String', 'elementConnectionDataDict.sinkDescription', elementConnectionDataDict.sinkDescription, {required: true});
+  //  
 
   // Init parent class
   ElementConnectionData.super_.call(this, elementConnectionDataDict)
@@ -29886,9 +29972,13 @@ function ElementStats(elementStatsDict){
   elementStatsDict = elementStatsDict || {}
 
   // Check elementStatsDict has the required fields
-  checkType('double', 'elementStatsDict.inputAudioLatency', elementStatsDict.inputAudioLatency, {required: true});
-  checkType('double', 'elementStatsDict.inputVideoLatency', elementStatsDict.inputVideoLatency, {required: true});
-  checkType('MediaLatencyStat', 'elementStatsDict.inputLatency', elementStatsDict.inputLatency, {isArray: true, required: true});
+  // 
+  // checkType('double', 'elementStatsDict.inputAudioLatency', elementStatsDict.inputAudioLatency, {required: true});
+  //  
+  // checkType('double', 'elementStatsDict.inputVideoLatency', elementStatsDict.inputVideoLatency, {required: true});
+  //  
+  // checkType('MediaLatencyStat', 'elementStatsDict.inputLatency', elementStatsDict.inputLatency, {isArray: true, required: true});
+  //  
 
   // Init parent class
   ElementStats.super_.call(this, elementStatsDict)
@@ -29999,9 +30089,13 @@ function EndpointStats(endpointStatsDict){
   endpointStatsDict = endpointStatsDict || {}
 
   // Check endpointStatsDict has the required fields
-  checkType('double', 'endpointStatsDict.audioE2ELatency', endpointStatsDict.audioE2ELatency, {required: true});
-  checkType('double', 'endpointStatsDict.videoE2ELatency', endpointStatsDict.videoE2ELatency, {required: true});
-  checkType('MediaLatencyStat', 'endpointStatsDict.E2ELatency', endpointStatsDict.E2ELatency, {isArray: true, required: true});
+  // 
+  // checkType('double', 'endpointStatsDict.audioE2ELatency', endpointStatsDict.audioE2ELatency, {required: true});
+  //  
+  // checkType('double', 'endpointStatsDict.videoE2ELatency', endpointStatsDict.videoE2ELatency, {required: true});
+  //  
+  // checkType('MediaLatencyStat', 'endpointStatsDict.E2ELatency', endpointStatsDict.E2ELatency, {isArray: true, required: true});
+  //  
 
   // Init parent class
   EndpointStats.super_.call(this, endpointStatsDict)
@@ -30158,8 +30252,11 @@ function Fraction(fractionDict){
   fractionDict = fractionDict || {}
 
   // Check fractionDict has the required fields
-  checkType('int', 'fractionDict.numerator', fractionDict.numerator, {required: true});
-  checkType('int', 'fractionDict.denominator', fractionDict.denominator, {required: true});
+  // 
+  // checkType('int', 'fractionDict.numerator', fractionDict.numerator, {required: true});
+  //  
+  // checkType('int', 'fractionDict.denominator', fractionDict.denominator, {required: true});
+  //  
 
   // Init parent class
   Fraction.super_.call(this, fractionDict)
@@ -30362,9 +30459,13 @@ function MediaLatencyStat(mediaLatencyStatDict){
   mediaLatencyStatDict = mediaLatencyStatDict || {}
 
   // Check mediaLatencyStatDict has the required fields
-  checkType('String', 'mediaLatencyStatDict.name', mediaLatencyStatDict.name, {required: true});
-  checkType('MediaType', 'mediaLatencyStatDict.type', mediaLatencyStatDict.type, {required: true});
-  checkType('double', 'mediaLatencyStatDict.avg', mediaLatencyStatDict.avg, {required: true});
+  // 
+  // checkType('String', 'mediaLatencyStatDict.name', mediaLatencyStatDict.name, {required: true});
+  //  
+  // checkType('MediaType', 'mediaLatencyStatDict.type', mediaLatencyStatDict.type, {required: true});
+  //  
+  // checkType('double', 'mediaLatencyStatDict.avg', mediaLatencyStatDict.avg, {required: true});
+  //  
 
   // Init parent class
   MediaLatencyStat.super_.call(this, mediaLatencyStatDict)
@@ -30575,10 +30676,15 @@ function ModuleInfo(moduleInfoDict){
   moduleInfoDict = moduleInfoDict || {}
 
   // Check moduleInfoDict has the required fields
-  checkType('String', 'moduleInfoDict.version', moduleInfoDict.version, {required: true});
-  checkType('String', 'moduleInfoDict.name', moduleInfoDict.name, {required: true});
-  checkType('String', 'moduleInfoDict.generationTime', moduleInfoDict.generationTime, {required: true});
-  checkType('String', 'moduleInfoDict.factories', moduleInfoDict.factories, {isArray: true, required: true});
+  // 
+  // checkType('String', 'moduleInfoDict.version', moduleInfoDict.version, {required: true});
+  //  
+  // checkType('String', 'moduleInfoDict.name', moduleInfoDict.name, {required: true});
+  //  
+  // checkType('String', 'moduleInfoDict.generationTime', moduleInfoDict.generationTime, {required: true});
+  //  
+  // checkType('String', 'moduleInfoDict.factories', moduleInfoDict.factories, {isArray: true, required: true});
+  //  
 
   // Init parent class
   ModuleInfo.super_.call(this, moduleInfoDict)
@@ -30691,10 +30797,15 @@ function RTCCertificateStats(rTCCertificateStatsDict){
   rTCCertificateStatsDict = rTCCertificateStatsDict || {}
 
   // Check rTCCertificateStatsDict has the required fields
-  checkType('String', 'rTCCertificateStatsDict.fingerprint', rTCCertificateStatsDict.fingerprint, {required: true});
-  checkType('String', 'rTCCertificateStatsDict.fingerprintAlgorithm', rTCCertificateStatsDict.fingerprintAlgorithm, {required: true});
-  checkType('String', 'rTCCertificateStatsDict.base64Certificate', rTCCertificateStatsDict.base64Certificate, {required: true});
-  checkType('String', 'rTCCertificateStatsDict.issuerCertificateId', rTCCertificateStatsDict.issuerCertificateId, {required: true});
+  // 
+  // checkType('String', 'rTCCertificateStatsDict.fingerprint', rTCCertificateStatsDict.fingerprint, {required: true});
+  //  
+  // checkType('String', 'rTCCertificateStatsDict.fingerprintAlgorithm', rTCCertificateStatsDict.fingerprintAlgorithm, {required: true});
+  //  
+  // checkType('String', 'rTCCertificateStatsDict.base64Certificate', rTCCertificateStatsDict.base64Certificate, {required: true});
+  //  
+  // checkType('String', 'rTCCertificateStatsDict.issuerCertificateId', rTCCertificateStatsDict.issuerCertificateId, {required: true});
+  //  
 
   // Init parent class
   RTCCertificateStats.super_.call(this, rTCCertificateStatsDict)
@@ -30811,11 +30922,17 @@ function RTCCodec(rTCCodecDict){
   rTCCodecDict = rTCCodecDict || {}
 
   // Check rTCCodecDict has the required fields
-  checkType('int64', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, {required: true});
-  checkType('String', 'rTCCodecDict.codec', rTCCodecDict.codec, {required: true});
-  checkType('int64', 'rTCCodecDict.clockRate', rTCCodecDict.clockRate, {required: true});
-  checkType('int64', 'rTCCodecDict.channels', rTCCodecDict.channels, {required: true});
-  checkType('String', 'rTCCodecDict.parameters', rTCCodecDict.parameters, {required: true});
+  // 
+  // checkType('int64', 'rTCCodecDict.payloadType', rTCCodecDict.payloadType, {required: true});
+  //  
+  // checkType('String', 'rTCCodecDict.codec', rTCCodecDict.codec, {required: true});
+  //  
+  // checkType('int64', 'rTCCodecDict.clockRate', rTCCodecDict.clockRate, {required: true});
+  //  
+  // checkType('int64', 'rTCCodecDict.channels', rTCCodecDict.channels, {required: true});
+  //  
+  // checkType('String', 'rTCCodecDict.parameters', rTCCodecDict.parameters, {required: true});
+  //  
 
   // Init parent class
   RTCCodec.super_.call(this, rTCCodecDict)
@@ -30996,14 +31113,23 @@ function RTCDataChannelStats(rTCDataChannelStatsDict){
   rTCDataChannelStatsDict = rTCDataChannelStatsDict || {}
 
   // Check rTCDataChannelStatsDict has the required fields
-  checkType('String', 'rTCDataChannelStatsDict.label', rTCDataChannelStatsDict.label, {required: true});
-  checkType('String', 'rTCDataChannelStatsDict.protocol', rTCDataChannelStatsDict.protocol, {required: true});
-  checkType('int64', 'rTCDataChannelStatsDict.datachannelid', rTCDataChannelStatsDict.datachannelid, {required: true});
-  checkType('RTCDataChannelState', 'rTCDataChannelStatsDict.state', rTCDataChannelStatsDict.state, {required: true});
-  checkType('int64', 'rTCDataChannelStatsDict.messagesSent', rTCDataChannelStatsDict.messagesSent, {required: true});
-  checkType('int64', 'rTCDataChannelStatsDict.bytesSent', rTCDataChannelStatsDict.bytesSent, {required: true});
-  checkType('int64', 'rTCDataChannelStatsDict.messagesReceived', rTCDataChannelStatsDict.messagesReceived, {required: true});
-  checkType('int64', 'rTCDataChannelStatsDict.bytesReceived', rTCDataChannelStatsDict.bytesReceived, {required: true});
+  // 
+  // checkType('String', 'rTCDataChannelStatsDict.label', rTCDataChannelStatsDict.label, {required: true});
+  //  
+  // checkType('String', 'rTCDataChannelStatsDict.protocol', rTCDataChannelStatsDict.protocol, {required: true});
+  //  
+  // checkType('int64', 'rTCDataChannelStatsDict.datachannelid', rTCDataChannelStatsDict.datachannelid, {required: true});
+  //  
+  // checkType('RTCDataChannelState', 'rTCDataChannelStatsDict.state', rTCDataChannelStatsDict.state, {required: true});
+  //  
+  // checkType('int64', 'rTCDataChannelStatsDict.messagesSent', rTCDataChannelStatsDict.messagesSent, {required: true});
+  //  
+  // checkType('int64', 'rTCDataChannelStatsDict.bytesSent', rTCDataChannelStatsDict.bytesSent, {required: true});
+  //  
+  // checkType('int64', 'rTCDataChannelStatsDict.messagesReceived', rTCDataChannelStatsDict.messagesReceived, {required: true});
+  //  
+  // checkType('int64', 'rTCDataChannelStatsDict.bytesReceived', rTCDataChannelStatsDict.bytesReceived, {required: true});
+  //  
 
   // Init parent class
   RTCDataChannelStats.super_.call(this, rTCDataChannelStatsDict)
@@ -31145,12 +31271,19 @@ function RTCIceCandidateAttributes(rTCIceCandidateAttributesDict){
   rTCIceCandidateAttributesDict = rTCIceCandidateAttributesDict || {}
 
   // Check rTCIceCandidateAttributesDict has the required fields
-  checkType('String', 'rTCIceCandidateAttributesDict.ipAddress', rTCIceCandidateAttributesDict.ipAddress, {required: true});
-  checkType('int64', 'rTCIceCandidateAttributesDict.portNumber', rTCIceCandidateAttributesDict.portNumber, {required: true});
-  checkType('String', 'rTCIceCandidateAttributesDict.transport', rTCIceCandidateAttributesDict.transport, {required: true});
-  checkType('RTCStatsIceCandidateType', 'rTCIceCandidateAttributesDict.candidateType', rTCIceCandidateAttributesDict.candidateType, {required: true});
-  checkType('int64', 'rTCIceCandidateAttributesDict.priority', rTCIceCandidateAttributesDict.priority, {required: true});
-  checkType('String', 'rTCIceCandidateAttributesDict.addressSourceUrl', rTCIceCandidateAttributesDict.addressSourceUrl, {required: true});
+  // 
+  // checkType('String', 'rTCIceCandidateAttributesDict.ipAddress', rTCIceCandidateAttributesDict.ipAddress, {required: true});
+  //  
+  // checkType('int64', 'rTCIceCandidateAttributesDict.portNumber', rTCIceCandidateAttributesDict.portNumber, {required: true});
+  //  
+  // checkType('String', 'rTCIceCandidateAttributesDict.transport', rTCIceCandidateAttributesDict.transport, {required: true});
+  //  
+  // checkType('RTCStatsIceCandidateType', 'rTCIceCandidateAttributesDict.candidateType', rTCIceCandidateAttributesDict.candidateType, {required: true});
+  //  
+  // checkType('int64', 'rTCIceCandidateAttributesDict.priority', rTCIceCandidateAttributesDict.priority, {required: true});
+  //  
+  // checkType('String', 'rTCIceCandidateAttributesDict.addressSourceUrl', rTCIceCandidateAttributesDict.addressSourceUrl, {required: true});
+  //  
 
   // Init parent class
   RTCIceCandidateAttributes.super_.call(this, rTCIceCandidateAttributesDict)
@@ -31303,19 +31436,33 @@ function RTCIceCandidatePairStats(rTCIceCandidatePairStatsDict){
   rTCIceCandidatePairStatsDict = rTCIceCandidatePairStatsDict || {}
 
   // Check rTCIceCandidatePairStatsDict has the required fields
-  checkType('String', 'rTCIceCandidatePairStatsDict.transportId', rTCIceCandidatePairStatsDict.transportId, {required: true});
-  checkType('String', 'rTCIceCandidatePairStatsDict.localCandidateId', rTCIceCandidatePairStatsDict.localCandidateId, {required: true});
-  checkType('String', 'rTCIceCandidatePairStatsDict.remoteCandidateId', rTCIceCandidatePairStatsDict.remoteCandidateId, {required: true});
-  checkType('RTCStatsIceCandidatePairState', 'rTCIceCandidatePairStatsDict.state', rTCIceCandidatePairStatsDict.state, {required: true});
-  checkType('int64', 'rTCIceCandidatePairStatsDict.priority', rTCIceCandidatePairStatsDict.priority, {required: true});
-  checkType('boolean', 'rTCIceCandidatePairStatsDict.nominated', rTCIceCandidatePairStatsDict.nominated, {required: true});
-  checkType('boolean', 'rTCIceCandidatePairStatsDict.writable', rTCIceCandidatePairStatsDict.writable, {required: true});
-  checkType('boolean', 'rTCIceCandidatePairStatsDict.readable', rTCIceCandidatePairStatsDict.readable, {required: true});
-  checkType('int64', 'rTCIceCandidatePairStatsDict.bytesSent', rTCIceCandidatePairStatsDict.bytesSent, {required: true});
-  checkType('int64', 'rTCIceCandidatePairStatsDict.bytesReceived', rTCIceCandidatePairStatsDict.bytesReceived, {required: true});
-  checkType('double', 'rTCIceCandidatePairStatsDict.roundTripTime', rTCIceCandidatePairStatsDict.roundTripTime, {required: true});
-  checkType('double', 'rTCIceCandidatePairStatsDict.availableOutgoingBitrate', rTCIceCandidatePairStatsDict.availableOutgoingBitrate, {required: true});
-  checkType('double', 'rTCIceCandidatePairStatsDict.availableIncomingBitrate', rTCIceCandidatePairStatsDict.availableIncomingBitrate, {required: true});
+  // 
+  // checkType('String', 'rTCIceCandidatePairStatsDict.transportId', rTCIceCandidatePairStatsDict.transportId, {required: true});
+  //  
+  // checkType('String', 'rTCIceCandidatePairStatsDict.localCandidateId', rTCIceCandidatePairStatsDict.localCandidateId, {required: true});
+  //  
+  // checkType('String', 'rTCIceCandidatePairStatsDict.remoteCandidateId', rTCIceCandidatePairStatsDict.remoteCandidateId, {required: true});
+  //  
+  // checkType('RTCStatsIceCandidatePairState', 'rTCIceCandidatePairStatsDict.state', rTCIceCandidatePairStatsDict.state, {required: true});
+  //  
+  // checkType('int64', 'rTCIceCandidatePairStatsDict.priority', rTCIceCandidatePairStatsDict.priority, {required: true});
+  //  
+  // checkType('boolean', 'rTCIceCandidatePairStatsDict.nominated', rTCIceCandidatePairStatsDict.nominated, {required: true});
+  //  
+  // checkType('boolean', 'rTCIceCandidatePairStatsDict.writable', rTCIceCandidatePairStatsDict.writable, {required: true});
+  //  
+  // checkType('boolean', 'rTCIceCandidatePairStatsDict.readable', rTCIceCandidatePairStatsDict.readable, {required: true});
+  //  
+  // checkType('int64', 'rTCIceCandidatePairStatsDict.bytesSent', rTCIceCandidatePairStatsDict.bytesSent, {required: true});
+  //  
+  // checkType('int64', 'rTCIceCandidatePairStatsDict.bytesReceived', rTCIceCandidatePairStatsDict.bytesReceived, {required: true});
+  //  
+  // checkType('double', 'rTCIceCandidatePairStatsDict.roundTripTime', rTCIceCandidatePairStatsDict.roundTripTime, {required: true});
+  //  
+  // checkType('double', 'rTCIceCandidatePairStatsDict.availableOutgoingBitrate', rTCIceCandidatePairStatsDict.availableOutgoingBitrate, {required: true});
+  //  
+  // checkType('double', 'rTCIceCandidatePairStatsDict.availableIncomingBitrate', rTCIceCandidatePairStatsDict.availableIncomingBitrate, {required: true});
+  //  
 
   // Init parent class
   RTCIceCandidatePairStats.super_.call(this, rTCIceCandidatePairStatsDict)
@@ -31474,9 +31621,13 @@ function RTCInboundRTPStreamStats(rTCInboundRTPStreamStatsDict){
   rTCInboundRTPStreamStatsDict = rTCInboundRTPStreamStatsDict || {}
 
   // Check rTCInboundRTPStreamStatsDict has the required fields
-  checkType('int64', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, {required: true});
-  checkType('int64', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, {required: true});
-  checkType('double', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, {required: true});
+  // 
+  // checkType('int64', 'rTCInboundRTPStreamStatsDict.packetsReceived', rTCInboundRTPStreamStatsDict.packetsReceived, {required: true});
+  //  
+  // checkType('int64', 'rTCInboundRTPStreamStatsDict.bytesReceived', rTCInboundRTPStreamStatsDict.bytesReceived, {required: true});
+  //  
+  // checkType('double', 'rTCInboundRTPStreamStatsDict.jitter', rTCInboundRTPStreamStatsDict.jitter, {required: true});
+  //  
 
   // Init parent class
   RTCInboundRTPStreamStats.super_.call(this, rTCInboundRTPStreamStatsDict)
@@ -31582,8 +31733,11 @@ function RTCMediaStreamStats(rTCMediaStreamStatsDict){
   rTCMediaStreamStatsDict = rTCMediaStreamStatsDict || {}
 
   // Check rTCMediaStreamStatsDict has the required fields
-  checkType('String', 'rTCMediaStreamStatsDict.streamIdentifier', rTCMediaStreamStatsDict.streamIdentifier, {required: true});
-  checkType('String', 'rTCMediaStreamStatsDict.trackIds', rTCMediaStreamStatsDict.trackIds, {isArray: true, required: true});
+  // 
+  // checkType('String', 'rTCMediaStreamStatsDict.streamIdentifier', rTCMediaStreamStatsDict.streamIdentifier, {required: true});
+  //  
+  // checkType('String', 'rTCMediaStreamStatsDict.trackIds', rTCMediaStreamStatsDict.trackIds, {isArray: true, required: true});
+  //  
 
   // Init parent class
   RTCMediaStreamStats.super_.call(this, rTCMediaStreamStatsDict)
@@ -31716,20 +31870,35 @@ function RTCMediaStreamTrackStats(rTCMediaStreamTrackStatsDict){
   rTCMediaStreamTrackStatsDict = rTCMediaStreamTrackStatsDict || {}
 
   // Check rTCMediaStreamTrackStatsDict has the required fields
-  checkType('String', 'rTCMediaStreamTrackStatsDict.trackIdentifier', rTCMediaStreamTrackStatsDict.trackIdentifier, {required: true});
-  checkType('boolean', 'rTCMediaStreamTrackStatsDict.remoteSource', rTCMediaStreamTrackStatsDict.remoteSource, {required: true});
-  checkType('String', 'rTCMediaStreamTrackStatsDict.ssrcIds', rTCMediaStreamTrackStatsDict.ssrcIds, {isArray: true, required: true});
-  checkType('int64', 'rTCMediaStreamTrackStatsDict.frameWidth', rTCMediaStreamTrackStatsDict.frameWidth, {required: true});
-  checkType('int64', 'rTCMediaStreamTrackStatsDict.frameHeight', rTCMediaStreamTrackStatsDict.frameHeight, {required: true});
-  checkType('double', 'rTCMediaStreamTrackStatsDict.framesPerSecond', rTCMediaStreamTrackStatsDict.framesPerSecond, {required: true});
-  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesSent', rTCMediaStreamTrackStatsDict.framesSent, {required: true});
-  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesReceived', rTCMediaStreamTrackStatsDict.framesReceived, {required: true});
-  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesDecoded', rTCMediaStreamTrackStatsDict.framesDecoded, {required: true});
-  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesDropped', rTCMediaStreamTrackStatsDict.framesDropped, {required: true});
-  checkType('int64', 'rTCMediaStreamTrackStatsDict.framesCorrupted', rTCMediaStreamTrackStatsDict.framesCorrupted, {required: true});
-  checkType('double', 'rTCMediaStreamTrackStatsDict.audioLevel', rTCMediaStreamTrackStatsDict.audioLevel, {required: true});
-  checkType('double', 'rTCMediaStreamTrackStatsDict.echoReturnLoss', rTCMediaStreamTrackStatsDict.echoReturnLoss, {required: true});
-  checkType('double', 'rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement', rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement, {required: true});
+  // 
+  // checkType('String', 'rTCMediaStreamTrackStatsDict.trackIdentifier', rTCMediaStreamTrackStatsDict.trackIdentifier, {required: true});
+  //  
+  // checkType('boolean', 'rTCMediaStreamTrackStatsDict.remoteSource', rTCMediaStreamTrackStatsDict.remoteSource, {required: true});
+  //  
+  // checkType('String', 'rTCMediaStreamTrackStatsDict.ssrcIds', rTCMediaStreamTrackStatsDict.ssrcIds, {isArray: true, required: true});
+  //  
+  // checkType('int64', 'rTCMediaStreamTrackStatsDict.frameWidth', rTCMediaStreamTrackStatsDict.frameWidth, {required: true});
+  //  
+  // checkType('int64', 'rTCMediaStreamTrackStatsDict.frameHeight', rTCMediaStreamTrackStatsDict.frameHeight, {required: true});
+  //  
+  // checkType('double', 'rTCMediaStreamTrackStatsDict.framesPerSecond', rTCMediaStreamTrackStatsDict.framesPerSecond, {required: true});
+  //  
+  // checkType('int64', 'rTCMediaStreamTrackStatsDict.framesSent', rTCMediaStreamTrackStatsDict.framesSent, {required: true});
+  //  
+  // checkType('int64', 'rTCMediaStreamTrackStatsDict.framesReceived', rTCMediaStreamTrackStatsDict.framesReceived, {required: true});
+  //  
+  // checkType('int64', 'rTCMediaStreamTrackStatsDict.framesDecoded', rTCMediaStreamTrackStatsDict.framesDecoded, {required: true});
+  //  
+  // checkType('int64', 'rTCMediaStreamTrackStatsDict.framesDropped', rTCMediaStreamTrackStatsDict.framesDropped, {required: true});
+  //  
+  // checkType('int64', 'rTCMediaStreamTrackStatsDict.framesCorrupted', rTCMediaStreamTrackStatsDict.framesCorrupted, {required: true});
+  //  
+  // checkType('double', 'rTCMediaStreamTrackStatsDict.audioLevel', rTCMediaStreamTrackStatsDict.audioLevel, {required: true});
+  //  
+  // checkType('double', 'rTCMediaStreamTrackStatsDict.echoReturnLoss', rTCMediaStreamTrackStatsDict.echoReturnLoss, {required: true});
+  //  
+  // checkType('double', 'rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement', rTCMediaStreamTrackStatsDict.echoReturnLossEnhancement, {required: true});
+  //  
 
   // Init parent class
   RTCMediaStreamTrackStats.super_.call(this, rTCMediaStreamTrackStatsDict)
@@ -31896,10 +32065,15 @@ function RTCOutboundRTPStreamStats(rTCOutboundRTPStreamStatsDict){
   rTCOutboundRTPStreamStatsDict = rTCOutboundRTPStreamStatsDict || {}
 
   // Check rTCOutboundRTPStreamStatsDict has the required fields
-  checkType('int64', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, {required: true});
-  checkType('int64', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, {required: true});
-  checkType('double', 'rTCOutboundRTPStreamStatsDict.targetBitrate', rTCOutboundRTPStreamStatsDict.targetBitrate, {required: true});
-  checkType('double', 'rTCOutboundRTPStreamStatsDict.roundTripTime', rTCOutboundRTPStreamStatsDict.roundTripTime, {required: true});
+  // 
+  // checkType('int64', 'rTCOutboundRTPStreamStatsDict.packetsSent', rTCOutboundRTPStreamStatsDict.packetsSent, {required: true});
+  //  
+  // checkType('int64', 'rTCOutboundRTPStreamStatsDict.bytesSent', rTCOutboundRTPStreamStatsDict.bytesSent, {required: true});
+  //  
+  // checkType('double', 'rTCOutboundRTPStreamStatsDict.targetBitrate', rTCOutboundRTPStreamStatsDict.targetBitrate, {required: true});
+  //  
+  // checkType('double', 'rTCOutboundRTPStreamStatsDict.roundTripTime', rTCOutboundRTPStreamStatsDict.roundTripTime, {required: true});
+  //  
 
   // Init parent class
   RTCOutboundRTPStreamStats.super_.call(this, rTCOutboundRTPStreamStatsDict)
@@ -32010,8 +32184,11 @@ function RTCPeerConnectionStats(rTCPeerConnectionStatsDict){
   rTCPeerConnectionStatsDict = rTCPeerConnectionStatsDict || {}
 
   // Check rTCPeerConnectionStatsDict has the required fields
-  checkType('int64', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, {required: true});
-  checkType('int64', 'rTCPeerConnectionStatsDict.dataChannelsClosed', rTCPeerConnectionStatsDict.dataChannelsClosed, {required: true});
+  // 
+  // checkType('int64', 'rTCPeerConnectionStatsDict.dataChannelsOpened', rTCPeerConnectionStatsDict.dataChannelsOpened, {required: true});
+  //  
+  // checkType('int64', 'rTCPeerConnectionStatsDict.dataChannelsClosed', rTCPeerConnectionStatsDict.dataChannelsClosed, {required: true});
+  //  
 
   // Init parent class
   RTCPeerConnectionStats.super_.call(this, rTCPeerConnectionStatsDict)
@@ -32141,19 +32318,33 @@ function RTCRTPStreamStats(rTCRTPStreamStatsDict){
   rTCRTPStreamStatsDict = rTCRTPStreamStatsDict || {}
 
   // Check rTCRTPStreamStatsDict has the required fields
-  checkType('String', 'rTCRTPStreamStatsDict.ssrc', rTCRTPStreamStatsDict.ssrc, {required: true});
-  checkType('String', 'rTCRTPStreamStatsDict.associateStatsId', rTCRTPStreamStatsDict.associateStatsId, {required: true});
-  checkType('boolean', 'rTCRTPStreamStatsDict.isRemote', rTCRTPStreamStatsDict.isRemote, {required: true});
-  checkType('String', 'rTCRTPStreamStatsDict.mediaTrackId', rTCRTPStreamStatsDict.mediaTrackId, {required: true});
-  checkType('String', 'rTCRTPStreamStatsDict.transportId', rTCRTPStreamStatsDict.transportId, {required: true});
-  checkType('String', 'rTCRTPStreamStatsDict.codecId', rTCRTPStreamStatsDict.codecId, {required: true});
-  checkType('int64', 'rTCRTPStreamStatsDict.firCount', rTCRTPStreamStatsDict.firCount, {required: true});
-  checkType('int64', 'rTCRTPStreamStatsDict.pliCount', rTCRTPStreamStatsDict.pliCount, {required: true});
-  checkType('int64', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, {required: true});
-  checkType('int64', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, {required: true});
-  checkType('int64', 'rTCRTPStreamStatsDict.remb', rTCRTPStreamStatsDict.remb, {required: true});
-  checkType('int64', 'rTCRTPStreamStatsDict.packetsLost', rTCRTPStreamStatsDict.packetsLost, {required: true});
-  checkType('double', 'rTCRTPStreamStatsDict.fractionLost', rTCRTPStreamStatsDict.fractionLost, {required: true});
+  // 
+  // checkType('String', 'rTCRTPStreamStatsDict.ssrc', rTCRTPStreamStatsDict.ssrc, {required: true});
+  //  
+  // checkType('String', 'rTCRTPStreamStatsDict.associateStatsId', rTCRTPStreamStatsDict.associateStatsId, {required: true});
+  //  
+  // checkType('boolean', 'rTCRTPStreamStatsDict.isRemote', rTCRTPStreamStatsDict.isRemote, {required: true});
+  //  
+  // checkType('String', 'rTCRTPStreamStatsDict.mediaTrackId', rTCRTPStreamStatsDict.mediaTrackId, {required: true});
+  //  
+  // checkType('String', 'rTCRTPStreamStatsDict.transportId', rTCRTPStreamStatsDict.transportId, {required: true});
+  //  
+  // checkType('String', 'rTCRTPStreamStatsDict.codecId', rTCRTPStreamStatsDict.codecId, {required: true});
+  //  
+  // checkType('int64', 'rTCRTPStreamStatsDict.firCount', rTCRTPStreamStatsDict.firCount, {required: true});
+  //  
+  // checkType('int64', 'rTCRTPStreamStatsDict.pliCount', rTCRTPStreamStatsDict.pliCount, {required: true});
+  //  
+  // checkType('int64', 'rTCRTPStreamStatsDict.nackCount', rTCRTPStreamStatsDict.nackCount, {required: true});
+  //  
+  // checkType('int64', 'rTCRTPStreamStatsDict.sliCount', rTCRTPStreamStatsDict.sliCount, {required: true});
+  //  
+  // checkType('int64', 'rTCRTPStreamStatsDict.remb', rTCRTPStreamStatsDict.remb, {required: true});
+  //  
+  // checkType('int64', 'rTCRTPStreamStatsDict.packetsLost', rTCRTPStreamStatsDict.packetsLost, {required: true});
+  //  
+  // checkType('double', 'rTCRTPStreamStatsDict.fractionLost', rTCRTPStreamStatsDict.fractionLost, {required: true});
+  //  
 
   // Init parent class
   RTCRTPStreamStats.super_.call(this, rTCRTPStreamStatsDict)
@@ -32305,6 +32496,7 @@ function RTCStats(rTCStatsDict){
   rTCStatsDict = rTCStatsDict || {}
 
   // Check rTCStatsDict has the required fields
+  // 
 
   // Init parent class
   RTCStats.super_.call(this, rTCStatsDict)
@@ -32514,13 +32706,21 @@ function RTCTransportStats(rTCTransportStatsDict){
   rTCTransportStatsDict = rTCTransportStatsDict || {}
 
   // Check rTCTransportStatsDict has the required fields
-  checkType('int64', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, {required: true});
-  checkType('int64', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, {required: true});
-  checkType('String', 'rTCTransportStatsDict.rtcpTransportStatsId', rTCTransportStatsDict.rtcpTransportStatsId, {required: true});
-  checkType('boolean', 'rTCTransportStatsDict.activeConnection', rTCTransportStatsDict.activeConnection, {required: true});
-  checkType('String', 'rTCTransportStatsDict.selectedCandidatePairId', rTCTransportStatsDict.selectedCandidatePairId, {required: true});
-  checkType('String', 'rTCTransportStatsDict.localCertificateId', rTCTransportStatsDict.localCertificateId, {required: true});
-  checkType('String', 'rTCTransportStatsDict.remoteCertificateId', rTCTransportStatsDict.remoteCertificateId, {required: true});
+  // 
+  // checkType('int64', 'rTCTransportStatsDict.bytesSent', rTCTransportStatsDict.bytesSent, {required: true});
+  //  
+  // checkType('int64', 'rTCTransportStatsDict.bytesReceived', rTCTransportStatsDict.bytesReceived, {required: true});
+  //  
+  // checkType('String', 'rTCTransportStatsDict.rtcpTransportStatsId', rTCTransportStatsDict.rtcpTransportStatsId, {required: true});
+  //  
+  // checkType('boolean', 'rTCTransportStatsDict.activeConnection', rTCTransportStatsDict.activeConnection, {required: true});
+  //  
+  // checkType('String', 'rTCTransportStatsDict.selectedCandidatePairId', rTCTransportStatsDict.selectedCandidatePairId, {required: true});
+  //  
+  // checkType('String', 'rTCTransportStatsDict.localCertificateId', rTCTransportStatsDict.localCertificateId, {required: true});
+  //  
+  // checkType('String', 'rTCTransportStatsDict.remoteCertificateId', rTCTransportStatsDict.remoteCertificateId, {required: true});
+  //  
 
   // Init parent class
   RTCTransportStats.super_.call(this, rTCTransportStatsDict)
@@ -32670,14 +32870,23 @@ function RembParams(rembParamsDict){
   rembParamsDict = rembParamsDict || {}
 
   // Check rembParamsDict has the required fields
-  checkType('int', 'rembParamsDict.packetsRecvIntervalTop', rembParamsDict.packetsRecvIntervalTop);
-  checkType('float', 'rembParamsDict.exponentialFactor', rembParamsDict.exponentialFactor);
-  checkType('int', 'rembParamsDict.linealFactorMin', rembParamsDict.linealFactorMin);
-  checkType('float', 'rembParamsDict.linealFactorGrade', rembParamsDict.linealFactorGrade);
-  checkType('float', 'rembParamsDict.decrementFactor', rembParamsDict.decrementFactor);
-  checkType('float', 'rembParamsDict.thresholdFactor', rembParamsDict.thresholdFactor);
-  checkType('int', 'rembParamsDict.upLosses', rembParamsDict.upLosses);
-  checkType('int', 'rembParamsDict.rembOnConnect', rembParamsDict.rembOnConnect);
+  // 
+  // checkType('int', 'rembParamsDict.packetsRecvIntervalTop', rembParamsDict.packetsRecvIntervalTop);
+  //  
+  // checkType('float', 'rembParamsDict.exponentialFactor', rembParamsDict.exponentialFactor);
+  //  
+  // checkType('int', 'rembParamsDict.linealFactorMin', rembParamsDict.linealFactorMin);
+  //  
+  // checkType('float', 'rembParamsDict.linealFactorGrade', rembParamsDict.linealFactorGrade);
+  //  
+  // checkType('float', 'rembParamsDict.decrementFactor', rembParamsDict.decrementFactor);
+  //  
+  // checkType('float', 'rembParamsDict.thresholdFactor', rembParamsDict.thresholdFactor);
+  //  
+  // checkType('int', 'rembParamsDict.upLosses', rembParamsDict.upLosses);
+  //  
+  // checkType('int', 'rembParamsDict.rembOnConnect', rembParamsDict.rembOnConnect);
+  //  
 
   // Init parent class
   RembParams.super_.call(this, rembParamsDict)
@@ -32810,10 +33019,15 @@ function ServerInfo(serverInfoDict){
   serverInfoDict = serverInfoDict || {}
 
   // Check serverInfoDict has the required fields
-  checkType('String', 'serverInfoDict.version', serverInfoDict.version, {required: true});
-  checkType('ModuleInfo', 'serverInfoDict.modules', serverInfoDict.modules, {isArray: true, required: true});
-  checkType('ServerType', 'serverInfoDict.type', serverInfoDict.type, {required: true});
-  checkType('String', 'serverInfoDict.capabilities', serverInfoDict.capabilities, {isArray: true, required: true});
+  // 
+  // checkType('String', 'serverInfoDict.version', serverInfoDict.version, {required: true});
+  //  
+  // checkType('ModuleInfo', 'serverInfoDict.modules', serverInfoDict.modules, {isArray: true, required: true});
+  //  
+  // checkType('ServerType', 'serverInfoDict.type', serverInfoDict.type, {required: true});
+  //  
+  // checkType('String', 'serverInfoDict.capabilities', serverInfoDict.capabilities, {isArray: true, required: true});
+  //  
 
   // Init parent class
   ServerInfo.super_.call(this, serverInfoDict)
@@ -32976,9 +33190,13 @@ function Stats(statsDict){
   statsDict = statsDict || {}
 
   // Check statsDict has the required fields
-  checkType('String', 'statsDict.id', statsDict.id, {required: true});
-  checkType('StatsType', 'statsDict.type', statsDict.type, {required: true});
-  checkType('double', 'statsDict.timestamp', statsDict.timestamp, {required: true});
+  // 
+  // checkType('String', 'statsDict.id', statsDict.id, {required: true});
+  //  
+  // checkType('StatsType', 'statsDict.type', statsDict.type, {required: true});
+  //  
+  // checkType('double', 'statsDict.timestamp', statsDict.timestamp, {required: true});
+  //  
 
   // Init parent class
   Stats.super_.call(this, statsDict)
@@ -33133,8 +33351,11 @@ function Tag(tagDict){
   tagDict = tagDict || {}
 
   // Check tagDict has the required fields
-  checkType('String', 'tagDict.key', tagDict.key, {required: true});
-  checkType('String', 'tagDict.value', tagDict.value, {required: true});
+  // 
+  // checkType('String', 'tagDict.key', tagDict.key, {required: true});
+  //  
+  // checkType('String', 'tagDict.value', tagDict.value, {required: true});
+  //  
 
   // Init parent class
   Tag.super_.call(this, tagDict)
@@ -33284,8 +33505,11 @@ function VideoCaps(videoCapsDict){
   videoCapsDict = videoCapsDict || {}
 
   // Check videoCapsDict has the required fields
-  checkType('VideoCodec', 'videoCapsDict.codec', videoCapsDict.codec, {required: true});
-  checkType('Fraction', 'videoCapsDict.framerate', videoCapsDict.framerate, {required: true});
+  // 
+  // checkType('VideoCodec', 'videoCapsDict.codec', videoCapsDict.codec, {required: true});
+  //  
+  // checkType('Fraction', 'videoCapsDict.framerate', videoCapsDict.framerate, {required: true});
+  //  
 
   // Init parent class
   VideoCaps.super_.call(this, videoCapsDict)
@@ -37117,11 +37341,17 @@ FaceOverlayFilter.prototype.setOverlayedImage = function(uri, offsetXPercent, of
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'uri', uri, {required: true});
-  checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
-  checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
-  checkType('float', 'widthPercent', widthPercent, {required: true});
-  checkType('float', 'heightPercent', heightPercent, {required: true});
+  //  
+  // checkType('String', 'uri', uri, {required: true});
+  //  
+  // checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
+  //  
+  // checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
+  //  
+  // checkType('float', 'widthPercent', widthPercent, {required: true});
+  //  
+  // checkType('float', 'heightPercent', heightPercent, {required: true});
+  //  
 
   var params = {
     uri: uri,
@@ -37465,14 +37695,23 @@ ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offset
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'id', id, {required: true});
-  checkType('String', 'uri', uri, {required: true});
-  checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
-  checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
-  checkType('float', 'widthPercent', widthPercent, {required: true});
-  checkType('float', 'heightPercent', heightPercent, {required: true});
-  checkType('boolean', 'keepAspectRatio', keepAspectRatio, {required: true});
-  checkType('boolean', 'center', center, {required: true});
+  //  
+  // checkType('String', 'id', id, {required: true});
+  //  
+  // checkType('String', 'uri', uri, {required: true});
+  //  
+  // checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
+  //  
+  // checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
+  //  
+  // checkType('float', 'widthPercent', widthPercent, {required: true});
+  //  
+  // checkType('float', 'heightPercent', heightPercent, {required: true});
+  //  
+  // checkType('boolean', 'keepAspectRatio', keepAspectRatio, {required: true});
+  //  
+  // checkType('boolean', 'center', center, {required: true});
+  //  
 
   var params = {
     id: id,
@@ -37511,7 +37750,9 @@ ImageOverlayFilter.prototype.removeImage = function(id, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'id', id, {required: true});
+  //  
+  // checkType('String', 'id', id, {required: true});
+  //  
 
   var params = {
     id: id
