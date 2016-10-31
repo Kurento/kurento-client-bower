@@ -33589,8 +33589,11 @@ AlphaBlending.prototype.setMaster = function(source, zOrder, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('int', 'zOrder', zOrder, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('int', 'zOrder', zOrder, {required: true});
+  //  
 
   var params = {
     source: source,
@@ -33640,12 +33643,19 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('float', 'relativeX', relativeX, {required: true});
-  checkType('float', 'relativeY', relativeY, {required: true});
-  checkType('int', 'zOrder', zOrder, {required: true});
-  checkType('float', 'relativeWidth', relativeWidth, {required: true});
-  checkType('float', 'relativeHeight', relativeHeight, {required: true});
-  checkType('HubPort', 'port', port, {required: true});
+  //  
+  // checkType('float', 'relativeX', relativeX, {required: true});
+  //  
+  // checkType('float', 'relativeY', relativeY, {required: true});
+  //  
+  // checkType('int', 'zOrder', zOrder, {required: true});
+  //  
+  // checkType('float', 'relativeWidth', relativeWidth, {required: true});
+  //  
+  // checkType('float', 'relativeHeight', relativeHeight, {required: true});
+  //  
+  // checkType('HubPort', 'port', port, {required: true});
+  //  
 
   var params = {
     relativeX: relativeX,
@@ -33881,8 +33891,11 @@ Dispatcher.prototype.connect = function(source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('HubPort', 'sink', sink, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('HubPort', 'sink', sink, {required: true});
+  //  
 
   var params = {
     source: source,
@@ -34051,7 +34064,9 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
 
   var params = {
     source: source
@@ -34300,9 +34315,13 @@ Mixer.prototype.connect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('MediaType', 'media', media, {required: true});
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('HubPort', 'sink', sink, {required: true});
+  //  
+  // checkType('MediaType', 'media', media, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('HubPort', 'sink', sink, {required: true});
+  //  
 
   var params = {
     media: media,
@@ -34342,9 +34361,13 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('MediaType', 'media', media, {required: true});
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('HubPort', 'sink', sink, {required: true});
+  //  
+  // checkType('MediaType', 'media', media, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('HubPort', 'sink', sink, {required: true});
+  //  
 
   var params = {
     media: media,
@@ -34571,7 +34594,9 @@ PlayerEndpoint.prototype.setPosition = function(position, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int64', 'position', position, {required: true});
+  //  
+  // checkType('int64', 'position', position, {required: true});
+  //  
 
   var params = {
     position: position
@@ -35579,7 +35604,9 @@ WebRtcEndpoint.prototype.setStunServerAddress = function(stunServerAddress, call
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'stunServerAddress', stunServerAddress, {required: true});
+  //  
+  // checkType('String', 'stunServerAddress', stunServerAddress, {required: true});
+  //  
 
   var params = {
     stunServerAddress: stunServerAddress
@@ -35641,7 +35668,9 @@ WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'stunServerPort', stunServerPort, {required: true});
+  //  
+  // checkType('int', 'stunServerPort', stunServerPort, {required: true});
+  //  
 
   var params = {
     stunServerPort: stunServerPort
@@ -35705,7 +35734,9 @@ WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'turnUrl', turnUrl, {required: true});
+  //  
+  // checkType('String', 'turnUrl', turnUrl, {required: true});
+  //  
 
   var params = {
     turnUrl: turnUrl
@@ -35742,7 +35773,9 @@ WebRtcEndpoint.prototype.addIceCandidate = function(candidate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('IceCandidate', 'candidate', candidate, {required: true});
+  //  
+  // checkType('IceCandidate', 'candidate', candidate, {required: true});
+  //  
 
   var params = {
     candidate: candidate
@@ -35774,7 +35807,9 @@ WebRtcEndpoint.prototype.closeDataChannel = function(channelId, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'channelId', channelId, {required: true});
+  //  
+  // checkType('int', 'channelId', channelId, {required: true});
+  //  
 
   var params = {
     channelId: channelId
@@ -35863,11 +35898,17 @@ WebRtcEndpoint.prototype.createDataChannel = function(label, ordered, maxPacketL
       throw error;
   }
 
-  checkType('String', 'label', label);
-  checkType('boolean', 'ordered', ordered);
-  checkType('int', 'maxPacketLifeTime', maxPacketLifeTime);
-  checkType('int', 'maxRetransmits', maxRetransmits);
-  checkType('String', 'protocol', protocol);
+  //  
+  // checkType('String', 'label', label);
+  //  
+  // checkType('boolean', 'ordered', ordered);
+  //  
+  // checkType('int', 'maxPacketLifeTime', maxPacketLifeTime);
+  //  
+  // checkType('int', 'maxRetransmits', maxRetransmits);
+  //  
+  // checkType('String', 'protocol', protocol);
+  //  
 
   var params = {
     label: label,
@@ -36285,9 +36326,13 @@ function IceCandidate(iceCandidateDict){
   iceCandidateDict = iceCandidateDict || {}
 
   // Check iceCandidateDict has the required fields
-  checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true});
-  checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true});
-  checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, {required: true});
+  // 
+  // checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true});
+  //  
+  // checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true});
+  //  
+  // checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, {required: true});
+  //  
 
   // Init parent class
   IceCandidate.super_.call(this, iceCandidateDict)
@@ -36395,10 +36440,15 @@ function IceCandidatePair(iceCandidatePairDict){
   iceCandidatePairDict = iceCandidatePairDict || {}
 
   // Check iceCandidatePairDict has the required fields
-  checkType('String', 'iceCandidatePairDict.streamID', iceCandidatePairDict.streamID, {required: true});
-  checkType('int', 'iceCandidatePairDict.componentID', iceCandidatePairDict.componentID, {required: true});
-  checkType('String', 'iceCandidatePairDict.localCandidate', iceCandidatePairDict.localCandidate, {required: true});
-  checkType('String', 'iceCandidatePairDict.remoteCandidate', iceCandidatePairDict.remoteCandidate, {required: true});
+  // 
+  // checkType('String', 'iceCandidatePairDict.streamID', iceCandidatePairDict.streamID, {required: true});
+  //  
+  // checkType('int', 'iceCandidatePairDict.componentID', iceCandidatePairDict.componentID, {required: true});
+  //  
+  // checkType('String', 'iceCandidatePairDict.localCandidate', iceCandidatePairDict.localCandidate, {required: true});
+  //  
+  // checkType('String', 'iceCandidatePairDict.remoteCandidate', iceCandidatePairDict.remoteCandidate, {required: true});
+  //  
 
   // Init parent class
   IceCandidatePair.super_.call(this, iceCandidatePairDict)
@@ -36560,9 +36610,13 @@ function IceConnection(iceConnectionDict){
   iceConnectionDict = iceConnectionDict || {}
 
   // Check iceConnectionDict has the required fields
-  checkType('String', 'iceConnectionDict.streamId', iceConnectionDict.streamId, {required: true});
-  checkType('int', 'iceConnectionDict.componentId', iceConnectionDict.componentId, {required: true});
-  checkType('IceComponentState', 'iceConnectionDict.state', iceConnectionDict.state, {required: true});
+  // 
+  // checkType('String', 'iceConnectionDict.streamId', iceConnectionDict.streamId, {required: true});
+  //  
+  // checkType('int', 'iceConnectionDict.componentId', iceConnectionDict.componentId, {required: true});
+  //  
+  // checkType('IceComponentState', 'iceConnectionDict.state', iceConnectionDict.state, {required: true});
+  //  
 
   // Init parent class
   IceConnection.super_.call(this, iceConnectionDict)
@@ -36719,8 +36773,11 @@ function SDES(sDESDict){
   sDESDict = sDESDict || {}
 
   // Check sDESDict has the required fields
-  checkType('String', 'sDESDict.key', sDESDict.key);
-  checkType('CryptoSuite', 'sDESDict.crypto', sDESDict.crypto);
+  // 
+  // checkType('String', 'sDESDict.key', sDESDict.key);
+  //  
+  // checkType('CryptoSuite', 'sDESDict.crypto', sDESDict.crypto);
+  //  
 
   // Init parent class
   SDES.super_.call(this, sDESDict)
@@ -36822,10 +36879,15 @@ function VideoInfo(videoInfoDict){
   videoInfoDict = videoInfoDict || {}
 
   // Check videoInfoDict has the required fields
-  checkType('boolean', 'videoInfoDict.isSeekable', videoInfoDict.isSeekable, {required: true});
-  checkType('int64', 'videoInfoDict.seekableInit', videoInfoDict.seekableInit, {required: true});
-  checkType('int64', 'videoInfoDict.seekableEnd', videoInfoDict.seekableEnd, {required: true});
-  checkType('int64', 'videoInfoDict.duration', videoInfoDict.duration, {required: true});
+  // 
+  // checkType('boolean', 'videoInfoDict.isSeekable', videoInfoDict.isSeekable, {required: true});
+  //  
+  // checkType('int64', 'videoInfoDict.seekableInit', videoInfoDict.seekableInit, {required: true});
+  //  
+  // checkType('int64', 'videoInfoDict.seekableEnd', videoInfoDict.seekableEnd, {required: true});
+  //  
+  // checkType('int64', 'videoInfoDict.duration', videoInfoDict.duration, {required: true});
+  //  
 
   // Init parent class
   VideoInfo.super_.call(this, videoInfoDict)
