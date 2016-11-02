@@ -53733,7 +53733,8 @@ URL.prototype.set = function set(part, value, fn) {
       break;
 
     case 'pathname':
-      url.pathname = value.charAt(0) === '/' ? value : '/' + value;
+      url.pathname = value.length && value.charAt(0) !== '/' ? '/' + value : value;
+
       break;
 
     default:
