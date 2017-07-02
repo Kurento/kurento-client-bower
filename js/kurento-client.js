@@ -27584,7 +27584,7 @@ MediaObject.prototype.getChildren = function(callback){
   if (usePromise) {
     var self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    var promise = new Promise(function(resolve, reject) {
 
       function callback2(error, values) {
         resolve(values)
@@ -27639,7 +27639,7 @@ MediaObject.prototype.getChilds = function(callback){
   if (usePromise) {
     var self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    var promise = new Promise(function(resolve, reject) {
 
       function callback2(error, values) {
         resolve(values)
@@ -27727,7 +27727,7 @@ MediaObject.prototype.getMediaPipeline = function(callback){
   if (usePromise) {
     var self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    var promise = new Promise(function(resolve, reject) {
 
       function callback2(error, values) {
         resolve(values)
@@ -27850,7 +27850,7 @@ MediaObject.prototype.getParent = function(callback){
   if (usePromise) {
     var self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    var promise = new Promise(function(resolve, reject) {
 
       function callback2(error, values) {
         resolve(values)
@@ -28926,7 +28926,7 @@ ServerManager.prototype.getPipelines = function(callback){
   if (usePromise) {
     var self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    var promise = new Promise(function(resolve, reject) {
 
       function callback2(error, values) {
         resolve(values)
