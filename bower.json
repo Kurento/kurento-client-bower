@@ -1,24 +1,53 @@
 {
   "name": "kurento-client",
-  "description": "Media API for the Kurento Web SDK",
+  "description": "JavaScript Client API for Kurento Media Server",
   "license": "Apache-2.0",
   "keywords": [
-    "API",
-    "Kurento",
-    "WebRTC"
+    "kurento",
+    "mcu",
+    "sfu",
+    "rpc",
+    "mediaserver",
+    "pipe",
+    "audio",
+    "video",
+    "media",
+    "recording",
+    "stream",
+    "streaming",
+    "videoconference",
+    "broadcast",
+    "multicast",
+    "client",
+    "server",
+    "browser",
+    "chrome",
+    "edge",
+    "firefox",
+    "safari",
+    "webrtc",
+    "datachannel",
+    "sdp",
+    "ice",
+    "stun",
+    "turn",
+    "h264",
+    "h.264",
+    "opus",
+    "vp8",
+    "rtp",
+    "srtp",
+    "rtsp"
   ],
-  "homepage": "http://www.kurento.org",
+  "homepage": "https://www.kurento.org",
   "repository": {
     "type": "git",
-    "url": "Kurento/kurento-client-js"
+    "url": "https://github.com/Kurento/kurento-client-js.git"
   },
   "authors": [
-    "Kurento <info@kurento.com> (http://kurento.org)",
-    {
-      "name": "Jesús Leganés Combarro 'piranna'",
-      "email": "piranna@gmail.com",
-      "url": "http://pirannafs.blogspot.com.es"
-    }
+    "Kurento <openvidu@gmail.com> (https://www.kurento.org)",
+    "Kurento Community <kurento@googlegroups.com> (https://www.kurento.org)",
+    "Jesús Leganés-Combarro 'piranna' <piranna@gmail.com> (https://pirannafs.blogspot.com/)"
   ],
   "main": "js/kurento-client.js"
 }
