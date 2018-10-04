@@ -37067,10 +37067,10 @@ exports.JsonRPC = JsonRPC;
 exports.XmlRPC  = XmlRPC;
 
 },{"./JsonRPC":221,"./XmlRPC":222}],224:[function(require,module,exports){
-(function (Buffer){
 'use strict'
 var inherits = require('inherits')
 var HashBase = require('hash-base')
+var Buffer = require('safe-buffer').Buffer
 
 var ARRAY16 = new Array(16)
 
@@ -37184,7 +37184,7 @@ MD5.prototype._digest = function () {
   this._update()
 
   // produce result
-  var buffer = new Buffer(16)
+  var buffer = Buffer.allocUnsafe(16)
   buffer.writeInt32LE(this._a, 0)
   buffer.writeInt32LE(this._b, 4)
   buffer.writeInt32LE(this._c, 8)
@@ -37214,8 +37214,7 @@ function fnI (a, b, c, d, m, k, s) {
 
 module.exports = MD5
 
-}).call(this,require("buffer").Buffer)
-},{"buffer":68,"hash-base":111,"inherits":"inherits"}],225:[function(require,module,exports){
+},{"hash-base":111,"inherits":"inherits","safe-buffer":281}],225:[function(require,module,exports){
 var bn = require('bn.js');
 var brorand = require('brorand');
 
