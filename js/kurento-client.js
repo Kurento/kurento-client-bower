@@ -21472,6 +21472,16 @@ var inherits = require('inherits');
 
 exports.inherits = inherits;
 
+function isSurrogatePair(msg, i) {
+  if ((msg.charCodeAt(i) & 0xFC00) !== 0xD800) {
+    return false;
+  }
+  if (i < 0 || i + 1 >= msg.length) {
+    return false;
+  }
+  return (msg.charCodeAt(i + 1) & 0xFC00) === 0xDC00;
+}
+
 function toArray(msg, enc) {
   if (Array.isArray(msg))
     return msg.slice();
@@ -21480,14 +21490,29 @@ function toArray(msg, enc) {
   var res = [];
   if (typeof msg === 'string') {
     if (!enc) {
+      // Inspired by stringToUtf8ByteArray() in closure-library by Google
+      // https://github.com/google/closure-library/blob/8598d87242af59aac233270742c8984e2b2bdbe0/closure/goog/crypt/crypt.js#L117-L143
+      // Apache License 2.0
+      // https://github.com/google/closure-library/blob/master/LICENSE
+      var p = 0;
       for (var i = 0; i < msg.length; i++) {
         var c = msg.charCodeAt(i);
-        var hi = c >> 8;
-        var lo = c & 0xff;
-        if (hi)
-          res.push(hi, lo);
-        else
-          res.push(lo);
+        if (c < 128) {
+          res[p++] = c;
+        } else if (c < 2048) {
+          res[p++] = (c >> 6) | 192;
+          res[p++] = (c & 63) | 128;
+        } else if (isSurrogatePair(msg, i)) {
+          c = 0x10000 + ((c & 0x03FF) << 10) + (msg.charCodeAt(++i) & 0x03FF);
+          res[p++] = (c >> 18) | 240;
+          res[p++] = ((c >> 12) & 63) | 128;
+          res[p++] = ((c >> 6) & 63) | 128;
+          res[p++] = (c & 63) | 128;
+        } else {
+          res[p++] = (c >> 12) | 224;
+          res[p++] = ((c >> 6) & 63) | 128;
+          res[p++] = (c & 63) | 128;
+        }
       }
     } else if (enc === 'hex') {
       msg = msg.replace(/[^a-z0-9]+/ig, '');
@@ -31096,11 +31121,8 @@ AlphaBlending.prototype.setMaster = function(source, zOrder, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('HubPort', 'source', source, {required: true});
-  //  
-  // checkType('int', 'zOrder', zOrder, {required: true});
-  //  
+  checkType('HubPort', 'source', source, {required: true});
+  checkType('int', 'zOrder', zOrder, {required: true});
 
   var params = {
     source: source,
@@ -31150,19 +31172,12 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('float', 'relativeX', relativeX, {required: true});
-  //  
-  // checkType('float', 'relativeY', relativeY, {required: true});
-  //  
-  // checkType('int', 'zOrder', zOrder, {required: true});
-  //  
-  // checkType('float', 'relativeWidth', relativeWidth, {required: true});
-  //  
-  // checkType('float', 'relativeHeight', relativeHeight, {required: true});
-  //  
-  // checkType('HubPort', 'port', port, {required: true});
-  //  
+  checkType('float', 'relativeX', relativeX, {required: true});
+  checkType('float', 'relativeY', relativeY, {required: true});
+  checkType('int', 'zOrder', zOrder, {required: true});
+  checkType('float', 'relativeWidth', relativeWidth, {required: true});
+  checkType('float', 'relativeHeight', relativeHeight, {required: true});
+  checkType('HubPort', 'port', port, {required: true});
 
   var params = {
     relativeX: relativeX,
@@ -31398,11 +31413,8 @@ Dispatcher.prototype.connect = function(source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('HubPort', 'source', source, {required: true});
-  //  
-  // checkType('HubPort', 'sink', sink, {required: true});
-  //  
+  checkType('HubPort', 'source', source, {required: true});
+  checkType('HubPort', 'sink', sink, {required: true});
 
   var params = {
     source: source,
@@ -31571,9 +31583,7 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('HubPort', 'source', source, {required: true});
-  //  
+  checkType('HubPort', 'source', source, {required: true});
 
   var params = {
     source: source
@@ -31694,37 +31704,10 @@ inherits(HttpPostEndpoint, HttpEndpoint);
  *  belongs
  *
  * @property {external:Boolean} [useEncodedMedia]
- *  Feed the input media as-is to the Media Pipeline, instead of first decoding 
- *  it.
- *                <p>
- *                When this property is not enabled, the input media gets always
- *                </p>
- *                <p>
- *                When this property is enabled, the explained behavior gets 
- *                disabled. Instead, The endpoint will provide any input media 
- *                directly to the Media Pipeline, without prior decoding. 
- *                Enabling this mode of operation could have a severe effect on 
- *                stability, because lost video keyframes will not be 
- *                regenerated; however, avoiding a full cycle of decoding and 
- *                encoding can be very useful for certain applications, because 
- *                it improves performance by greatly reducing the CPU processing
- *                </p>
- *                <p>
- *                Keep in mind that if this property is enabled, the original 
- *                source media MUST already have an encoding format which is 
- *                compatible with the destination target. For example: given a 
- *                pipeline which uses this endpoint to read a file and then 
- *                streams it to a WebRTC browser such as Chrome, then the file 
- *                must already be encoded with a VP8 or H.264 codec profile 
- *                which Chrome is able to decode. Note that for this example, 
- *                most browsers don't support ANY combination of H.264 encoding 
- *                options; instead, they tend to support only a very specific 
- *                subset of the codec features (also known as 'profiles').
- *                </p>
- *                <p>
- *                We strongly recommend to avoid using this option, because 
- *                correct behavior cannot be guaranteed.
- *                </p>
+ *  configures the endpoint to use encoded media instead of raw media. If the 
+ *  parameter is not set then the element uses raw media. Changing this 
+ *  parameter could affect in a severe way to stability because key frames lost 
+ *  will not be generated. Changing the media type does not affect to the result
  */
 HttpPostEndpoint.constructorParams = {
   disconnectionTimeout: {
@@ -31849,13 +31832,9 @@ Mixer.prototype.connect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('MediaType', 'media', media, {required: true});
-  //  
-  // checkType('HubPort', 'source', source, {required: true});
-  //  
-  // checkType('HubPort', 'sink', sink, {required: true});
-  //  
+  checkType('MediaType', 'media', media, {required: true});
+  checkType('HubPort', 'source', source, {required: true});
+  checkType('HubPort', 'sink', sink, {required: true});
 
   var params = {
     media: media,
@@ -31895,13 +31874,9 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('MediaType', 'media', media, {required: true});
-  //  
-  // checkType('HubPort', 'source', source, {required: true});
-  //  
-  // checkType('HubPort', 'sink', sink, {required: true});
-  //  
+  checkType('MediaType', 'media', media, {required: true});
+  checkType('HubPort', 'source', source, {required: true});
+  checkType('HubPort', 'sink', sink, {required: true});
 
   var params = {
     media: media,
@@ -32080,38 +32055,6 @@ inherits(PlayerEndpoint, UriEndpoint);
 //
 
 /**
- * Returns the GStreamer DOT string for this element's private pipeline
- *
- * @alias module:elements.PlayerEndpoint#getElementGstreamerDot
- *
- * @param {module:elements.PlayerEndpoint~getElementGstreamerDotCallback} [callback]
- *
- * @return {external:Promise}
- */
-PlayerEndpoint.prototype.getElementGstreamerDot = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  var usePromise = false;
-  
-  if (callback == undefined) {
-    usePromise = true;
-  }
-  
-  if(!arguments.length) callback = undefined;
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'getElementGstreamerDot', callback), this)
-};
-/**
- * @callback module:elements.PlayerEndpoint~getElementGstreamerDotCallback
- * @param {external:Error} error
- * @param {external:String} result
- */
-
-/**
  * Get or set the actual position of the video in ms. <hr/><b>Note</b> Setting 
  * the position only works for seekable videos
  *
@@ -32160,9 +32103,7 @@ PlayerEndpoint.prototype.setPosition = function(position, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('int64', 'position', position, {required: true});
-  //  
+  checkType('int64', 'position', position, {required: true});
 
   var params = {
     position: position
@@ -32257,7 +32198,7 @@ PlayerEndpoint.prototype.play = function(callback){
  *  belongs to.
  *
  * @property {external:Integer} [networkCache]
- *  When using RTSP sources: Amount of milliseconds to buffer
+ *  When using rtsp sources. Amount of ms to buffer
  *
  * @property {external:String} uri
  *  URI pointing to the video. It has to be accessible to the KMS process.
@@ -32269,37 +32210,7 @@ PlayerEndpoint.prototype.play = function(callback){
  *                </ul>
  *
  * @property {external:Boolean} [useEncodedMedia]
- *  Feed the input media as-is to the Media Pipeline, instead of first decoding 
- *  it.
- *                <p>
- *                When this property is not enabled, the input media gets always
- *                </p>
- *                <p>
- *                When this property is enabled, the explained behavior gets 
- *                disabled. Instead, The endpoint will provide any input media 
- *                directly to the Media Pipeline, without prior decoding. 
- *                Enabling this mode of operation could have a severe effect on 
- *                stability, because lost video keyframes will not be 
- *                regenerated; however, avoiding a full cycle of decoding and 
- *                encoding can be very useful for certain applications, because 
- *                it improves performance by greatly reducing the CPU processing
- *                </p>
- *                <p>
- *                Keep in mind that if this property is enabled, the original 
- *                source media MUST already have an encoding format which is 
- *                compatible with the destination target. For example: given a 
- *                pipeline which uses this endpoint to read a file and then 
- *                streams it to a WebRTC browser such as Chrome, then the file 
- *                must already be encoded with a VP8 or H.264 codec profile 
- *                which Chrome is able to decode. Note that for this example, 
- *                most browsers don't support ANY combination of H.264 encoding 
- *                options; instead, they tend to support only a very specific 
- *                subset of the codec features (also known as 'profiles').
- *                </p>
- *                <p>
- *                We strongly recommend to avoid using this option, because 
- *                correct behavior cannot be guaranteed.
- *                </p>
+ *  use encoded instead of raw media. If the parameter is false then the element
  */
 PlayerEndpoint.constructorParams = {
   mediaPipeline: {
@@ -32711,8 +32622,9 @@ var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
  *        needing to go through the exchange process, as the receiving peer does
  *        </p>
  *        <p>
- *        The user can set some bandwidth limits that will be used during the 
- *        negotiation process.
+ *        While there is no congestion control in this endpoint, the user can 
+ *        set some bandwidth limits that will be used during the negotiation 
+ *        process.
  *        The default bandwidth range of the endpoint is 100kbps-500kbps, but it
  *        <ul style='list-style-type:circle'>
  *          <li>
@@ -32747,9 +32659,10 @@ var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
  *        TODO: What happens if the b=as tag form the SDP has a lower value than
  *        </p>
  *        <p>
- *        Take into consideration that setting a too high upper limit for the 
- *        output bandwidth can be a reason for the local network connection to 
- *        be overflooded.
+ *        Having no congestion ocntrol implementation means that the bitrate 
+ *        will remain constant. This is something to take into consideration 
+ *        when setting upper limits for the output bandwidth, or the local 
+ *        network connection can be overflooded.
  *        </p>
  *
  * @extends module:core/abstracts.BaseRtpEndpoint
@@ -33198,9 +33111,7 @@ WebRtcEndpoint.prototype.setStunServerAddress = function(stunServerAddress, call
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('String', 'stunServerAddress', stunServerAddress, {required: true});
-  //  
+  checkType('String', 'stunServerAddress', stunServerAddress, {required: true});
 
   var params = {
     stunServerAddress: stunServerAddress
@@ -33262,9 +33173,7 @@ WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('int', 'stunServerPort', stunServerPort, {required: true});
-  //  
+  checkType('int', 'stunServerPort', stunServerPort, {required: true});
 
   var params = {
     stunServerPort: stunServerPort
@@ -33328,9 +33237,7 @@ WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('String', 'turnUrl', turnUrl, {required: true});
-  //  
+  checkType('String', 'turnUrl', turnUrl, {required: true});
 
   var params = {
     turnUrl: turnUrl
@@ -33367,9 +33274,7 @@ WebRtcEndpoint.prototype.addIceCandidate = function(candidate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('IceCandidate', 'candidate', candidate, {required: true});
-  //  
+  checkType('IceCandidate', 'candidate', candidate, {required: true});
 
   var params = {
     candidate: candidate
@@ -33401,9 +33306,7 @@ WebRtcEndpoint.prototype.closeDataChannel = function(channelId, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('int', 'channelId', channelId, {required: true});
-  //  
+  checkType('int', 'channelId', channelId, {required: true});
 
   var params = {
     channelId: channelId
@@ -33492,17 +33395,11 @@ WebRtcEndpoint.prototype.createDataChannel = function(label, ordered, maxPacketL
       throw error;
   }
 
-  //  
-  // checkType('String', 'label', label);
-  //  
-  // checkType('boolean', 'ordered', ordered);
-  //  
-  // checkType('int', 'maxPacketLifeTime', maxPacketLifeTime);
-  //  
-  // checkType('int', 'maxRetransmits', maxRetransmits);
-  //  
-  // checkType('String', 'protocol', protocol);
-  //  
+  checkType('String', 'label', label);
+  checkType('boolean', 'ordered', ordered);
+  checkType('int', 'maxPacketLifeTime', maxPacketLifeTime);
+  checkType('int', 'maxRetransmits', maxRetransmits);
+  checkType('String', 'protocol', protocol);
 
   var params = {
     label: label,
@@ -33565,12 +33462,6 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  *
- * @property {external:Boolean} [recvonly]
- *  Single direction, receive-only endpoint
- *
- * @property {external:Boolean} [sendonly]
- *  Single direction, send-only endpoint
- *
  * @property {external:Boolean} [useDataChannels]
  *  Activate data channels support
  */
@@ -33581,10 +33472,6 @@ WebRtcEndpoint.constructorParams = {
     type: 'kurento.MediaPipeline',
     required: true
   },
-  recvonly: {
-    type: 'boolean'  },
-  sendonly: {
-    type: 'boolean'  },
   useDataChannels: {
     type: 'boolean'  }
 };
@@ -33930,13 +33817,9 @@ function IceCandidate(iceCandidateDict){
   iceCandidateDict = iceCandidateDict || {}
 
   // Check iceCandidateDict has the required fields
-  // 
-  // checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true});
-  //  
-  // checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true});
-  //  
-  // checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, {required: true});
-  //  
+  checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true});
+  checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true});
+  checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, {required: true});
 
   // Init parent class
   IceCandidate.super_.call(this, iceCandidateDict)
@@ -34044,15 +33927,10 @@ function IceCandidatePair(iceCandidatePairDict){
   iceCandidatePairDict = iceCandidatePairDict || {}
 
   // Check iceCandidatePairDict has the required fields
-  // 
-  // checkType('String', 'iceCandidatePairDict.streamID', iceCandidatePairDict.streamID, {required: true});
-  //  
-  // checkType('int', 'iceCandidatePairDict.componentID', iceCandidatePairDict.componentID, {required: true});
-  //  
-  // checkType('String', 'iceCandidatePairDict.localCandidate', iceCandidatePairDict.localCandidate, {required: true});
-  //  
-  // checkType('String', 'iceCandidatePairDict.remoteCandidate', iceCandidatePairDict.remoteCandidate, {required: true});
-  //  
+  checkType('String', 'iceCandidatePairDict.streamID', iceCandidatePairDict.streamID, {required: true});
+  checkType('int', 'iceCandidatePairDict.componentID', iceCandidatePairDict.componentID, {required: true});
+  checkType('String', 'iceCandidatePairDict.localCandidate', iceCandidatePairDict.localCandidate, {required: true});
+  checkType('String', 'iceCandidatePairDict.remoteCandidate', iceCandidatePairDict.remoteCandidate, {required: true});
 
   // Init parent class
   IceCandidatePair.super_.call(this, iceCandidatePairDict)
@@ -34214,13 +34092,9 @@ function IceConnection(iceConnectionDict){
   iceConnectionDict = iceConnectionDict || {}
 
   // Check iceConnectionDict has the required fields
-  // 
-  // checkType('String', 'iceConnectionDict.streamId', iceConnectionDict.streamId, {required: true});
-  //  
-  // checkType('int', 'iceConnectionDict.componentId', iceConnectionDict.componentId, {required: true});
-  //  
-  // checkType('IceComponentState', 'iceConnectionDict.state', iceConnectionDict.state, {required: true});
-  //  
+  checkType('String', 'iceConnectionDict.streamId', iceConnectionDict.streamId, {required: true});
+  checkType('int', 'iceConnectionDict.componentId', iceConnectionDict.componentId, {required: true});
+  checkType('IceComponentState', 'iceConnectionDict.state', iceConnectionDict.state, {required: true});
 
   // Init parent class
   IceConnection.super_.call(this, iceConnectionDict)
@@ -34365,35 +34239,8 @@ var ComplexType = require('kurento-client-core').complexTypes.ComplexType;
  * @constructor module:elements/complexTypes.SDES
  *
  * @property {external:String} key
- *  <p>Master key and salt (plain text)</p>
- *            <p>
- *            This field provides the the cryptographic master key appended with
- *            </p>
- *            <p>
- *            The expected length of the key (as provided to this parameter) is 
- *            determined by the crypto-suite for which the key applies (30 
- *            characters for AES_CM_128, 46 characters for AES_CM_256). If the 
- *            length does not match the expected value, the key will be 
- *            considered invalid.
- *            </p>
- *            <p>
- *            If no key is provided, a random one will be generated using the 
- *            `getrandom` system call.
- *            </p>
- * @property {external:String} keyBase64
- *  <p>Master key and salt (base64 encoded)</p>
- *            <p>
- *            This field provides the cryptographic master key appended with the
- *            </p>
- *            <p>
- *            The expected length of the key (after being decoded from base64) 
- *            is determined by the crypto-suite for which the key applies (30 
- *            bytes for AES_CM_128, 46 bytes for AES_CM_256). If the length does
- *            </p>
- *            <p>
- *            If no key is provided, a random one will be generated using the 
- *            `getrandom` system call.
- *            </p>
+ *   A string representing the cryptographic key used. The length varies 
+ *   depending on the cryptographic method used (30 bytes length for AES_128_CM,
  * @property {module:elements/complexTypes.CryptoSuite} crypto
  *  Selects the cryptographic suite to be used. For available values, please see
  */
@@ -34404,13 +34251,8 @@ function SDES(sDESDict){
   sDESDict = sDESDict || {}
 
   // Check sDESDict has the required fields
-  // 
-  // checkType('String', 'sDESDict.key', sDESDict.key);
-  //  
-  // checkType('String', 'sDESDict.keyBase64', sDESDict.keyBase64);
-  //  
-  // checkType('CryptoSuite', 'sDESDict.crypto', sDESDict.crypto);
-  //  
+  checkType('String', 'sDESDict.key', sDESDict.key);
+  checkType('CryptoSuite', 'sDESDict.crypto', sDESDict.crypto);
 
   // Init parent class
   SDES.super_.call(this, sDESDict)
@@ -34421,11 +34263,6 @@ function SDES(sDESDict){
       writable: true,
       enumerable: true,
       value: sDESDict.key
-    },
-    keyBase64: {
-      writable: true,
-      enumerable: true,
-      value: sDESDict.keyBase64
     },
     crypto: {
       writable: true,
@@ -34517,15 +34354,10 @@ function VideoInfo(videoInfoDict){
   videoInfoDict = videoInfoDict || {}
 
   // Check videoInfoDict has the required fields
-  // 
-  // checkType('boolean', 'videoInfoDict.isSeekable', videoInfoDict.isSeekable, {required: true});
-  //  
-  // checkType('int64', 'videoInfoDict.seekableInit', videoInfoDict.seekableInit, {required: true});
-  //  
-  // checkType('int64', 'videoInfoDict.seekableEnd', videoInfoDict.seekableEnd, {required: true});
-  //  
-  // checkType('int64', 'videoInfoDict.duration', videoInfoDict.duration, {required: true});
-  //  
+  checkType('boolean', 'videoInfoDict.isSeekable', videoInfoDict.isSeekable, {required: true});
+  checkType('int64', 'videoInfoDict.seekableInit', videoInfoDict.seekableInit, {required: true});
+  checkType('int64', 'videoInfoDict.seekableEnd', videoInfoDict.seekableEnd, {required: true});
+  checkType('int64', 'videoInfoDict.duration', videoInfoDict.duration, {required: true});
 
   // Init parent class
   VideoInfo.super_.call(this, videoInfoDict)
@@ -34755,17 +34587,11 @@ FaceOverlayFilter.prototype.setOverlayedImage = function(uri, offsetXPercent, of
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('String', 'uri', uri, {required: true});
-  //  
-  // checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
-  //  
-  // checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
-  //  
-  // checkType('float', 'widthPercent', widthPercent, {required: true});
-  //  
-  // checkType('float', 'heightPercent', heightPercent, {required: true});
-  //  
+  checkType('String', 'uri', uri, {required: true});
+  checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
+  checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
+  checkType('float', 'widthPercent', widthPercent, {required: true});
+  checkType('float', 'heightPercent', heightPercent, {required: true});
 
   var params = {
     uri: uri,
@@ -34882,9 +34708,7 @@ var kurentoClient = require('kurento-client');
 
 var disguise = kurentoClient.disguise;
 
-var checkType      = kurentoClient.checkType;
-var ChecktypeError = checkType.ChecktypeError;
-
+var ChecktypeError = kurentoClient.checkType.ChecktypeError;
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -34899,16 +34723,11 @@ function noop(error, result) {
 
 
 /**
- * Create a {@link module:filters.GStreamerFilter GStreamerFilter}.
+ * Create a {@link module:filters.GStreamerFilter GStreamerFilter}
  *
  * @classdesc
- *  A generic filter interface that allows injecting any GStreamer element.
- *        <p>
- *        Note however that the current implementation of GStreamerFilter only 
- *        allows single elements to be injected; one cannot indicate more than 
- *        one at the same time; use several GStreamerFilters if you need to 
- *        inject more than one element at the same time.
- *        </p>
+ *  This is a generic filter interface, that creates GStreamer filters in the 
+ *  media server.
  *
  * @extends module:core/abstracts.Filter
  *
@@ -34925,8 +34744,7 @@ inherits(GStreamerFilter, Filter);
 //
 
 /**
- * String used to instantiate the GStreamer element, as in `gst-launch 
- * <https://gstreamer.freedesktop.org/documentation/tools/gst-launch.html>`__.
+ * GStreamer command.
  *
  * @alias module:filters.GStreamerFilter#getCommand
  *
@@ -34958,60 +34776,15 @@ GStreamerFilter.prototype.getCommand = function(callback){
  */
 
 
-//
-// Public methods
-//
-
-/**
- * Provide a value to one of the GStreamer element's properties.
- *
- * @alias module:filters.GStreamerFilter.setElementProperty
- *
- * @param {external:String} propertyName
- *  Name of the property that needs to be modified in the GStreamer element.
- *
- * @param {external:String} propertyValue
- *  Value that must be assigned to the property.
- *
- * @param {module:filters.GStreamerFilter~setElementPropertyCallback} [callback]
- *
- * @return {external:Promise}
- */
-GStreamerFilter.prototype.setElementProperty = function(propertyName, propertyValue, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  //  
-  // checkType('String', 'propertyName', propertyName, {required: true});
-  //  
-  // checkType('String', 'propertyValue', propertyValue, {required: true});
-  //  
-
-  var params = {
-    propertyName: propertyName,
-    propertyValue: propertyValue
-  };
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'setElementProperty', params, callback), this)
-};
-/**
- * @callback module:filters.GStreamerFilter~setElementPropertyCallback
- * @param {external:Error} error
- */
-
-
 /**
  * @alias module:filters.GStreamerFilter.constructorParams
  *
  * @property {external:String} command
- *  String used to instantiate the GStreamer element, as in `gst-launch 
- *  <https://gstreamer.freedesktop.org/documentation/tools/gst-launch.html>`__.
+ *  command that would be used to instantiate the filter, as in `gst-launch 
+ *  <http://rpm.pbone.net/index.php3/stat/45/idpl/19531544/numer/1/nazwa/gst-launch-1.0>`__
  *
  * @property {external:FilterType} [filterType]
- *  Sets the filter as Audio, Video, or Autodetect.
+ *  Filter type that define if the filter is set as audio, video or autodetect
  *
  * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter 
@@ -35162,23 +34935,14 @@ ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offset
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('String', 'id', id, {required: true});
-  //  
-  // checkType('String', 'uri', uri, {required: true});
-  //  
-  // checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
-  //  
-  // checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
-  //  
-  // checkType('float', 'widthPercent', widthPercent, {required: true});
-  //  
-  // checkType('float', 'heightPercent', heightPercent, {required: true});
-  //  
-  // checkType('boolean', 'keepAspectRatio', keepAspectRatio, {required: true});
-  //  
-  // checkType('boolean', 'center', center, {required: true});
-  //  
+  checkType('String', 'id', id, {required: true});
+  checkType('String', 'uri', uri, {required: true});
+  checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
+  checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
+  checkType('float', 'widthPercent', widthPercent, {required: true});
+  checkType('float', 'heightPercent', heightPercent, {required: true});
+  checkType('boolean', 'keepAspectRatio', keepAspectRatio, {required: true});
+  checkType('boolean', 'center', center, {required: true});
 
   var params = {
     id: id,
@@ -35217,9 +34981,7 @@ ImageOverlayFilter.prototype.removeImage = function(id, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  //  
-  // checkType('String', 'id', id, {required: true});
-  //  
+  checkType('String', 'id', id, {required: true});
 
   var params = {
     id: id
@@ -62158,7 +61920,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.8.1'});
+Object.defineProperty(exports, 'version', {value: '6.9.0'});
 
 
 var HubPort = require('./HubPort');
@@ -62202,7 +61964,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.8.1'});
+Object.defineProperty(exports, 'version', {value: '6.6.1'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -62260,7 +62022,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.8.1'});
+Object.defineProperty(exports, 'version', {value: '6.6.1'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
