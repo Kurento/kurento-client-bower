@@ -35,7 +35,8 @@ var createPromise = require('./createPromise');
 var MediaObjectCreator = require('./MediaObjectCreator');
 var TransactionsManager = require('./TransactionsManager');
 
-var TransactionNotCommitedException = TransactionsManager.TransactionNotCommitedException;
+var TransactionNotCommitedException = TransactionsManager
+  .TransactionNotCommitedException;
 var transactionOperation = TransactionsManager.transactionOperation;
 
 var MediaObject = require('kurento-client-core').abstracts.MediaObject;
@@ -82,7 +83,8 @@ function findIndex(list, predicate) {
 function serializeParams(params) {
   for (var key in params) {
     var param = params[key];
-    if (param instanceof MediaObject || (param && (params.object !== undefined ||
+    if (param instanceof MediaObject || (param && (params.object !==
+        undefined ||
         params.hub !== undefined || params.sink !== undefined))) {
       if (param && param.id != null) {
         params[key] = param.id;
@@ -582,7 +584,8 @@ function KurentoClient(ws_uri, options, callback) {
             if (error) throw error
 
             params = serializeParams(params);
-            params.operationParams = serializeParams(params.operationParams);
+            params.operationParams = serializeParams(params
+              .operationParams);
 
             return encode(method, params, callback2);
           })
@@ -640,7 +643,8 @@ function KurentoClient(ws_uri, options, callback) {
       case 'create':
         var constructorParams = params.constructorParams;
         for (var key in constructorParams)
-          constructorParams[key] = checkId(operation, constructorParams[key]);
+          constructorParams[key] = checkId(operation, constructorParams[
+            key]);
         break;
 
       default:
@@ -847,7 +851,8 @@ function KurentoClient(ws_uri, options, callback) {
                 if (pingNum > notReconnectIfNumLessThan) {
                   enabledPings = false;
                   updateNotReconnectIfLessThan();
-                  console.log("Server did not respond to ping message " +
+                  console.log(
+                    "Server did not respond to ping message " +
                     pingNum + ".");
                   clearInterval(pingInterval);
                   pingPongStarted = false;
@@ -1019,7 +1024,8 @@ function KurentoClient(ws_uri, options, callback) {
             var message = "Module '" + notInstalled[0] +
               "' is not installed in the Kurento Media Server"
           else
-            var message = "Modules '" + notInstalled.slice(0, -1).join("', '") +
+            var message = "Modules '" + notInstalled.slice(0, -1).join(
+                "', '") +
               "' and '" + notInstalled[length - 1] +
               "' are not installed in the Kurento Media Server"
 
@@ -1192,7 +1198,8 @@ var Transaction = require('./TransactionsManager').Transaction;
  * @return {module:core/abstracts.MediaObject}
  */
 function getConstructor(type, strict) {
-  var result = register.classes[type.qualifiedType] || register.abstracts[type.qualifiedType] ||
+  var result = register.classes[type.qualifiedType] || register.abstracts[type
+      .qualifiedType] ||
     register.classes[type.type] || register.abstracts[type.type] ||
     register.classes[type] || register.abstracts[type];
   if (result) return result;
@@ -1269,7 +1276,8 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
     mediaObject.on('_describe', describe);
     mediaObject.on('_rpc', encodeRpc);
 
-    if (mediaObject instanceof register.abstracts['kurento.Hub'] || mediaObject instanceof register
+    if (mediaObject instanceof register.abstracts['kurento.Hub'] ||
+      mediaObject instanceof register
       .classes['kurento.MediaPipeline'])
       mediaObject.on('_create', encodeCreate);
 
@@ -1297,7 +1305,8 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
     var params = item.params || {};
     delete item.params;
 
-    if (params.mediaPipeline == undefined && host instanceof register.classes.MediaPipeline)
+    if (params.mediaPipeline == undefined && host instanceof register.classes
+      .MediaPipeline)
       params.mediaPipeline = host;
 
     var params_ = extend({}, params)
@@ -1394,7 +1403,8 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
               var params = request.params || {}
 
               if (typeof params.mediaPipeline === 'number')
-                params.mediaPipeline = mediaObjects[params.mediaPipeline]
+                params.mediaPipeline = mediaObjects[params
+                  .mediaPipeline]
 
               mediaObjects.push(createMediaObject(request, callback))
             },
@@ -12157,6 +12167,7 @@ module.exports = function xor (a, b) {
 
 }).call(this,require("buffer").Buffer)
 },{"buffer":68}],68:[function(require,module,exports){
+(function (Buffer){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -13935,7 +13946,8 @@ function numberIsNaN (obj) {
   return obj !== obj // eslint-disable-line no-self-compare
 }
 
-},{"base64-js":32,"ieee754":126}],69:[function(require,module,exports){
+}).call(this,require("buffer").Buffer)
+},{"base64-js":32,"buffer":68,"ieee754":126}],69:[function(require,module,exports){
 'use strict';
 
 /*!
@@ -26861,8 +26873,8 @@ var ComplexType = require('./ComplexType');
  * @constructor module:core/complexTypes.CodecConfiguration
  *
  * @property {external:String} name
- *  Name of the codec defined as <encoding name>/<clock rate>[/<encoding 
- *  parameters>]
+ *  Name of the codec. Must follow this format: <encoding name>/<clock 
+ *  rate>[/<encoding parameters>]
  * @property {external:String} properties
  *  String used for tuning codec properties
  */
@@ -26874,7 +26886,7 @@ function CodecConfiguration(codecConfigurationDict){
 
   // Check codecConfigurationDict has the required fields
   // 
-  // checkType('String', 'codecConfigurationDict.name', codecConfigurationDict.name, {required: true});
+  // checkType('String', 'codecConfigurationDict.name', codecConfigurationDict.name);
   //  
   // checkType('String', 'codecConfigurationDict.properties', codecConfigurationDict.properties);
   //  
@@ -30486,8 +30498,11 @@ var ComplexType = require('./ComplexType');
  * @property {module:core/complexTypes.StatsType} type
  *  The type of this object.
  * @property {external:double} timestamp
- *  The timestamp associated with this object. The time is relative to the UNIX 
- *  epoch (Jan 1, 1970, UTC).
+ *  @deprecated
+ *  [DEPRECATED: Use timestampMillis] The timestamp associated with this object:
+ * @property {external:int64} timestampMillis
+ *  The timestamp associated with this event: Milliseconds elapsed since the 
+ *  UNIX Epoch (Jan 1, 1970, UTC).
  */
 function Stats(statsDict){
   if(!(this instanceof Stats))
@@ -30502,6 +30517,8 @@ function Stats(statsDict){
   // checkType('StatsType', 'statsDict.type', statsDict.type, {required: true});
   //  
   // checkType('double', 'statsDict.timestamp', statsDict.timestamp, {required: true});
+  //  
+  // checkType('int64', 'statsDict.timestampMillis', statsDict.timestampMillis, {required: true});
   //  
 
   // Init parent class
@@ -30523,6 +30540,11 @@ function Stats(statsDict){
       writable: true,
       enumerable: true,
       value: statsDict.timestamp
+    },
+    timestampMillis: {
+      writable: true,
+      enumerable: true,
+      value: statsDict.timestampMillis
     }
   })
 }
@@ -39002,7 +39024,7 @@ function deflate(strm, flush) {
                     (!s.gzhead.extra ? 0 : 4) +
                     (!s.gzhead.name ? 0 : 8) +
                     (!s.gzhead.comment ? 0 : 16)
-                );
+        );
         put_byte(s, s.gzhead.time & 0xff);
         put_byte(s, (s.gzhead.time >> 8) & 0xff);
         put_byte(s, (s.gzhead.time >> 16) & 0xff);
@@ -41727,6 +41749,8 @@ module.exports = {
 //   misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 
+/* eslint-disable space-unary-ops */
+
 var utils = require('../utils/common');
 
 /* Public constants ==========================================================*/
@@ -43139,7 +43163,8 @@ var AttributeTypeValue = asn.define('AttributeTypeValue', function () {
 var AlgorithmIdentifier = asn.define('AlgorithmIdentifier', function () {
   this.seq().obj(
     this.key('algorithm').objid(),
-    this.key('parameters').optional()
+    this.key('parameters').optional(),
+    this.key('curve').objid().optional()
   )
 })
 
@@ -43181,7 +43206,7 @@ var Extension = asn.define('Extension', function () {
 
 var TBSCertificate = asn.define('TBSCertificate', function () {
   this.seq().obj(
-    this.key('version').explicit(0).int(),
+    this.key('version').explicit(0).int().optional(),
     this.key('serialNumber').int(),
     this.key('signature').use(AlgorithmIdentifier),
     this.key('issuer').use(Name),
@@ -43205,13 +43230,13 @@ var X509Certificate = asn.define('X509Certificate', function () {
 module.exports = X509Certificate
 
 },{"asn1.js":9}],243:[function(require,module,exports){
-(function (Buffer){
 // adapted from https://github.com/apatil/pemstrip
 var findProc = /Proc-Type: 4,ENCRYPTED[\n\r]+DEK-Info: AES-((?:128)|(?:192)|(?:256))-CBC,([0-9A-H]+)[\n\r]+([0-9A-z\n\r\+\/\=]+)[\n\r]+/m
-var startRegex = /^-----BEGIN ((?:.* KEY)|CERTIFICATE)-----/m
-var fullRegex = /^-----BEGIN ((?:.* KEY)|CERTIFICATE)-----([0-9A-z\n\r\+\/\=]+)-----END \1-----$/m
+var startRegex = /^-----BEGIN ((?:.*? KEY)|CERTIFICATE)-----/m
+var fullRegex = /^-----BEGIN ((?:.*? KEY)|CERTIFICATE)-----([0-9A-z\n\r\+\/\=]+)-----END \1-----$/m
 var evp = require('evp_bytestokey')
 var ciphers = require('browserify-aes')
+var Buffer = require('safe-buffer').Buffer
 module.exports = function (okey, password) {
   var key = okey.toString()
   var match = key.match(findProc)
@@ -43221,8 +43246,8 @@ module.exports = function (okey, password) {
     decrypted = new Buffer(match2[2].replace(/[\r\n]/g, ''), 'base64')
   } else {
     var suite = 'aes' + match[1]
-    var iv = new Buffer(match[2], 'hex')
-    var cipherText = new Buffer(match[3].replace(/[\r\n]/g, ''), 'base64')
+    var iv = Buffer.from(match[2], 'hex')
+    var cipherText = Buffer.from(match[3].replace(/[\r\n]/g, ''), 'base64')
     var cipherKey = evp(password, iv.slice(0, 8), parseInt(match[1], 10)).key
     var out = []
     var cipher = ciphers.createDecipheriv(suite, cipherKey, iv)
@@ -43237,14 +43262,13 @@ module.exports = function (okey, password) {
   }
 }
 
-}).call(this,require("buffer").Buffer)
-},{"browserify-aes":39,"buffer":68,"evp_bytestokey":109}],244:[function(require,module,exports){
-(function (Buffer){
+},{"browserify-aes":39,"evp_bytestokey":109,"safe-buffer":282}],244:[function(require,module,exports){
 var asn1 = require('./asn1')
 var aesid = require('./aesid.json')
 var fixProc = require('./fixProc')
 var ciphers = require('browserify-aes')
 var compat = require('pbkdf2')
+var Buffer = require('safe-buffer').Buffer
 module.exports = parseKeys
 
 function parseKeys (buffer) {
@@ -43254,7 +43278,7 @@ function parseKeys (buffer) {
     buffer = buffer.key
   }
   if (typeof buffer === 'string') {
-    buffer = new Buffer(buffer)
+    buffer = Buffer.from(buffer)
   }
 
   var stripped = fixProc(buffer, password)
@@ -43339,7 +43363,7 @@ function decrypt (data, password) {
   var iv = data.algorithm.decrypt.cipher.iv
   var cipherText = data.subjectPrivateKey
   var keylen = parseInt(algo.split('-')[1], 10) / 8
-  var key = compat.pbkdf2Sync(password, salt, iters, keylen)
+  var key = compat.pbkdf2Sync(password, salt, iters, keylen, 'sha1')
   var cipher = ciphers.createDecipheriv(algo, key, iv)
   var out = []
   out.push(cipher.update(cipherText))
@@ -43347,8 +43371,7 @@ function decrypt (data, password) {
   return Buffer.concat(out)
 }
 
-}).call(this,require("buffer").Buffer)
-},{"./aesid.json":240,"./asn1":241,"./fixProc":243,"browserify-aes":39,"buffer":68,"pbkdf2":246}],245:[function(require,module,exports){
+},{"./aesid.json":240,"./asn1":241,"./fixProc":243,"browserify-aes":39,"pbkdf2":246,"safe-buffer":282}],245:[function(require,module,exports){
 (function (process){
 // .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
 // backported and transplited with Babel, with backwards-compat fixes
@@ -45122,6 +45145,14 @@ exports.encode = exports.stringify = require('./encode');
 (function (process,global){
 'use strict'
 
+// limit of Crypto.getRandomValues()
+// https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues
+var MAX_BYTES = 65536
+
+// Node supports requesting up to this number of bytes
+// https://github.com/nodejs/node/blob/master/lib/internal/crypto/random.js#L48
+var MAX_UINT32 = 4294967295
+
 function oldBrowser () {
   throw new Error('Secure random number generation is not supported by this browser.\nUse Chrome, Firefox or Internet Explorer 11')
 }
@@ -45137,18 +45168,22 @@ if (crypto && crypto.getRandomValues) {
 
 function randomBytes (size, cb) {
   // phantomjs needs to throw
-  if (size > 65536) throw new Error('requested too many random bytes')
-  // in case browserify  isn't using the Uint8Array version
-  var rawBytes = new global.Uint8Array(size)
+  if (size > MAX_UINT32) throw new RangeError('requested too many random bytes')
 
-  // This will not work in older browsers.
-  // See https://developer.mozilla.org/en-US/docs/Web/API/window.crypto.getRandomValues
+  var bytes = Buffer.allocUnsafe(size)
+
   if (size > 0) {  // getRandomValues fails on IE if size == 0
-    crypto.getRandomValues(rawBytes)
+    if (size > MAX_BYTES) { // this is the max bytes crypto.getRandomValues
+      // can do at once see https://developer.mozilla.org/en-US/docs/Web/API/window.crypto.getRandomValues
+      for (var generated = 0; generated < size; generated += MAX_BYTES) {
+        // buffer.slice automatically checks if the end is past the end of
+        // the buffer so we don't have to here
+        crypto.getRandomValues(bytes.slice(generated, generated + MAX_BYTES))
+      }
+    } else {
+      crypto.getRandomValues(bytes)
+    }
   }
-
-  // XXX: phantomjs doesn't like a buffer being passed here
-  var bytes = Buffer.from(rawBytes.buffer)
 
   if (typeof cb === 'function') {
     return process.nextTick(function () {
@@ -60686,7 +60721,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
  * @copyright Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors (Conversion to ES6 API by Jake Archibald)
  * @license   Licensed under MIT license
  *            See https://raw.githubusercontent.com/stefanpenner/es6-promise/master/LICENSE
- * @version   v4.2.5+7f2b526d
+ * @version   v4.2.6+9869a4bc
  */
 
 (function (global, factory) {
@@ -61920,7 +61955,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.9.0'});
+Object.defineProperty(exports, 'version', {value: '6.10.0'});
 
 
 var HubPort = require('./HubPort');

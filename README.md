@@ -16,7 +16,7 @@ Installation instructions
 Be sure to have installed [Node.js] and [Bower] in your system:
 
 ```bash
-curl -sL https://deb.nodesource.com/setup_4.x | sudo bash -
+curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
 sudo npm install -g bower
 ```
@@ -49,16 +49,16 @@ file from its URL and stream it over HTTP :
 
    ```Javascript
    var kurento = kurentoClient.KurentoClient(ws_uri);
-   
+
    kurento.then(function(kurento)
    {
      // Connection success
-     …
+     ...
    },
    function(error)
    {
      // Connection error
-     …
+     ...
    });
    ```
 
@@ -66,12 +66,12 @@ file from its URL and stream it over HTTP :
    kurentoClient.KurentoClient(ws_uri, function(kurento)
    {
      // Connection success
-     …
+     ...
    },
    function(error)
    {
      // Connection error
-     …
+     ...
    });
    ```
 
@@ -82,7 +82,7 @@ file from its URL and stream it over HTTP :
    ```Javascript
    kurento.create('MediaPipeline', function(error, pipeline)
    {
-     …
+     ...
    });
    ```
 
@@ -94,17 +94,17 @@ file from its URL and stream it over HTTP :
    {uri: "https://ci.kurento.com/video/format/small.webm"},
    function(error, player)
    {
-     …
+     ...
    });
 
    pipeline.create('HttpGetEndpoint', function(error, httpGet)
    {
      httpGet.on('EndOfStream', function(event)
      {
-       …
+       ...
      });
 
-     …
+     ...
    });
    ```
 
@@ -113,7 +113,7 @@ file from its URL and stream it over HTTP :
    ```Javascript
    player.connect(httpGet, function(error, pipeline)
    {
-     …
+     ...
    });
    ```
 
@@ -122,7 +122,7 @@ file from its URL and stream it over HTTP :
    ```Javascript
    httpGet.getUrl(function(error, url)
    {
-     …
+     ...
    });
    ```
 
@@ -131,7 +131,7 @@ file from its URL and stream it over HTTP :
    ```Javascript
    player.play(function(error)
    {
-     …
+     ...
    });
    ```
 
