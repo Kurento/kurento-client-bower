@@ -2720,7 +2720,8 @@ function toByteArray (b64) {
     ? validLen - 4
     : validLen
 
-  for (var i = 0; i < len; i += 4) {
+  var i
+  for (i = 0; i < len; i += 4) {
     tmp =
       (revLookup[b64.charCodeAt(i)] << 18) |
       (revLookup[b64.charCodeAt(i + 1)] << 12) |
@@ -2821,6 +2822,10 @@ function fromByteArray (uint8) {
 
 var base64 = require('base64-js')
 var ieee754 = require('ieee754')
+var customInspectSymbol =
+  (typeof Symbol === 'function' && typeof Symbol.for === 'function')
+    ? Symbol.for('nodejs.util.inspect.custom')
+    : null
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -2857,7 +2862,9 @@ function typedArraySupport () {
   // Can typed array instances can be augmented?
   try {
     var arr = new Uint8Array(1)
-    arr.__proto__ = { __proto__: Uint8Array.prototype, foo: function () { return 42 } }
+    var proto = { foo: function () { return 42 } }
+    Object.setPrototypeOf(proto, Uint8Array.prototype)
+    Object.setPrototypeOf(arr, proto)
     return arr.foo() === 42
   } catch (e) {
     return false
@@ -2886,7 +2893,7 @@ function createBuffer (length) {
   }
   // Return an augmented `Uint8Array` instance
   var buf = new Uint8Array(length)
-  buf.__proto__ = Buffer.prototype
+  Object.setPrototypeOf(buf, Buffer.prototype)
   return buf
 }
 
@@ -2936,7 +2943,7 @@ function from (value, encodingOrOffset, length) {
   }
 
   if (value == null) {
-    throw TypeError(
+    throw new TypeError(
       'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
       'or Array-like Object. Received type ' + (typeof value)
     )
@@ -2988,8 +2995,8 @@ Buffer.from = function (value, encodingOrOffset, length) {
 
 // Note: Change prototype *after* Buffer.from is defined to workaround Chrome bug:
 // https://github.com/feross/buffer/pull/148
-Buffer.prototype.__proto__ = Uint8Array.prototype
-Buffer.__proto__ = Uint8Array
+Object.setPrototypeOf(Buffer.prototype, Uint8Array.prototype)
+Object.setPrototypeOf(Buffer, Uint8Array)
 
 function assertSize (size) {
   if (typeof size !== 'number') {
@@ -3093,7 +3100,8 @@ function fromArrayBuffer (array, byteOffset, length) {
   }
 
   // Return an augmented `Uint8Array` instance
-  buf.__proto__ = Buffer.prototype
+  Object.setPrototypeOf(buf, Buffer.prototype)
+
   return buf
 }
 
@@ -3415,6 +3423,9 @@ Buffer.prototype.inspect = function inspect () {
   if (this.length > max) str += ' ... '
   return '<Buffer ' + str + '>'
 }
+if (customInspectSymbol) {
+  Buffer.prototype[customInspectSymbol] = Buffer.prototype.inspect
+}
 
 Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
   if (isInstance(target, Uint8Array)) {
@@ -3540,7 +3551,7 @@ function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
         return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
       }
     }
-    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
+    return arrayIndexOf(buffer, [val], byteOffset, encoding, dir)
   }
 
   throw new TypeError('val must be string, number or Buffer')
@@ -3869,7 +3880,7 @@ function hexSlice (buf, start, end) {
 
   var out = ''
   for (var i = start; i < end; ++i) {
-    out += toHex(buf[i])
+    out += hexSliceLookupTable[buf[i]]
   }
   return out
 }
@@ -3906,7 +3917,8 @@ Buffer.prototype.slice = function slice (start, end) {
 
   var newBuf = this.subarray(start, end)
   // Return an augmented `Uint8Array` instance
-  newBuf.__proto__ = Buffer.prototype
+  Object.setPrototypeOf(newBuf, Buffer.prototype)
+
   return newBuf
 }
 
@@ -4395,6 +4407,8 @@ Buffer.prototype.fill = function fill (val, start, end, encoding) {
     }
   } else if (typeof val === 'number') {
     val = val & 255
+  } else if (typeof val === 'boolean') {
+    val = Number(val)
   }
 
   // Invalid ranges are not set to a default, so can range check early.
@@ -4450,11 +4464,6 @@ function base64clean (str) {
     str = str + '='
   }
   return str
-}
-
-function toHex (n) {
-  if (n < 16) return '0' + n.toString(16)
-  return n.toString(16)
 }
 
 function utf8ToBytes (string, units) {
@@ -4586,6 +4595,20 @@ function numberIsNaN (obj) {
   // For IE11 support
   return obj !== obj // eslint-disable-line no-self-compare
 }
+
+// Create lookup table for `toString('hex')`
+// See: https://github.com/feross/buffer/issues/219
+var hexSliceLookupTable = (function () {
+  var alphabet = '0123456789abcdef'
+  var table = new Array(256)
+  for (var i = 0; i < 16; ++i) {
+    var i16 = i * 16
+    for (var j = 0; j < 16; ++j) {
+      table[i16 + j] = alphabet[i] + alphabet[j]
+    }
+  }
+  return table
+})()
 
 }).call(this,require("buffer").Buffer)
 },{"base64-js":15,"buffer":17,"ieee754":23}],18:[function(require,module,exports){
@@ -14667,8 +14690,11 @@ AlphaBlending.prototype.setMaster = function(source, zOrder, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('int', 'zOrder', zOrder, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('int', 'zOrder', zOrder, {required: true});
+  //  
 
   var params = {
     source: source,
@@ -14718,12 +14744,19 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('float', 'relativeX', relativeX, {required: true});
-  checkType('float', 'relativeY', relativeY, {required: true});
-  checkType('int', 'zOrder', zOrder, {required: true});
-  checkType('float', 'relativeWidth', relativeWidth, {required: true});
-  checkType('float', 'relativeHeight', relativeHeight, {required: true});
-  checkType('HubPort', 'port', port, {required: true});
+  //  
+  // checkType('float', 'relativeX', relativeX, {required: true});
+  //  
+  // checkType('float', 'relativeY', relativeY, {required: true});
+  //  
+  // checkType('int', 'zOrder', zOrder, {required: true});
+  //  
+  // checkType('float', 'relativeWidth', relativeWidth, {required: true});
+  //  
+  // checkType('float', 'relativeHeight', relativeHeight, {required: true});
+  //  
+  // checkType('HubPort', 'port', port, {required: true});
+  //  
 
   var params = {
     relativeX: relativeX,
@@ -14959,8 +14992,11 @@ Dispatcher.prototype.connect = function(source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('HubPort', 'sink', sink, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('HubPort', 'sink', sink, {required: true});
+  //  
 
   var params = {
     source: source,
@@ -15129,7 +15165,9 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
 
   var params = {
     source: source
@@ -15250,10 +15288,37 @@ inherits(HttpPostEndpoint, HttpEndpoint);
  *  belongs
  *
  * @property {external:Boolean} [useEncodedMedia]
- *  configures the endpoint to use encoded media instead of raw media. If the 
- *  parameter is not set then the element uses raw media. Changing this 
- *  parameter could affect in a severe way to stability because key frames lost 
- *  will not be generated. Changing the media type does not affect to the result
+ *  Feed the input media as-is to the Media Pipeline, instead of first decoding 
+ *  it.
+ *                <p>
+ *                When this property is not enabled, the input media gets always
+ *                </p>
+ *                <p>
+ *                When this property is enabled, the explained behavior gets 
+ *                disabled. Instead, The endpoint will provide any input media 
+ *                directly to the Media Pipeline, without prior decoding. 
+ *                Enabling this mode of operation could have a severe effect on 
+ *                stability, because lost video keyframes will not be 
+ *                regenerated; however, avoiding a full cycle of decoding and 
+ *                encoding can be very useful for certain applications, because 
+ *                it improves performance by greatly reducing the CPU processing
+ *                </p>
+ *                <p>
+ *                Keep in mind that if this property is enabled, the original 
+ *                source media MUST already have an encoding format which is 
+ *                compatible with the destination target. For example: given a 
+ *                pipeline which uses this endpoint to read a file and then 
+ *                streams it to a WebRTC browser such as Chrome, then the file 
+ *                must already be encoded with a VP8 or H.264 codec profile 
+ *                which Chrome is able to decode. Note that for this example, 
+ *                most browsers don't support ANY combination of H.264 encoding 
+ *                options; instead, they tend to support only a very specific 
+ *                subset of the codec features (also known as 'profiles').
+ *                </p>
+ *                <p>
+ *                We strongly recommend to avoid using this option, because 
+ *                correct behavior cannot be guaranteed.
+ *                </p>
  */
 HttpPostEndpoint.constructorParams = {
   disconnectionTimeout: {
@@ -15378,9 +15443,13 @@ Mixer.prototype.connect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('MediaType', 'media', media, {required: true});
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('HubPort', 'sink', sink, {required: true});
+  //  
+  // checkType('MediaType', 'media', media, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('HubPort', 'sink', sink, {required: true});
+  //  
 
   var params = {
     media: media,
@@ -15420,9 +15489,13 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('MediaType', 'media', media, {required: true});
-  checkType('HubPort', 'source', source, {required: true});
-  checkType('HubPort', 'sink', sink, {required: true});
+  //  
+  // checkType('MediaType', 'media', media, {required: true});
+  //  
+  // checkType('HubPort', 'source', source, {required: true});
+  //  
+  // checkType('HubPort', 'sink', sink, {required: true});
+  //  
 
   var params = {
     media: media,
@@ -15601,6 +15674,38 @@ inherits(PlayerEndpoint, UriEndpoint);
 //
 
 /**
+ * Returns the GStreamer DOT string for this element's private pipeline
+ *
+ * @alias module:elements.PlayerEndpoint#getElementGstreamerDot
+ *
+ * @param {module:elements.PlayerEndpoint~getElementGstreamerDotCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+PlayerEndpoint.prototype.getElementGstreamerDot = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getElementGstreamerDot', callback), this)
+};
+/**
+ * @callback module:elements.PlayerEndpoint~getElementGstreamerDotCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
+
+/**
  * Get or set the actual position of the video in ms. <hr/><b>Note</b> Setting 
  * the position only works for seekable videos
  *
@@ -15649,7 +15754,9 @@ PlayerEndpoint.prototype.setPosition = function(position, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int64', 'position', position, {required: true});
+  //  
+  // checkType('int64', 'position', position, {required: true});
+  //  
 
   var params = {
     position: position
@@ -15744,7 +15851,7 @@ PlayerEndpoint.prototype.play = function(callback){
  *  belongs to.
  *
  * @property {external:Integer} [networkCache]
- *  When using rtsp sources. Amount of ms to buffer
+ *  When using RTSP sources: Amount of milliseconds to buffer
  *
  * @property {external:String} uri
  *  URI pointing to the video. It has to be accessible to the KMS process.
@@ -15756,7 +15863,37 @@ PlayerEndpoint.prototype.play = function(callback){
  *                </ul>
  *
  * @property {external:Boolean} [useEncodedMedia]
- *  use encoded instead of raw media. If the parameter is false then the element
+ *  Feed the input media as-is to the Media Pipeline, instead of first decoding 
+ *  it.
+ *                <p>
+ *                When this property is not enabled, the input media gets always
+ *                </p>
+ *                <p>
+ *                When this property is enabled, the explained behavior gets 
+ *                disabled. Instead, The endpoint will provide any input media 
+ *                directly to the Media Pipeline, without prior decoding. 
+ *                Enabling this mode of operation could have a severe effect on 
+ *                stability, because lost video keyframes will not be 
+ *                regenerated; however, avoiding a full cycle of decoding and 
+ *                encoding can be very useful for certain applications, because 
+ *                it improves performance by greatly reducing the CPU processing
+ *                </p>
+ *                <p>
+ *                Keep in mind that if this property is enabled, the original 
+ *                source media MUST already have an encoding format which is 
+ *                compatible with the destination target. For example: given a 
+ *                pipeline which uses this endpoint to read a file and then 
+ *                streams it to a WebRTC browser such as Chrome, then the file 
+ *                must already be encoded with a VP8 or H.264 codec profile 
+ *                which Chrome is able to decode. Note that for this example, 
+ *                most browsers don't support ANY combination of H.264 encoding 
+ *                options; instead, they tend to support only a very specific 
+ *                subset of the codec features (also known as 'profiles').
+ *                </p>
+ *                <p>
+ *                We strongly recommend to avoid using this option, because 
+ *                correct behavior cannot be guaranteed.
+ *                </p>
  */
 PlayerEndpoint.constructorParams = {
   mediaPipeline: {
@@ -15845,98 +15982,155 @@ function noop(error, result) {
  *
  * @classdesc
  *  <p>
- *        Provides the functionality to store contents. The recorder can store 
- *        in local files or in a network resource. It receives a media stream 
- *        from another MediaElement (i.e. the source), and stores it in the 
- *        designated location.
- *        </p>
- *        <p>
- *        The following information has to be provided In order to create a 
- *        RecorderEndpoint, and can’t be changed afterwards:
- *        <ul>
- *          <li>
- *            URI of the resource where media will be stored. Following schemas 
- *            are supported:
- *            <ul>
- *              <li>
- *                Files: mounted in the local file system.
- *                <ul>
- *                  <li>file://<path-to-file></li>
- *                </ul>
- *              <li>
- *                HTTP: Requires the server to support method PUT
- *                <ul>
- *                  <li>
- *                    http(s)://<server-ip>/path/to/file
- *                  </li>
- *                  <li>
- *                    http(s)://username:password@<server-ip>/path/to/file
- *                  </li>
- *                </ul>
- *              </li>
- *            </ul>
- *          </li>
- *          <li>
- *            Relative URIs (with no schema) are supported. They are completed 
- *            prepending a default URI defined by property defaultPath. This 
- *            property allows using relative paths instead of absolute paths. If
- *          </li>
- *          <li>
- *            The media profile used to store the file. This will determine the 
- *            encoding. See below for more details about media profile
- *          </li>
- *          <li>
- *            Optionally, the user can select if the endpoint will stop 
- *            processing once the EndOfStream event is detected.
- *          </li>
- *        </ul>
- *        <p>
- *        </p>
- *        RecorderEndpoint requires access to the resource where stream is going
- *        <p>
- *        </p>
- *        The media profile is quite an important parameter, as it will 
- *        determine whether there is a transcodification or not. If the input 
- *        stream codec if not compatible with the selected media profile, the 
- *        media will be transcoded into a suitable format, before arriving at 
- *        the RecorderEndpoint's sink pad. This will result in a higher CPU load
- *        <ul>
- *          <li>WEBM: No transcodification will take place.</li>
- *          <li>MP4: The media server will have to transcode the media received 
- *          from VP8 to H264. This will raise the CPU load in the system.</li>
- *        </ul>
- *        <p>
- *        </p>
- *        Recording will start as soon as the user invokes the record method. 
- *        The recorder will then store, in the location indicated, the media 
- *        that the source is sending to the endpoint’s sink. If no media is 
- *        being received, or no endpoint has been connected, then the 
- *        destination will be empty. The recorder starts storing information 
- *        into the file as soon as it gets it.
- *        <p>
- *        </p>
- *        When another endpoint is connected to the recorder, by default both 
- *        AUDIO and VIDEO media types are expected, unless specified otherwise 
- *        when invoking the connect method. Failing to provide both types, will 
- *        result in teh recording buffering the received media: it won’t be 
- *        written to the file until the recording is stopped. This is due to the
- *        <p>
- *        </p>
- *        The source endpoint can be hot-swapped, while the recording is taking 
- *        place. The recorded file will then contain different feeds. When 
- *        switching video sources, if the new video has different size, the 
- *        recorder will retain the size of the previous source. If the source is
- *        <p>
- *        </p>
- *        It is recommended to start recording only after media arrives, either 
- *        to the endpoint that is the source of the media connected to the 
- *        recorder, to the recorder itself, or both. Users may use the 
- *        MediaFlowIn and MediaFlowOut events, and synchronise the recording 
- *        with the moment media comes in. In any case, nothing will be stored in
- *        <p>
- *        </p>
- *        Stopping the recording process is done through the stopAndWait method,
- *        </p>
+ *    Provides the functionality to store contents. The recorder can store in 
+ *    local
+ *    files or in a network resource. It receives a media stream from another
+ *    MediaElement (i.e. the source), and stores it in the designated location.
+ *  </p>
+ *  <p>
+ *    The following information has to be provided In order to create a
+ *    RecorderEndpoint, and cannot be changed afterwards:
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      URI of the resource where media will be stored. Following schemas are
+ *      supported:
+ *      <ul>
+ *        <li>
+ *          Files: mounted in the local file system.
+ *          <ul>
+ *            <li><code>file:///path/to/file</code></li>
+ *          </ul>
+ *        </li>
+ *        <li>
+ *          HTTP: Requires the server to support method PUT
+ *          <ul>
+ *            <li><code>http(s)://{server-ip}/path/to/file</code></li>
+ *            <li>
+ *              <code>http(s)://username:password@{server-ip}/path/to/file</code>
+ *            </li>
+ *          </ul>
+ *        </li>
+ *      </ul>
+ *    </li>
+ *    <li>
+ *      Relative URIs (with no schema) are supported. They are completed 
+ *      prepending
+ *      a default URI defined by property <i>defaultPath</i>. This property is
+ *      defined in the configuration file
+ *      <i>/etc/kurento/modules/kurento/UriEndpoint.conf.ini</i>, and the 
+ *      default
+ *      value is <code>file:///var/lib/kurento/</code>
+ *    </li>
+ *    <li>
+ *      The media profile (@MediaProfileSpecType) used to store the file. This 
+ *      will
+ *      determine the encoding. See below for more details about media profile.
+ *    </li>
+ *    <li>
+ *      Optionally, the user can select if the endpoint will stop processing 
+ *      once
+ *      the EndOfStream event is detected.
+ *    </li>
+ *  </ul>
+ *  <p>
+ *    RecorderEndpoint requires access to the resource where stream is going to 
+ *    be
+ *    recorded. If it's a local file (<code>file://</code>), the system user 
+ *    running
+ *    the media server daemon (kurento by default), needs to have write 
+ *    permissions
+ *    for that URI. If it's an HTTP server, it must be accessible from the 
+ *    machine
+ *    where media server is running, and also have the correct access rights.
+ *    Otherwise, the media server won't be able to store any information, and an
+ *    ErrorEvent will be fired. Please note that if you haven't subscribed to 
+ *    that
+ *    type of event, you can be left wondering why your media is not being 
+ *    saved,
+ *    while the error message was ignored.
+ *  </p>
+ *  <p>
+ *    The media profile is quite an important parameter, as it will determine
+ *    whether the server needs to perform on-the-fly transcoding of the media. 
+ *    If
+ *    the input stream codec if not compatible with the selected media profile, 
+ *    the
+ *    media will be transcoded into a suitable format. This will result in a 
+ *    higher
+ *    CPU load and will impact overall performance of the media server.
+ *  </p>
+ *  For example: Say that your pipeline will receive <b>VP8</b>-encoded video 
+ *  from
+ *  WebRTC, and sends it to a RecorderEndpoint; depending on the format 
+ *  selected...
+ *  <ul>
+ *    <li>
+ *      WEBM: The input codec is the same as the recording format, so no 
+ *      transcoding
+ *      will take place.
+ *    </li>
+ *    <li>
+ *      MP4: The media server will have to transcode from <b>VP8</b> to 
+ *      <b>H264</b>.
+ *      This will raise the CPU load in the system.
+ *    </li>
+ *    <li>
+ *      MKV: Again, video must be transcoded from <b>VP8</b> to <b>H264</b>, 
+ *      which
+ *      means more CPU load.
+ *    </li>
+ *  </ul>
+ *  From this you can see how selecting the correct format for your application 
+ *  is a
+ *  very important decision.
+ *  <p>
+ *    Recording will start as soon as the user invokes the record method. The
+ *    recorder will then store, in the location indicated, the media that the 
+ *    source
+ *    is sending to the endpoint's sink. If no media is being received, or no
+ *    endpoint has been connected, then the destination will be empty. The 
+ *    recorder
+ *    starts storing information into the file as soon as it gets it.
+ *  </p>
+ *  <p>
+ *    When another endpoint is connected to the recorder, by default both AUDIO 
+ *    and
+ *    VIDEO media types are expected, unless specified otherwise when invoking 
+ *    the
+ *    connect method. Failing to provide both types, will result in teh 
+ *    recording
+ *    buffering the received media: it won't be written to the file until the
+ *    recording is stopped. This is due to the recorder waiting for the other 
+ *    type
+ *    of media to arrive, so they are synchronized.
+ *  </p>
+ *  <p>
+ *    The source endpoint can be hot-swapped, while the recording is taking 
+ *    place.
+ *    The recorded file will then contain different feeds. When switching video
+ *    sources, if the new video has different size, the recorder will retain the
+ *    size of the previous source. If the source is disconnected, the last frame
+ *    recorded will be shown for the duration of the disconnection, or until the
+ *    recording is stopped.
+ *  </p>
+ *  <p>
+ *    It is recommended to start recording only after media arrives, either to 
+ *    the
+ *    endpoint that is the source of the media connected to the recorder, to the
+ *    recorder itself, or both. Users may use the MediaFlowIn and MediaFlowOut
+ *    events, and synchronize the recording with the moment media comes in. In 
+ *    any
+ *    case, nothing will be stored in the file until the first media packets 
+ *    arrive.
+ *  </p>
+ *  <p>
+ *    Stopping the recording process is done through the stopAndWait method, 
+ *    which
+ *    will return only after all the information was stored correctly. If the 
+ *    file
+ *    is empty, this means that no media arrived at the recorder.
+ *  </p>
  *
  * @extends module:core/abstracts.UriEndpoint
  *
@@ -16168,9 +16362,8 @@ var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
  *        needing to go through the exchange process, as the receiving peer does
  *        </p>
  *        <p>
- *        While there is no congestion control in this endpoint, the user can 
- *        set some bandwidth limits that will be used during the negotiation 
- *        process.
+ *        The user can set some bandwidth limits that will be used during the 
+ *        negotiation process.
  *        The default bandwidth range of the endpoint is 100kbps-500kbps, but it
  *        <ul style='list-style-type:circle'>
  *          <li>
@@ -16205,10 +16398,9 @@ var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
  *        TODO: What happens if the b=as tag form the SDP has a lower value than
  *        </p>
  *        <p>
- *        Having no congestion ocntrol implementation means that the bitrate 
- *        will remain constant. This is something to take into consideration 
- *        when setting upper limits for the output bandwidth, or the local 
- *        network connection can be overflooded.
+ *        Take into consideration that setting a too high upper limit for the 
+ *        output bandwidth can be a reason for the local network connection to 
+ *        be overflooded.
  *        </p>
  *
  * @extends module:core/abstracts.BaseRtpEndpoint
@@ -16657,7 +16849,9 @@ WebRtcEndpoint.prototype.setStunServerAddress = function(stunServerAddress, call
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'stunServerAddress', stunServerAddress, {required: true});
+  //  
+  // checkType('String', 'stunServerAddress', stunServerAddress, {required: true});
+  //  
 
   var params = {
     stunServerAddress: stunServerAddress
@@ -16719,7 +16913,9 @@ WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'stunServerPort', stunServerPort, {required: true});
+  //  
+  // checkType('int', 'stunServerPort', stunServerPort, {required: true});
+  //  
 
   var params = {
     stunServerPort: stunServerPort
@@ -16783,7 +16979,9 @@ WebRtcEndpoint.prototype.setTurnUrl = function(turnUrl, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'turnUrl', turnUrl, {required: true});
+  //  
+  // checkType('String', 'turnUrl', turnUrl, {required: true});
+  //  
 
   var params = {
     turnUrl: turnUrl
@@ -16820,7 +17018,9 @@ WebRtcEndpoint.prototype.addIceCandidate = function(candidate, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('IceCandidate', 'candidate', candidate, {required: true});
+  //  
+  // checkType('IceCandidate', 'candidate', candidate, {required: true});
+  //  
 
   var params = {
     candidate: candidate
@@ -16852,7 +17052,9 @@ WebRtcEndpoint.prototype.closeDataChannel = function(channelId, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('int', 'channelId', channelId, {required: true});
+  //  
+  // checkType('int', 'channelId', channelId, {required: true});
+  //  
 
   var params = {
     channelId: channelId
@@ -16941,11 +17143,17 @@ WebRtcEndpoint.prototype.createDataChannel = function(label, ordered, maxPacketL
       throw error;
   }
 
-  checkType('String', 'label', label);
-  checkType('boolean', 'ordered', ordered);
-  checkType('int', 'maxPacketLifeTime', maxPacketLifeTime);
-  checkType('int', 'maxRetransmits', maxRetransmits);
-  checkType('String', 'protocol', protocol);
+  //  
+  // checkType('String', 'label', label);
+  //  
+  // checkType('boolean', 'ordered', ordered);
+  //  
+  // checkType('int', 'maxPacketLifeTime', maxPacketLifeTime);
+  //  
+  // checkType('int', 'maxRetransmits', maxRetransmits);
+  //  
+  // checkType('String', 'protocol', protocol);
+  //  
 
   var params = {
     label: label,
@@ -17008,6 +17216,12 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
  *  belongs
  *
+ * @property {external:Boolean} [recvonly]
+ *  Single direction, receive-only endpoint
+ *
+ * @property {external:Boolean} [sendonly]
+ *  Single direction, send-only endpoint
+ *
  * @property {external:Boolean} [useDataChannels]
  *  Activate data channels support
  */
@@ -17018,6 +17232,10 @@ WebRtcEndpoint.constructorParams = {
     type: 'kurento.MediaPipeline',
     required: true
   },
+  recvonly: {
+    type: 'boolean'  },
+  sendonly: {
+    type: 'boolean'  },
   useDataChannels: {
     type: 'boolean'  }
 };
@@ -17363,9 +17581,13 @@ function IceCandidate(iceCandidateDict){
   iceCandidateDict = iceCandidateDict || {}
 
   // Check iceCandidateDict has the required fields
-  checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true});
-  checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true});
-  checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, {required: true});
+  // 
+  // checkType('String', 'iceCandidateDict.candidate', iceCandidateDict.candidate, {required: true});
+  //  
+  // checkType('String', 'iceCandidateDict.sdpMid', iceCandidateDict.sdpMid, {required: true});
+  //  
+  // checkType('int', 'iceCandidateDict.sdpMLineIndex', iceCandidateDict.sdpMLineIndex, {required: true});
+  //  
 
   // Init parent class
   IceCandidate.super_.call(this, iceCandidateDict)
@@ -17473,10 +17695,15 @@ function IceCandidatePair(iceCandidatePairDict){
   iceCandidatePairDict = iceCandidatePairDict || {}
 
   // Check iceCandidatePairDict has the required fields
-  checkType('String', 'iceCandidatePairDict.streamID', iceCandidatePairDict.streamID, {required: true});
-  checkType('int', 'iceCandidatePairDict.componentID', iceCandidatePairDict.componentID, {required: true});
-  checkType('String', 'iceCandidatePairDict.localCandidate', iceCandidatePairDict.localCandidate, {required: true});
-  checkType('String', 'iceCandidatePairDict.remoteCandidate', iceCandidatePairDict.remoteCandidate, {required: true});
+  // 
+  // checkType('String', 'iceCandidatePairDict.streamID', iceCandidatePairDict.streamID, {required: true});
+  //  
+  // checkType('int', 'iceCandidatePairDict.componentID', iceCandidatePairDict.componentID, {required: true});
+  //  
+  // checkType('String', 'iceCandidatePairDict.localCandidate', iceCandidatePairDict.localCandidate, {required: true});
+  //  
+  // checkType('String', 'iceCandidatePairDict.remoteCandidate', iceCandidatePairDict.remoteCandidate, {required: true});
+  //  
 
   // Init parent class
   IceCandidatePair.super_.call(this, iceCandidatePairDict)
@@ -17638,9 +17865,13 @@ function IceConnection(iceConnectionDict){
   iceConnectionDict = iceConnectionDict || {}
 
   // Check iceConnectionDict has the required fields
-  checkType('String', 'iceConnectionDict.streamId', iceConnectionDict.streamId, {required: true});
-  checkType('int', 'iceConnectionDict.componentId', iceConnectionDict.componentId, {required: true});
-  checkType('IceComponentState', 'iceConnectionDict.state', iceConnectionDict.state, {required: true});
+  // 
+  // checkType('String', 'iceConnectionDict.streamId', iceConnectionDict.streamId, {required: true});
+  //  
+  // checkType('int', 'iceConnectionDict.componentId', iceConnectionDict.componentId, {required: true});
+  //  
+  // checkType('IceComponentState', 'iceConnectionDict.state', iceConnectionDict.state, {required: true});
+  //  
 
   // Init parent class
   IceConnection.super_.call(this, iceConnectionDict)
@@ -17723,11 +17954,11 @@ var kurentoClient = require('kurento-client');
 
 /**
  * Media Profile.
- * Currently WEBM, MP4 and JPEG are supported.
+ * Currently WEBM, MKV, MP4 and JPEG are supported.
  *
  * @typedef elements/complexTypes.MediaProfileSpecType
  *
- * @type {(WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|JPEG_VIDEO_ONLY|KURENTO_SPLIT_RECORDER)}
+ * @type {(WEBM|MKV|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MKV_VIDEO_ONLY|MKV_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|JPEG_VIDEO_ONLY|KURENTO_SPLIT_RECORDER)}
  */
 
 /**
@@ -17743,8 +17974,8 @@ function checkMediaProfileSpecType(key, value)
   if(typeof value != 'string')
     throw SyntaxError(key+' param should be a String, not '+typeof value);
 
-  if(!value.match('WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|JPEG_VIDEO_ONLY|KURENTO_SPLIT_RECORDER'))
-    throw SyntaxError(key+' param is not one of [WEBM|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|JPEG_VIDEO_ONLY|KURENTO_SPLIT_RECORDER] ('+value+')');
+  if(!value.match('WEBM|MKV|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MKV_VIDEO_ONLY|MKV_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|JPEG_VIDEO_ONLY|KURENTO_SPLIT_RECORDER'))
+    throw SyntaxError(key+' param is not one of [WEBM|MKV|MP4|WEBM_VIDEO_ONLY|WEBM_AUDIO_ONLY|MKV_VIDEO_ONLY|MKV_AUDIO_ONLY|MP4_VIDEO_ONLY|MP4_AUDIO_ONLY|JPEG_VIDEO_ONLY|KURENTO_SPLIT_RECORDER] ('+value+')');
 };
 
 
@@ -17785,8 +18016,35 @@ var ComplexType = require('kurento-client-core').complexTypes.ComplexType;
  * @constructor module:elements/complexTypes.SDES
  *
  * @property {external:String} key
- *   A string representing the cryptographic key used. The length varies 
- *   depending on the cryptographic method used (30 bytes length for AES_128_CM,
+ *  <p>Master key and salt (plain text)</p>
+ *            <p>
+ *            This field provides the the cryptographic master key appended with
+ *            </p>
+ *            <p>
+ *            The expected length of the key (as provided to this parameter) is 
+ *            determined by the crypto-suite for which the key applies (30 
+ *            characters for AES_CM_128, 46 characters for AES_CM_256). If the 
+ *            length does not match the expected value, the key will be 
+ *            considered invalid.
+ *            </p>
+ *            <p>
+ *            If no key is provided, a random one will be generated using the 
+ *            `getrandom` system call.
+ *            </p>
+ * @property {external:String} keyBase64
+ *  <p>Master key and salt (base64 encoded)</p>
+ *            <p>
+ *            This field provides the cryptographic master key appended with the
+ *            </p>
+ *            <p>
+ *            The expected length of the key (after being decoded from base64) 
+ *            is determined by the crypto-suite for which the key applies (30 
+ *            bytes for AES_CM_128, 46 bytes for AES_CM_256). If the length does
+ *            </p>
+ *            <p>
+ *            If no key is provided, a random one will be generated using the 
+ *            `getrandom` system call.
+ *            </p>
  * @property {module:elements/complexTypes.CryptoSuite} crypto
  *  Selects the cryptographic suite to be used. For available values, please see
  */
@@ -17797,8 +18055,13 @@ function SDES(sDESDict){
   sDESDict = sDESDict || {}
 
   // Check sDESDict has the required fields
-  checkType('String', 'sDESDict.key', sDESDict.key);
-  checkType('CryptoSuite', 'sDESDict.crypto', sDESDict.crypto);
+  // 
+  // checkType('String', 'sDESDict.key', sDESDict.key);
+  //  
+  // checkType('String', 'sDESDict.keyBase64', sDESDict.keyBase64);
+  //  
+  // checkType('CryptoSuite', 'sDESDict.crypto', sDESDict.crypto);
+  //  
 
   // Init parent class
   SDES.super_.call(this, sDESDict)
@@ -17809,6 +18072,11 @@ function SDES(sDESDict){
       writable: true,
       enumerable: true,
       value: sDESDict.key
+    },
+    keyBase64: {
+      writable: true,
+      enumerable: true,
+      value: sDESDict.keyBase64
     },
     crypto: {
       writable: true,
@@ -17900,10 +18168,15 @@ function VideoInfo(videoInfoDict){
   videoInfoDict = videoInfoDict || {}
 
   // Check videoInfoDict has the required fields
-  checkType('boolean', 'videoInfoDict.isSeekable', videoInfoDict.isSeekable, {required: true});
-  checkType('int64', 'videoInfoDict.seekableInit', videoInfoDict.seekableInit, {required: true});
-  checkType('int64', 'videoInfoDict.seekableEnd', videoInfoDict.seekableEnd, {required: true});
-  checkType('int64', 'videoInfoDict.duration', videoInfoDict.duration, {required: true});
+  // 
+  // checkType('boolean', 'videoInfoDict.isSeekable', videoInfoDict.isSeekable, {required: true});
+  //  
+  // checkType('int64', 'videoInfoDict.seekableInit', videoInfoDict.seekableInit, {required: true});
+  //  
+  // checkType('int64', 'videoInfoDict.seekableEnd', videoInfoDict.seekableEnd, {required: true});
+  //  
+  // checkType('int64', 'videoInfoDict.duration', videoInfoDict.duration, {required: true});
+  //  
 
   // Init parent class
   VideoInfo.super_.call(this, videoInfoDict)
@@ -18133,11 +18406,17 @@ FaceOverlayFilter.prototype.setOverlayedImage = function(uri, offsetXPercent, of
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'uri', uri, {required: true});
-  checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
-  checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
-  checkType('float', 'widthPercent', widthPercent, {required: true});
-  checkType('float', 'heightPercent', heightPercent, {required: true});
+  //  
+  // checkType('String', 'uri', uri, {required: true});
+  //  
+  // checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
+  //  
+  // checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
+  //  
+  // checkType('float', 'widthPercent', widthPercent, {required: true});
+  //  
+  // checkType('float', 'heightPercent', heightPercent, {required: true});
+  //  
 
   var params = {
     uri: uri,
@@ -18254,7 +18533,9 @@ var kurentoClient = require('kurento-client');
 
 var disguise = kurentoClient.disguise;
 
-var ChecktypeError = kurentoClient.checkType.ChecktypeError;
+var checkType      = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
 
 var Transaction = kurentoClient.TransactionsManager.Transaction;
 
@@ -18269,11 +18550,16 @@ function noop(error, result) {
 
 
 /**
- * Create a {@link module:filters.GStreamerFilter GStreamerFilter}
+ * Create a {@link module:filters.GStreamerFilter GStreamerFilter}.
  *
  * @classdesc
- *  This is a generic filter interface, that creates GStreamer filters in the 
- *  media server.
+ *  A generic filter interface that allows injecting any GStreamer element.
+ *        <p>
+ *        Note however that the current implementation of GStreamerFilter only 
+ *        allows single elements to be injected; one cannot indicate more than 
+ *        one at the same time; use several GStreamerFilters if you need to 
+ *        inject more than one element at the same time.
+ *        </p>
  *
  * @extends module:core/abstracts.Filter
  *
@@ -18290,7 +18576,8 @@ inherits(GStreamerFilter, Filter);
 //
 
 /**
- * GStreamer command.
+ * String used to instantiate the GStreamer element, as in `gst-launch 
+ * <https://gstreamer.freedesktop.org/documentation/tools/gst-launch.html>`__.
  *
  * @alias module:filters.GStreamerFilter#getCommand
  *
@@ -18322,15 +18609,60 @@ GStreamerFilter.prototype.getCommand = function(callback){
  */
 
 
+//
+// Public methods
+//
+
+/**
+ * Provide a value to one of the GStreamer element's properties.
+ *
+ * @alias module:filters.GStreamerFilter.setElementProperty
+ *
+ * @param {external:String} propertyName
+ *  Name of the property that needs to be modified in the GStreamer element.
+ *
+ * @param {external:String} propertyValue
+ *  Value that must be assigned to the property.
+ *
+ * @param {module:filters.GStreamerFilter~setElementPropertyCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+GStreamerFilter.prototype.setElementProperty = function(propertyName, propertyValue, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('String', 'propertyName', propertyName, {required: true});
+  //  
+  // checkType('String', 'propertyValue', propertyValue, {required: true});
+  //  
+
+  var params = {
+    propertyName: propertyName,
+    propertyValue: propertyValue
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setElementProperty', params, callback), this)
+};
+/**
+ * @callback module:filters.GStreamerFilter~setElementPropertyCallback
+ * @param {external:Error} error
+ */
+
+
 /**
  * @alias module:filters.GStreamerFilter.constructorParams
  *
  * @property {external:String} command
- *  command that would be used to instantiate the filter, as in `gst-launch 
- *  <http://rpm.pbone.net/index.php3/stat/45/idpl/19531544/numer/1/nazwa/gst-launch-1.0>`__
+ *  String used to instantiate the GStreamer element, as in `gst-launch 
+ *  <https://gstreamer.freedesktop.org/documentation/tools/gst-launch.html>`__.
  *
  * @property {external:FilterType} [filterType]
- *  Filter type that define if the filter is set as audio, video or autodetect
+ *  Sets the filter as Audio, Video, or Autodetect.
  *
  * @property {module:core.MediaPipeline} mediaPipeline
  *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter 
@@ -18481,14 +18813,23 @@ ImageOverlayFilter.prototype.addImage = function(id, uri, offsetXPercent, offset
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'id', id, {required: true});
-  checkType('String', 'uri', uri, {required: true});
-  checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
-  checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
-  checkType('float', 'widthPercent', widthPercent, {required: true});
-  checkType('float', 'heightPercent', heightPercent, {required: true});
-  checkType('boolean', 'keepAspectRatio', keepAspectRatio, {required: true});
-  checkType('boolean', 'center', center, {required: true});
+  //  
+  // checkType('String', 'id', id, {required: true});
+  //  
+  // checkType('String', 'uri', uri, {required: true});
+  //  
+  // checkType('float', 'offsetXPercent', offsetXPercent, {required: true});
+  //  
+  // checkType('float', 'offsetYPercent', offsetYPercent, {required: true});
+  //  
+  // checkType('float', 'widthPercent', widthPercent, {required: true});
+  //  
+  // checkType('float', 'heightPercent', heightPercent, {required: true});
+  //  
+  // checkType('boolean', 'keepAspectRatio', keepAspectRatio, {required: true});
+  //  
+  // checkType('boolean', 'center', center, {required: true});
+  //  
 
   var params = {
     id: id,
@@ -18527,7 +18868,9 @@ ImageOverlayFilter.prototype.removeImage = function(id, callback){
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  checkType('String', 'id', id, {required: true});
+  //  
+  // checkType('String', 'id', id, {required: true});
+  //  
 
   var params = {
     id: id
@@ -18547,7 +18890,7 @@ ImageOverlayFilter.prototype.removeImage = function(id, callback){
  * @alias module:filters.ImageOverlayFilter.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  pipeline to which this {@link module:core/abstracts.Filter Filter} belons
+ *  pipeline to which this {@link module:core/abstracts.Filter Filter} belongs
  */
 ImageOverlayFilter.constructorParams = {
   mediaPipeline: {
@@ -32859,7 +33202,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.11.0'});
+Object.defineProperty(exports, 'version', {value: '6.11.1-dev'});
 
 
 var HubPort = require('./HubPort');
@@ -32903,7 +33246,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.6.1'});
+Object.defineProperty(exports, 'version', {value: '6.11.1-dev'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -32961,7 +33304,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.6.1'});
+Object.defineProperty(exports, 'version', {value: '6.11.1-dev'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
