@@ -5718,8 +5718,9 @@ function noop(error, result) {
  * @classdesc
  *  A pipeline is a container for a collection of {@link 
  *  module:core/abstracts.MediaElement MediaElements} and 
- *  :rom:cls:`MediaMixers<MediaMixer>`. It offers the methods needed to control 
- *  the creation and connection of elements inside a certain pipeline.
+ *  :rom:cls:`MediaMixers<MediaMixer>`.
+ *  It offers the methods needed to control the creation and connection of 
+ *  elements inside a certain pipeline.
  *
  * @extends module:core/abstracts.MediaObject
  *
@@ -5935,7 +5936,7 @@ MediaPipeline.prototype.getGstreamerDot = function(details, callback){
  * @callback module:core.MediaPipeline~getGstreamerDotCallback
  * @param {external:Error} error
  * @param {external:String} result
- *  The dot graph
+ *  The dot graph.
  */
 
 
@@ -6137,64 +6138,102 @@ function noop(error, result) {
 
 /**
  * @classdesc
- *  This class extends from the SdpEndpoint, and handles RTP communications. All
- *        <ul style='list-style-type:circle'>
- *          <li>
- *            ConnectionStateChangedEvent: This event is raised when the 
- *            connection between two peers changes. It can have two values
- *            <ul>
- *              <li>CONNECTED</li>
- *              <li>DISCONNECTED</li>
- *            </ul>
- *          </li>
- *          <li>
- *            MediaStateChangedEvent: Based on RTCP packet flow, this event 
- *            provides more reliable information about the state of media flow. 
- *            Since RTCP packets are not flowing at a constant rate (minimizing 
- *            a browser with an RTCPeerConnection might affect this interval, 
- *            for instance), there is a guard period of about 5s. This traduces 
- *            in a period where there might be no media flowing, but the event 
- *            hasn't been fired yet. Nevertheless, this is the most reliable and
- *            <ul>
- *              <li>CONNECTED: There is an RTCP packet flow between peers.</li>
- *              <li>DISCONNECTED: No RTCP packets have been received, or at 
- *              least 5s have passed since the last packet arrived.</li>
- *            </ul>
- *          </li>
- *        </ul>
- *        Part of the bandwidth control of the video component of the media 
- *        session is done here. The values of the properties described are in 
- *        kbps.
- *        <ul style='list-style-type:circle'>
- *          <li>
- *            Input bandwidth control mechanism: Configuration interval used to 
- *            inform remote peer the range of bitrates that can be pushed into 
- *            this BaseRtpEndpoint object.
- *            <ul>
- *              <li>
- *                setMinVideoRecvBandwidth: sets min bitrate limits expected for
- *              </li>
- *            </ul>
- *            Max values are announced in the SDP, while min values are set to 
- *            limit the lower value of REMB packages. It follows that min values
- *          </li>
- *          <li>
- *            Output bandwidth control mechanism: Configuration interval used to
- *            <ul>
- *              <li>
- *                setMinVideoSendBandwidth: sets the minimum bitrate for video 
- *                to be sent to remote peer. 0 is considered unconstrained.
- *              </li>
- *              <li>
- *                setMaxVideoSendBandwidth: sets maximum bitrate limits for 
- *                video sent to remote peer. 0 is considered unconstrained.
- *              </li>
- *            </ul>
- *          </li>
- *        </ul>
- *        All bandwidth control parameters must be changed before the SDP 
- *        negotiation takes place, and can't be changed afterwards.
- *        </p>
+ *  Handles RTP communications.
+ *  <p>
+ *    All endpoints that rely on the RTP protocol, like the RtpEndpoint or the
+ *    WebRtcEndpoint, inherit from this class. The endpoint provides information
+ *    about the connection state and the media state, which can be consulted at 
+ *    any
+ *    time through the {@link module:core/abstracts.BaseRtpEndpoint#mediaState} 
+ *    and the {@link module:core/abstracts.BaseRtpEndpoint#connectionState}
+ *    properties. It is also possible subscribe to events fired when these
+ *    properties change.
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      ConnectionStateChangedEvent: This event is raised when the connection
+ *      between two peers changes. It can have two values:
+ *      <ul>
+ *        <li>CONNECTED</li>
+ *        <li>DISCONNECTED</li>
+ *      </ul>
+ *    </li>
+ *    <li>
+ *      MediaStateChangedEvent: Based on RTCP packet flow, this event provides 
+ *      more
+ *      reliable information about the state of media flow. Since RTCP packets 
+ *      are
+ *      not flowing at a constant rate (minimizing a browser with an
+ *      RTCPeerConnection might affect this interval, for instance), there is a
+ *      guard period of about 5s. This traduces in a period where there might be
+ *      media flowing, but the event hasn't been fired yet. Nevertheless, this 
+ *      is
+ *      the most reliable and useful way of knowing what the state of media 
+ *      exchange
+ *      is. Possible values are:
+ *      <ul>
+ *        <li>CONNECTED: There is an RTCP packet flow between peers.</li>
+ *        <li>
+ *          DISCONNECTED: No RTCP packets have been received, or at least 5s 
+ *          have
+ *          passed since the last packet arrived.
+ *        </li>
+ *      </ul>
+ *    </li>
+ *  </ul>
+ *  <p>
+ *    Part of the bandwidth control of the video component of the media session 
+ *    is
+ *    done here. The values of the properties described are in kbps:
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      Input bandwidth control mechanism: Configuration interval used to inform
+ *      remote peer the range of bitrates that can be pushed into this
+ *      BaseRtpEndpoint object.
+ *      <ul>
+ *        <li>
+ *          setMinVideoRecvBandwidth: sets min bitrate limits expected for the
+ *          received video stream. This value is set to limit the lower value of
+ *          REMB packages, if supported by the implementing class.
+ *        </li>
+ *      </ul>
+ *      Max values are announced in the SDP, while min values are set to limit 
+ *      the
+ *      lower value of REMB packages. It follows that min values will only have
+ *      effect in peers that support this control mechanism, such as Chrome.
+ *    </li>
+ *    <li>
+ *      Output bandwidth control mechanism: Configuration interval used to 
+ *      control
+ *      bitrate of the output video stream sent to remote peer. It is important 
+ *      to
+ *      keep in mind that pushed bitrate depends on network and remote peer
+ *      capabilities. Remote peers can also announce bandwidth limitation in 
+ *      their
+ *      SDPs (through the <code>b={modifier}:{value}</code> tag). Kurento will
+ *      always enforce bitrate limitations specified by the remote peer over
+ *      internal configurations.
+ *      <ul>
+ *        <li>
+ *          setMinVideoSendBandwidth: sets the minimum bitrate for video to be 
+ *          sent
+ *          to remote peer. 0 is considered unconstrained.
+ *        </li>
+ *        <li>
+ *          setMaxVideoSendBandwidth: sets maximum bitrate limits for video sent
+ *          remote peer. 0 is considered unconstrained.
+ *        </li>
+ *      </ul>
+ *    </li>
+ *  </ul>
+ *  <p>
+ *    <b>
+ *      All bandwidth control parameters must be changed before the SDP 
+ *      negotiation
+ *      takes place, and can't be changed afterwards.
+ *    </b>
+ *  </p>
  *
  * @abstract
  * @extends module:core/abstracts.SdpEndpoint
@@ -6215,11 +6254,11 @@ inherits(BaseRtpEndpoint, SdpEndpoint);
 //
 
 /**
- * Connection state. Possible values are
- *           <ul>
- *             <li>CONNECTED</li>
- *             <li>DISCONNECTED</li>
- *           </ul>
+ * Connection state.
+ * <ul>
+ *   <li>CONNECTED</li>
+ *   <li>DISCONNECTED</li>
+ * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#getConnectionState
  *
@@ -6251,8 +6290,27 @@ BaseRtpEndpoint.prototype.getConnectionState = function(callback){
  */
 
 /**
- * Maximum bandwidth for video transmission, in kbps. The default value is 500 
- * kbps. 0 is considered unconstrained.
+ * Maximum video transmission bitrate used for bandwidth
+ * estimations in the congestion control algorithm (REMB).
+ * <p>
+ *   With this parameter you can control the maximum video quality that will be
+ *   sent when reacting to good network conditions. Setting this parameter to a
+ *   high value permits the video quality to raise when the network conditions 
+ *   get
+ *   better.
+ * </p>
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 500.</li>
+ *   <li>
+ *     0 = unconstrained: the video bitrate will grow until all the available
+ *     network bandwidth is used by the stream.<br>
+ *     Note that this might have a bad effect if more than one stream is running
+ *     (as all of them would try to raise the video bitrate indefinitely, until 
+ *     the
+ *     network gets saturated).
+ *   </li>
+ * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#getMaxVideoSendBandwidth
  *
@@ -6284,8 +6342,27 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
  */
 
 /**
- * Maximum bandwidth for video transmission, in kbps. The default value is 500 
- * kbps. 0 is considered unconstrained.
+ * Maximum video transmission bitrate used for bandwidth
+ * estimations in the congestion control algorithm (REMB).
+ * <p>
+ *   With this parameter you can control the maximum video quality that will be
+ *   sent when reacting to good network conditions. Setting this parameter to a
+ *   high value permits the video quality to raise when the network conditions 
+ *   get
+ *   better.
+ * </p>
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 500.</li>
+ *   <li>
+ *     0 = unconstrained: the video bitrate will grow until all the available
+ *     network bandwidth is used by the stream.<br>
+ *     Note that this might have a bad effect if more than one stream is running
+ *     (as all of them would try to raise the video bitrate indefinitely, until 
+ *     the
+ *     network gets saturated).
+ *   </li>
+ * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#setMaxVideoSendBandwidth
  *
@@ -6317,11 +6394,12 @@ BaseRtpEndpoint.prototype.setMaxVideoSendBandwidth = function(maxVideoSendBandwi
  */
 
 /**
- * Media flow state. Possible values are
- *           <ul>
- *             <li>CONNECTED: There is an RTCP flow.</li>
- *             <li>DISCONNECTED: No RTCP packets have been received for at least
- *           </ul>
+ * Media flow state.
+ * <ul>
+ *   <li>CONNECTED: There is an RTCP flow.</li>
+ *   <li>DISCONNECTED: No RTCP packets have been received for at least 5 
+ *   sec.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#getMediaState
  *
@@ -6353,8 +6431,13 @@ BaseRtpEndpoint.prototype.getMediaState = function(callback){
  */
 
 /**
- * Minimum bandwidth announced for video reception, in kbps. The default and 
- * absolute minimum value is 30 kbps, even if a lower value is set.
+ * Minimum bitrate announced for video reception.
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 30.</li>
+ *   <li>The absolute minimum value is 30 kbps, even if a lower value is 
+ *   set.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#getMinVideoRecvBandwidth
  *
@@ -6386,8 +6469,13 @@ BaseRtpEndpoint.prototype.getMinVideoRecvBandwidth = function(callback){
  */
 
 /**
- * Minimum bandwidth announced for video reception, in kbps. The default and 
- * absolute minimum value is 30 kbps, even if a lower value is set.
+ * Minimum bitrate announced for video reception.
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 30.</li>
+ *   <li>The absolute minimum value is 30 kbps, even if a lower value is 
+ *   set.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#setMinVideoRecvBandwidth
  *
@@ -6419,8 +6507,31 @@ BaseRtpEndpoint.prototype.setMinVideoRecvBandwidth = function(minVideoRecvBandwi
  */
 
 /**
- * Minimum bandwidth for video transmission, in kbps. The default value is 100 
- * kbps. 0 is considered unconstrained.
+ * Minimum video transmission bitrate used for bandwidth
+ * estimations in the congestion control algorithm (REMB).
+ * <p>
+ *   With this parameter you can control the minimum video quality that will be
+ *   sent when reacting to bad network conditions. Setting this parameter to a 
+ *   low
+ *   value permits the video quality to drop when the network conditions get 
+ *   worse.
+ * </p>
+ * <p>
+ *   Note that if you set this parameter too high (trying to avoid bad video
+ *   quality altogether), you would be limiting the adaptation ability of the
+ *   congestion control algorithm, and your stream might be unable to ever 
+ *   recover
+ *   from adverse network conditions.
+ * </p>
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 100.</li>
+ *   <li>
+ *     0 = unconstrained: the video bitrate will drop as needed, even to the
+ *     lowest possible quality, which might make the video completely blurry and
+ *     pixelated.
+ *   </li>
+ * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#getMinVideoSendBandwidth
  *
@@ -6452,8 +6563,31 @@ BaseRtpEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
  */
 
 /**
- * Minimum bandwidth for video transmission, in kbps. The default value is 100 
- * kbps. 0 is considered unconstrained.
+ * Minimum video transmission bitrate used for bandwidth
+ * estimations in the congestion control algorithm (REMB).
+ * <p>
+ *   With this parameter you can control the minimum video quality that will be
+ *   sent when reacting to bad network conditions. Setting this parameter to a 
+ *   low
+ *   value permits the video quality to drop when the network conditions get 
+ *   worse.
+ * </p>
+ * <p>
+ *   Note that if you set this parameter too high (trying to avoid bad video
+ *   quality altogether), you would be limiting the adaptation ability of the
+ *   congestion control algorithm, and your stream might be unable to ever 
+ *   recover
+ *   from adverse network conditions.
+ * </p>
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 100.</li>
+ *   <li>
+ *     0 = unconstrained: the video bitrate will drop as needed, even to the
+ *     lowest possible quality, which might make the video completely blurry and
+ *     pixelated.
+ *   </li>
+ * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#setMinVideoSendBandwidth
  *
@@ -6614,16 +6748,23 @@ var MediaElement = require('./MediaElement');
 
 /**
  * @classdesc
- *  Base interface for all end points. An Endpoint is a {@link 
- *  module:core/abstracts.MediaElement MediaElement}
- *  that allow <a 
- *  href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a> to
- *  <a href="http<a href="http://<a 
- *  href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a>org/docs/current/glossary.html#term-webrtc">WebRTC</a>.org/docs/current/glossary.html#term-rtp">RTP</a>different
- *  :term:`WebRTC`, :term:`HTTP`, <code>file:/</code> URLs... An 
- *  <code>Endpoint</code> may
- *  contain both sources and sinks for different media types, to provide
- *  bidirectional communication.
+ *  Base interface for all end points.
+ *  <p>
+ *    An Endpoint is a {@link module:core/abstracts.MediaElement MediaElement} 
+ *    that allow <a 
+ *    href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a> 
+ *    to interchange
+ *    media contents with external systems, su<a href="http<a href="http://<a 
+ *    href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a>org/docs/current/glossary.html#term-webrtc">WebRTC</a>.org/docs/current/glossary.html#term-rtp">RTP</a>fferent
+ *    and mechanisms, such as :term:`RTP`, :term:`WebRTC`, :term:`HTTP`, 
+ *    <code>file://</code>
+ *    URLs, etc.
+ *  </p>
+ *  <p>
+ *    An <code>Endpoint</code> may contain both sources and sinks for different 
+ *    media types,
+ *    to provide bidirectional communication.
+ *  </p>
  *
  * @abstract
  * @extends module:core/abstracts.MediaElement
@@ -6701,9 +6842,12 @@ var MediaElement = require('./MediaElement');
 
 /**
  * @classdesc
- *  Base interface for all filters. This is a certain type of {@link 
- *  module:core/abstracts.MediaElement MediaElement}, that processes media 
- *  injected through its sinks, and delivers the outcome through its sources.
+ *  Base interface for all filters.
+ *  <p>
+ *    This is a certain type of {@link module:core/abstracts.MediaElement 
+ *    MediaElement}, that processes media
+ *    injected through its sinks, and delivers the outcome through its sources.
+ *  </p>
  *
  * @abstract
  * @extends module:core/abstracts.MediaElement
@@ -6794,7 +6938,9 @@ function noop(error, result) {
 
 /**
  * @classdesc
- *  A Hub is a routing {@link module:core/abstracts.MediaObject MediaObject}. It
+ *  A Hub is a routing {@link module:core/abstracts.MediaObject MediaObject}.
+ *  It connects several {@link module:core/abstracts.Endpoint endpoints } 
+ *  together
  *
  * @abstract
  * @extends module:core/abstracts.MediaObject
@@ -6864,7 +7010,7 @@ Hub.prototype.getGstreamerDot = function(details, callback){
  * @callback module:core/abstracts.Hub~getGstreamerDotCallback
  * @param {external:Error} error
  * @param {external:String} result
- *  The dot graph
+ *  The dot graph.
  */
 
 
@@ -6995,32 +7141,47 @@ function noop(error, result) {
 
 /**
  * @classdesc
- *  <p>This is the basic building block of the media server, that can be 
- *  interconnected inside a pipeline. A {@link 
- *  module:core/abstracts.MediaElement MediaElement} is a module that 
- *  encapsulates a specific media capability, and that is able to exchange media
- *        </p>
- *        <p>
- *        A pad can be defined as an input or output interface. Input pads are 
- *        called sinks, and it's where the media elements receive media from 
- *        other media elements. Output interfaces are called sources, and it's 
- *        the pad used by the media element to feed media to other media 
- *        elements. There can be only one sink pad per media element. On the 
- *        other hand, the number of source pads is unconstrained. This means 
- *        that a certain media element can receive media only from one element 
- *        at a time, while it can send media to many others. Pads are created on
- *        </p>
- *        <p>
- *        When media elements are connected, it can be the case that the 
- *        encoding required in both input and output pads is not the same, and 
- *        thus it needs to be transcoded. This is something that is handled 
- *        transparently by the MediaElement internals, but such transcoding has 
- *        a toll in the form of a higher CPU load, so connecting MediaElements 
- *        that need media encoded in different formats is something to consider 
- *        as a high load operation. The event `MediaTranscodingStateChange` 
- *        allows to inform the client application of whether media transcoding 
- *        is being enabled or not inside any MediaElement object.
- *        </p>
+ *  The basic building block of the media server, that can be interconnected 
+ *  inside a pipeline.
+ *  <p>
+ *    A {@link module:core/abstracts.MediaElement MediaElement} is a module that
+ *    capability, and that is able to exchange media with other MediaElements
+ *    through an internal element called <b>pad</b>.
+ *  </p>
+ *  <p>
+ *    A pad can be defined as an input or output interface. Input pads are 
+ *    called
+ *    sinks, and it's where the media elements receive media from other media
+ *    elements. Output interfaces are called sources, and it's the pad used by 
+ *    the
+ *    media element to feed media to other media elements. There can be only one
+ *    sink pad per media element. On the other hand, the number of source pads 
+ *    is
+ *    unconstrained. This means that a certain media element can receive media 
+ *    only
+ *    from one element at a time, while it can send media to many others. Pads 
+ *    are
+ *    created on demand, when the connect method is invoked. When two media 
+ *    elements
+ *    are connected, one media pad is created for each type of media connected. 
+ *    For
+ *    example, if you connect AUDIO and VIDEO between two media elements, each 
+ *    one
+ *    will need to create two new pads: one for AUDIO and one for VIDEO.
+ *  </p>
+ *  <p>
+ *    When media elements are connected, it can be the case that the encoding
+ *    required in both input and output pads is not the same, and thus it needs 
+ *    to
+ *    be transcoded. This is something that is handled transparently by the
+ *    MediaElement internals, but such transcoding has a toll in the form of a
+ *    higher CPU load, so connecting MediaElements that need media encoded in
+ *    different formats is something to consider as a high load operation. The 
+ *    event
+ *    `MediaTranscodingStateChange` allows to inform the client application of
+ *    whether media transcoding is being enabled or not inside any MediaElement
+ *    object.
+ *  </p>
  *
  * @abstract
  * @extends module:core/abstracts.MediaObject
@@ -7044,11 +7205,10 @@ inherits(MediaElement, MediaObject);
 //
 
 /**
- * @deprecated
- * Deprecated due to a typo. Use maxOutputBitrate instead of this function. 
- * Maximum video bandwidth for transcoding. 0 = unlimited.
- *   Unit: bps(bits per second).
- *   Default value: MAXINT
+ * Maximum video bandwidth for transcoding.
+ * @deprecated Deprecated due to a typo. Use {@link 
+ * module:core/abstracts.MediaElement#maxOutputBitrate} instead of this 
+ * function.
  *
  * @alias module:core/abstracts.MediaElement#getMaxOuputBitrate
  *
@@ -7080,11 +7240,10 @@ MediaElement.prototype.getMaxOuputBitrate = function(callback){
  */
 
 /**
- * @deprecated
- * Deprecated due to a typo. Use maxOutputBitrate instead of this function. 
- * Maximum video bandwidth for transcoding. 0 = unlimited.
- *   Unit: bps(bits per second).
- *   Default value: MAXINT
+ * Maximum video bandwidth for transcoding.
+ * @deprecated Deprecated due to a typo. Use {@link 
+ * module:core/abstracts.MediaElement#maxOutputBitrate} instead of this 
+ * function.
  *
  * @alias module:core/abstracts.MediaElement#setMaxOuputBitrate
  *
@@ -7116,9 +7275,12 @@ MediaElement.prototype.setMaxOuputBitrate = function(maxOuputBitrate, callback){
  */
 
 /**
- * Maximum video bitrate for transcoding. 0 = unlimited.
- *   Unit: bps(bits per second).
- *   Default value: MAXINT
+ * Maximum video bitrate for transcoding.
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: MAXINT.</li>
+ *   <li>0 = unlimited.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.MediaElement#getMaxOutputBitrate
  *
@@ -7150,9 +7312,12 @@ MediaElement.prototype.getMaxOutputBitrate = function(callback){
  */
 
 /**
- * Maximum video bitrate for transcoding. 0 = unlimited.
- *   Unit: bps(bits per second).
- *   Default value: MAXINT
+ * Maximum video bitrate for transcoding.
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: MAXINT.</li>
+ *   <li>0 = unlimited.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.MediaElement#setMaxOutputBitrate
  *
@@ -7184,11 +7349,10 @@ MediaElement.prototype.setMaxOutputBitrate = function(maxOutputBitrate, callback
  */
 
 /**
- * @deprecated
- * Deprecated due to a typo. Use minOutputBitrate instead of this function. 
  * Minimum video bandwidth for transcoding.
- *   Unit: bps(bits per second).
- *   Default value: 0
+ * @deprecated Deprecated due to a typo. Use {@link 
+ * module:core/abstracts.MediaElement#minOutputBitrate} instead of this 
+ * function.
  *
  * @alias module:core/abstracts.MediaElement#getMinOuputBitrate
  *
@@ -7220,11 +7384,10 @@ MediaElement.prototype.getMinOuputBitrate = function(callback){
  */
 
 /**
- * @deprecated
- * Deprecated due to a typo. Use minOutputBitrate instead of this function. 
  * Minimum video bandwidth for transcoding.
- *   Unit: bps(bits per second).
- *   Default value: 0
+ * @deprecated Deprecated due to a typo. Use {@link 
+ * module:core/abstracts.MediaElement#minOutputBitrate} instead of this 
+ * function.
  *
  * @alias module:core/abstracts.MediaElement#setMinOuputBitrate
  *
@@ -7257,8 +7420,10 @@ MediaElement.prototype.setMinOuputBitrate = function(minOuputBitrate, callback){
 
 /**
  * Minimum video bitrate for transcoding.
- *   Unit: bps(bits per second).
- *   Default value: 0
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: 0.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.MediaElement#getMinOutputBitrate
  *
@@ -7291,8 +7456,10 @@ MediaElement.prototype.getMinOutputBitrate = function(callback){
 
 /**
  * Minimum video bitrate for transcoding.
- *   Unit: bps(bits per second).
- *   Default value: 0
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: 0.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.MediaElement#setMinOutputBitrate
  *
@@ -7329,33 +7496,39 @@ MediaElement.prototype.setMinOutputBitrate = function(minOutputBitrate, callback
 //
 
 /**
- * <p>Connects two elements, with the media flowing from left to right: the 
- * elements that invokes the connect wil be the source of media, creating one 
- * sink pad for each type of media connected. The element given as parameter to 
- * the method will be the sink, and it will create one sink pad per media type 
- * connected.
- *           </p>
- *           <p>
- *           If otherwise not specified, all types of media are connected by 
- *           default (AUDIO, VIDEO and DATA). It is recommended to connect the 
- *           specific types of media if not all of them will be used. For this 
- *           purpose, the connect method can be invoked more than once on the 
- *           same two elements, but with different media types.
- *           </p>
- *           <p>
- *           The connection is unidirectional. If a bidirectional connection is 
- *           desired, the position of the media elements must be inverted. For 
- *           instance, webrtc1.connect(webrtc2) is connecting webrtc1 as source 
- *           of webrtc2. In order to create a WebRTC one-2one conversation, the 
- *           user would need to especify the connection on the other direction 
- *           with webrtc2.connect(webrtc1).
- *           </p>
- *           <p>
- *           Even though one media element can have one sink pad per type of 
- *           media, only one media element can be connected to another at a 
- *           given time. If a media element is connected to another, the former 
- *           will become the source of the sink media element, regardles whether
- *           </p>
+ * Connects two elements, with the media flowing from left to right.
+ * <p>
+ *   The element that invokes the connect will be the source of media, creating 
+ *   one
+ *   sink pad for each type of media connected. The element given as parameter 
+ *   to
+ *   the method will be the sink, and it will create one sink pad per media type
+ *   connected.
+ * </p>
+ * <p>
+ *   If otherwise not specified, all types of media are connected by default
+ *   (AUDIO, VIDEO and DATA). It is recommended to connect the specific types of
+ *   media if not all of them will be used. For this purpose, the connect method
+ *   can be invoked more than once on the same two elements, but with different
+ *   media types.
+ * </p>
+ * <p>
+ *   The connection is unidirectional. If a bidirectional connection is desired,
+ *   the position of the media elements must be inverted. For instance,
+ *   webrtc1.connect(webrtc2) is connecting webrtc1 as source of webrtc2. In 
+ *   order
+ *   to create a WebRTC one-2one conversation, the user would need to specify 
+ *   the
+ *   connection on the other direction with webrtc2.connect(webrtc1).
+ * </p>
+ * <p>
+ *   Even though one media element can have one sink pad per type of media, only
+ *   one media element can be connected to another at a given time. If a media
+ *   element is connected to another, the former will become the source of the 
+ *   sink
+ *   media element, regardless whether there was another element connected or 
+ *   not.
+ * </p>
  *
  * @alias module:core/abstracts.MediaElement.connect
  *
@@ -7552,16 +7725,17 @@ MediaElement.prototype.disconnect = function(sink, mediaType, sourceMediaDescrip
  */
 
 /**
- * This method returns a .dot file describing the topology of the media element.
- *           <ul>
- *             <li>SHOW_ALL: default value</li>
- *             <li>SHOW_CAPS_DETAILS</li>
- *             <li>SHOW_FULL_PARAMS</li>
- *             <li>SHOW_MEDIA_TYPE</li>
- *             <li>SHOW_NON_DEFAULT_PARAMS</li>
- *             <li>SHOW_STATES</li>
- *             <li>SHOW_VERBOSE</li>
- *           </ul>
+ * Return a .dot file describing the topology of the media element.
+ * <p>The element can be queried for certain type of data:</p>
+ * <ul>
+ *   <li>SHOW_ALL: default value</li>
+ *   <li>SHOW_CAPS_DETAILS</li>
+ *   <li>SHOW_FULL_PARAMS</li>
+ *   <li>SHOW_MEDIA_TYPE</li>
+ *   <li>SHOW_NON_DEFAULT_PARAMS</li>
+ *   <li>SHOW_STATES</li>
+ *   <li>SHOW_VERBOSE</li>
+ * </ul>
  *
  * @alias module:core/abstracts.MediaElement.getGstreamerDot
  *
@@ -7612,14 +7786,19 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
  * @callback module:core/abstracts.MediaElement~getGstreamerDotCallback
  * @param {external:Error} error
  * @param {external:String} result
- *  The dot graph
+ *  The dot graph.
  */
 
 /**
- * Gets information about the source pads of this media element. Since source 
- * pads connect to other media element's sinks, this is formally the sink of 
- * media from the element's perspective. Media can be filtered by type, or by 
- * the description given to the pad though which both elements are connected.
+ * Gets information about the source pads of this media element.
+ * <p>
+ *   Since source pads connect to other media element's sinks, this is formally 
+ *   the
+ *   sink of media from the element's perspective. Media can be filtered by 
+ *   type,
+ *   or by the description given to the pad though which both elements are
+ *   connected.
+ * </p>
  *
  * @alias module:core/abstracts.MediaElement.getSinkConnections
  *
@@ -7685,10 +7864,15 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
  */
 
 /**
- * Gets information about the sink pads of this media element. Since sink pads 
- * are the interface through which a media element gets it's media, whatever is 
- * connected to an element's sink pad is formally a source of media. Media can 
- * be filtered by type, or by the description given to the pad though which both
+ * Gets information about the sink pads of this media element.
+ * <p>
+ *   Since sink pads are the interface through which a media element gets it's
+ *   media, whatever is connected to an element's sink pad is formally a source 
+ *   of
+ *   media. Media can be filtered by type, or by the description given to the 
+ *   pad
+ *   though which both elements are connected.
+ * </p>
  *
  * @alias module:core/abstracts.MediaElement.getSourceConnections
  *
@@ -7874,7 +8058,7 @@ MediaElement.prototype.isMediaFlowingIn = function(mediaType, sinkMediaDescripti
  * @callback module:core/abstracts.MediaElement~isMediaFlowingInCallback
  * @param {external:Error} error
  * @param {external:Boolean} result
- *  TRUE if there is media, FALSE in other case
+ *  TRUE if there is media, FALSE in other case.
  */
 
 /**
@@ -7937,7 +8121,7 @@ MediaElement.prototype.isMediaFlowingOut = function(mediaType, sourceMediaDescri
  * @callback module:core/abstracts.MediaElement~isMediaFlowingOutCallback
  * @param {external:Error} error
  * @param {external:Boolean} result
- *  TRUE if there is media, FALSE in other case
+ *  TRUE if there is media, FALSE in other case.
  */
 
 /**
@@ -8008,7 +8192,11 @@ MediaElement.prototype.isMediaTranscoding = function(mediaType, binName, callbac
  */
 
 /**
- * Sets the type of data for the audio stream. MediaElements that do not support
+ * Sets the type of data for the audio stream.
+ * <p>
+ *   MediaElements that do not support configuration of audio capabilities will
+ *   throw a MEDIA_OBJECT_ILLEGAL_PARAM_ERROR exception.
+ * </p>
  *
  * @alias module:core/abstracts.MediaElement.setAudioFormat
  *
@@ -8079,7 +8267,11 @@ MediaElement.prototype.setOutputBitrate = function(bitrate, callback){
  */
 
 /**
- * Sets the type of data for the video stream. MediaElements that do not support
+ * Sets the type of data for the video stream.
+ * <p>
+ *   MediaElements that do not support configuration of video capabilities will
+ *   throw a MEDIA_OBJECT_ILLEGAL_PARAM_ERROR exception
+ * </p>
  *
  * @alias module:core/abstracts.MediaElement.setVideoFormat
  *
@@ -8191,37 +8383,57 @@ function noop(error, result) {
 
 /**
  * @classdesc
- *  <p>Base interface used to manage capabilities common to all Kurento 
- *  elements. This includes both: {@link module:core/abstracts.MediaElement 
- *  MediaElement} and {@link module:core.MediaPipeline MediaPipeline}</p>
- *        <h4>Properties</h4>
- *        <ul>
- *          <li><b>id</b>: unique identifier assigned to this 
- *          <code>MediaObject</code> at instantiation time. {@link 
- *          module:core.MediaPipeline MediaPipeline} IDs are generated with a 
- *          GUID followed by suffix <code>_kurento.MediaPipeline</code>. {@link 
- *          module:core/abstracts.MediaElement MediaElement} IDs are also a GUID
- *            <blockquote>
- *            <dl>
- *              <dt><i>MediaPipeline ID example</i></dt>
- *              <dd><code>907cac3a-809a-4bbe-a93e-ae7e944c5cae_kurento.MediaPipeline</code></dd>
- *              <dt><i>MediaElement ID example</i></dt> 
- *              <dd><code>907cac3a-809a-4bbe-a93e-ae7e944c5cae_kurento.MediaPipeline/403da25a-805b-4cf1-8c55-f190588e6c9b_kurento.WebRtcEndpoint</code></dd>
- *            </dl>
- *            </blockquote>
- *          </li>
- *          <li><b>name</b>: free text intended to provide a friendly name for 
- *          this <code>MediaObject</code>. Its default value is the same as the 
- *          ID.</li>
- *          <li><b>tags</b>: key-value pairs intended for applications to 
- *          associate metadata to this <code>MediaObject</code> instance.</li>
- *        </ul>
- *        <p>
- *        <h4>Events</h4>
- *        <ul>
- *          <li>`ErrorEvent`: reports asynchronous error events. It is 
- *          recommended to always subscribe a listener to this event, as regular
- *        </ul>
+ *  Base interface used to manage capabilities common to all Kurento elements.
+ *  <h4>Properties</h4>
+ *  <ul>
+ *    <li>
+ *      <b>id</b>: unique identifier assigned to this <code>MediaObject</code> 
+ *      at
+ *      instantiation time. {@link module:core.MediaPipeline MediaPipeline} IDs 
+ *      are generated with a GUID
+ *      followed by suffix <code>_kurento.MediaPipeline</code>.
+ *      {@link module:core/abstracts.MediaElement MediaElement} IDs are also a 
+ *      GUID with suffix
+ *      <code>_kurento.{ElementType}</code> and prefixed by parent's ID.
+ *      <blockquote>
+ *        <dl>
+ *          <dt><i>MediaPipeline ID example</i></dt>
+ *          <dd>
+ *            <code>
+ *              907cac3a-809a-4bbe-a93e-ae7e944c5cae_kurento.MediaPipeline
+ *            </code>
+ *          </dd>
+ *          <dt><i>MediaElement ID example</i></dt>
+ *          <dd>
+ *            <code>
+ *              907cac3a-809a-4bbe-a93e-ae7e944c5cae_kurento.MediaPipeline/403da25a-805b-4cf1-8c55-f190588e6c9b_kurento.WebRtcEndpoint
+ *            </code>
+ *          </dd>
+ *        </dl>
+ *      </blockquote>
+ *    </li>
+ *    <li>
+ *      <b>name</b>: free text intended to provide a friendly name for this
+ *      <code>MediaObject</code>. Its default value is the same as the ID.
+ *    </li>
+ *    <li>
+ *      <b>tags</b>: key-value pairs intended for applications to associate 
+ *      metadata
+ *      to this <code>MediaObject</code> instance.
+ *    </li>
+ *  </ul>
+ *  <p></p>
+ *  <h4>Events</h4>
+ *  <ul>
+ *    <li>
+ *      <b>ErrorEvent</b>: reports asynchronous error events. It is recommended 
+ *      to
+ *      always subscribe a listener to this event, as regular error from the
+ *      pipeline will be notified through it, instead of through an exception 
+ *      when
+ *      invoking a method.
+ *    </li>
+ *  </ul>
  *
  * @abstract
  * @extends external:EventEmitter
@@ -8337,7 +8549,7 @@ inherits(MediaObject, EventEmitter);
 //
 
 /**
- * children of this <code>MediaObject</code>.
+ * Children of this <code>MediaObject</code>.
  *
  * @alias module:core/abstracts.MediaObject#getChildren
  *
@@ -8391,8 +8603,8 @@ MediaObject.prototype.getChildren = function(callback){
  */
 
 /**
- * @deprecated
- *  (Use children instead) children of this <code>MediaObject</code>.
+ * Children of this <code>MediaObject</code>.
+ * @deprecated Use children instead.
  *
  * @alias module:core/abstracts.MediaObject#getChilds
  *
@@ -8534,9 +8746,12 @@ MediaObject.prototype.getMediaPipeline = function(callback){
  */
 
 /**
- * this <code>MediaObject</code>'s name. This is just a comodity to simplify 
- * developers' life debugging, it is not used internally for indexing nor 
- * idenfiying the objects. By default, it's the object's ID.
+ * This <code>MediaObject</code>'s name.
+ * <p>
+ *   This is just sugar to simplify developers' life debugging, it is not used
+ *   internally for indexing nor identifying the objects. By default, it's the
+ *   object's ID.
+ * </p>
  *
  * @alias module:core/abstracts.MediaObject#getName
  *
@@ -8568,9 +8783,12 @@ MediaObject.prototype.getName = function(callback){
  */
 
 /**
- * this <code>MediaObject</code>'s name. This is just a comodity to simplify 
- * developers' life debugging, it is not used internally for indexing nor 
- * idenfiying the objects. By default, it's the object's ID.
+ * This <code>MediaObject</code>'s name.
+ * <p>
+ *   This is just sugar to simplify developers' life debugging, it is not used
+ *   internally for indexing nor identifying the objects. By default, it's the
+ *   object's ID.
+ * </p>
  *
  * @alias module:core/abstracts.MediaObject#setName
  *
@@ -8602,8 +8820,14 @@ MediaObject.prototype.setName = function(name, callback){
  */
 
 /**
- * parent of this <code>MediaObject</code>. The parent of a {@link 
- * module:core/abstracts.Hub Hub} or a {@link module:core/abstracts.MediaElement
+ * Parent of this <code>MediaObject</code>.
+ * <p>
+ *   The parent of a {@link module:core/abstracts.Hub Hub} or a {@link 
+ *   module:core/abstracts.MediaElement MediaElement} is its
+ *   {@link module:core.MediaPipeline MediaPipeline}. A {@link 
+ *   module:core.MediaPipeline MediaPipeline} has no parent, so this
+ *   property will be null.
+ * </p>
  *
  * @alias module:core/abstracts.MediaObject#getParent
  *
@@ -8657,7 +8881,7 @@ MediaObject.prototype.getParent = function(callback){
  */
 
 /**
- * flag activating or deactivating sending the element's tags in fired events.
+ * Flag activating or deactivating sending the element's tags in fired events.
  *
  * @alias module:core/abstracts.MediaObject#getSendTagsInEvents
  *
@@ -8689,7 +8913,7 @@ MediaObject.prototype.getSendTagsInEvents = function(callback){
  */
 
 /**
- * flag activating or deactivating sending the element's tags in fired events.
+ * Flag activating or deactivating sending the element's tags in fired events.
  *
  * @alias module:core/abstracts.MediaObject#setSendTagsInEvents
  *
@@ -8726,8 +8950,8 @@ MediaObject.prototype.setSendTagsInEvents = function(sendTagsInEvents, callback)
 //
 
 /**
- * Adds a new tag to this <code>MediaObject</code>. If the tag is already 
- * present, it changes the value.
+ * Adds a new tag to this <code>MediaObject</code>.
+ * If the tag is already present, it changes the value.
  *
  * @alias module:core/abstracts.MediaObject.addTag
  *
@@ -8838,7 +9062,8 @@ MediaObject.prototype.getTags = function(callback){
  */
 
 /**
- * Removes an existing tag. Exists silently with no error if tag is not defined.
+ * Removes an existing tag.
+ * Exists silently with no error if tag is not defined.
  *
  * @alias module:core/abstracts.MediaObject.removeTag
  *
@@ -9125,14 +9350,15 @@ function noop(error, result) {
 
 /**
  * @classdesc
- *  This interface is implemented by Endpoints that require an SDP negotiation 
- *  for the setup of a networked media session with remote peers. The API 
- *  provides the following functionality:
- *        <ul>
- *          <li>Generate SDP offers.</li>
- *          <li>Process SDP offers.</li>
- *          <li>Configure SDP related params.</li>
- *        </ul>
+ *  Interface implemented by Endpoints that require an SDP negotiation for the 
+ *  setup
+ *  of a networked media session with remote peers.
+ *  <p>The API provides the following functionality:</p>
+ *  <ul>
+ *    <li>Generate SDP offers.</li>
+ *    <li>Process SDP offers.</li>
+ *    <li>Configure SDP related params.</li>
+ *  </ul>
  *
  * @abstract
  * @extends module:core/abstracts.SessionEndpoint
@@ -9150,8 +9376,13 @@ inherits(SdpEndpoint, SessionEndpoint);
 //
 
 /**
- *  Maximum bandwidth for audio reception, in kbps. The default value is 500. A 
- *  value of 0 sets this as leaves this unconstrained. <hr/><b>Note</b> This has
+ * Maximum bandwidth for audio reception.
+ * <p>This has to be set before the SDP is generated.</p>
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 500.</li>
+ *   <li>0 = unconstrained.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint#getMaxAudioRecvBandwidth
  *
@@ -9183,8 +9414,13 @@ SdpEndpoint.prototype.getMaxAudioRecvBandwidth = function(callback){
  */
 
 /**
- *  Maximum bandwidth for audio reception, in kbps. The default value is 500. A 
- *  value of 0 sets this as leaves this unconstrained. <hr/><b>Note</b> This has
+ * Maximum bandwidth for audio reception.
+ * <p>This has to be set before the SDP is generated.</p>
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 500.</li>
+ *   <li>0 = unconstrained.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint#setMaxAudioRecvBandwidth
  *
@@ -9216,9 +9452,13 @@ SdpEndpoint.prototype.setMaxAudioRecvBandwidth = function(maxAudioRecvBandwidth,
  */
 
 /**
- *  Maximum bandwidth for video reception, in kbps. The default value is 500. A 
- *  value of 0 sets this as unconstrained. <hr/><b>Note</b> This has to be set 
- *  before the SDP is generated.
+ * Maximum bandwidth for video reception.
+ * <p>This has to be set before the SDP is generated.</p>
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 500.</li>
+ *   <li>0 = unconstrained.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint#getMaxVideoRecvBandwidth
  *
@@ -9250,9 +9490,13 @@ SdpEndpoint.prototype.getMaxVideoRecvBandwidth = function(callback){
  */
 
 /**
- *  Maximum bandwidth for video reception, in kbps. The default value is 500. A 
- *  value of 0 sets this as unconstrained. <hr/><b>Note</b> This has to be set 
- *  before the SDP is generated.
+ * Maximum bandwidth for video reception.
+ * <p>This has to be set before the SDP is generated.</p>
+ * <ul>
+ *   <li>Unit: kbps (kilobits per second).</li>
+ *   <li>Default: 500.</li>
+ *   <li>0 = unconstrained.</li>
+ * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint#setMaxVideoRecvBandwidth
  *
@@ -9289,18 +9533,18 @@ SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth,
 //
 
 /**
- *  Generates an SDP offer with  media capabilities of the Endpoint.
- *           Exceptions
- *           <ul>
- *             <li>
- *               SDP_END_POINT_ALREADY_NEGOTIATED If the endpoint is already 
- *               negotiated.
- *             </li>
- *             <li>
- *               SDP_END_POINT_GENERATE_OFFER_ERROR if the generated offer is 
- *               empty. This is most likely due to an internal error.
- *             </li>
- *           </ul>
+ * Generates an SDP offer with media capabilities of the Endpoint.
+ * Throws:
+ * <ul>
+ *   <li>
+ *     SDP_END_POINT_ALREADY_NEGOTIATED If the endpoint is already negotiated.
+ *   </li>
+ *   <li>
+ *     SDP_END_POINT_GENERATE_OFFER_ERROR if the generated offer is empty. This 
+ *     is
+ *     most likely due to an internal error.
+ *   </li>
+ * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint.generateOffer
  *
@@ -9333,20 +9577,18 @@ SdpEndpoint.prototype.generateOffer = function(callback){
  */
 
 /**
- * This method returns the local SDP. The output depends on the negotiation 
- * stage:
- *           <ul>
- *             <li>
- *               No offer has been generated: returns null.
- *             </li>
- *             <li>
- *               Offer has been generated: return the SDP offer.
- *             </li>
- *             <li>
- *               Offer has been generated and answer processed: retruns the 
- *               agreed SDP.
- *             </li>
- *           </ul>
+ * Returns the local SDP.
+ * <ul>
+ *   <li>
+ *     No offer has been generated: returns null.
+ *   </li>
+ *   <li>
+ *     Offer has been generated: returns the SDP offer.
+ *   </li>
+ *   <li>
+ *     Offer has been generated and answer processed: returns the agreed SDP.
+ *   </li>
+ * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint.getLocalSessionDescriptor
  *
@@ -9375,12 +9617,12 @@ SdpEndpoint.prototype.getLocalSessionDescriptor = function(callback){
  * @callback module:core/abstracts.SdpEndpoint~getLocalSessionDescriptorCallback
  * @param {external:Error} error
  * @param {external:String} result
- *  The last agreed SessionSpec
+ *  The last agreed SessionSpec.
  */
 
 /**
- * This method returns the remote SDP. If the negotiation process is not 
- * complete, it will return NULL.
+ * This method returns the remote SDP.
+ * If the negotiation process is not complete, it will return NULL.
  *
  * @alias module:core/abstracts.SdpEndpoint.getRemoteSessionDescriptor
  *
@@ -9409,30 +9651,28 @@ SdpEndpoint.prototype.getRemoteSessionDescriptor = function(callback){
  * @callback module:core/abstracts.SdpEndpoint~getRemoteSessionDescriptorCallback
  * @param {external:Error} error
  * @param {external:String} result
- *  The last agreed User Agent session description
+ *  The last agreed User Agent session description.
  */
 
 /**
- *  Generates an SDP offer with  media capabilities of the Endpoint.
- *           Exceptions
- *           <ul>
- *             <li>
- *               SDP_PARSE_ERROR If the offer is empty or has errors.
- *             </li>
- *             <li>
- *               SDP_END_POINT_ALREADY_NEGOTIATED If the endpoint is already 
- *               negotiated.
- *             </li>
- *             <li>
- *               SDP_END_POINT_PROCESS_ANSWER_ERROR if the result of processing 
- *               the answer is an empty string. This is most likely due to an 
- *               internal error.
- *             </li>
- *             <li>
- *               SDP_END_POINT_NOT_OFFER_GENERATED If the method is invoked 
- *               before the generateOffer method.
- *             </li>
- *           </ul>
+ * Generates an SDP offer with media capabilities of the Endpoint.
+ * Throws:
+ * <ul>
+ *   <li>
+ *     SDP_PARSE_ERROR If the offer is empty or has errors.
+ *   </li>
+ *   <li>
+ *     SDP_END_POINT_ALREADY_NEGOTIATED If the endpoint is already negotiated.
+ *   </li>
+ *   <li>
+ *     SDP_END_POINT_PROCESS_ANSWER_ERROR if the result of processing the answer
+ *     an empty string. This is most likely due to an internal error.
+ *   </li>
+ *   <li>
+ *     SDP_END_POINT_NOT_OFFER_GENERATED If the method is invoked before the
+ *     generateOffer method.
+ *   </li>
+ * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint.processAnswer
  *
@@ -9468,21 +9708,25 @@ SdpEndpoint.prototype.processAnswer = function(answer, callback){
  */
 
 /**
- *  Processes SDP offer of the remote peer, and generates an SDP answer based on
- *           Exceptions
- *           <ul>
- *             <li>
- *               SDP_PARSE_ERROR If the offer is empty or has errors.
- *             </li>
- *             <li>
- *               SDP_END_POINT_ALREADY_NEGOTIATED If the endpoint is already 
- *               negotiated.
- *             </li>
- *             <li>
- *               SDP_END_POINT_PROCESS_OFFER_ERROR if the generated offer is 
- *               empty. This is most likely due to an internal error.
- *             </li>
- *           </ul>
+ * Processes SDP offer of the remote peer, and generates an SDP answer based on 
+ * the endpoint's capabilities.
+ * <p>
+ *   If no matching capabilities are found, the SDP will contain no codecs.
+ * </p>
+ * Throws:
+ * <ul>
+ *   <li>
+ *     SDP_PARSE_ERROR If the offer is empty or has errors.
+ *   </li>
+ *   <li>
+ *     SDP_END_POINT_ALREADY_NEGOTIATED If the endpoint is already negotiated.
+ *   </li>
+ *   <li>
+ *     SDP_END_POINT_PROCESS_OFFER_ERROR if the generated offer is empty. This 
+ *     is
+ *     most likely due to an internal error.
+ *   </li>
+ * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint.processOffer
  *
@@ -9514,7 +9758,7 @@ SdpEndpoint.prototype.processOffer = function(offer, callback){
  * @callback module:core/abstracts.SdpEndpoint~processOfferCallback
  * @param {external:Error} error
  * @param {external:String} result
- *  The chosen configuration from the ones stated in the SDP offer
+ *  The chosen configuration from the ones stated in the SDP offer.
  */
 
 
@@ -9770,6 +10014,57 @@ ServerManager.prototype.getSessions = function(callback){
 //
 
 /**
+ * Number of CPU cores that the media server can use.
+ * <p>
+ *   Linux processes can be configured to use only a subset of the cores that 
+ *   are
+ *   available in the system, via the process affinity settings
+ *   (<strong>sched_setaffinity(2)</strong>). With this method it is possible to
+ *   know the number of cores that the media server can use in the machine where
+ *   is running.
+ * </p>
+ * <p>
+ *   For example, it's possible to limit the core affinity inside a Docker
+ *   container by running with a command such as
+ *   <em>docker run --cpuset-cpus='0,1'</em>.
+ * </p>
+ * <p>
+ *   Note that the return value represents the number of
+ *   <em>logical</em> processing units available, i.e. CPU cores including
+ *   Hyper-Threading.
+ * </p>
+ *
+ * @alias module:core/abstracts.ServerManager.getCpuCount
+ *
+ * @param {module:core/abstracts.ServerManager~getCpuCountCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+ServerManager.prototype.getCpuCount = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getCpuCount', callback), this)
+};
+/**
+ * @callback module:core/abstracts.ServerManager~getCpuCountCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ *  Number of CPU cores available for the media server.
+ */
+
+/**
  * Returns the kmd associated to a module
  *
  * @alias module:core/abstracts.ServerManager.getKmd
@@ -9802,11 +10097,58 @@ ServerManager.prototype.getKmd = function(moduleName, callback){
  * @callback module:core/abstracts.ServerManager~getKmdCallback
  * @param {external:Error} error
  * @param {external:String} result
- *  The kmd file
+ *  The kmd file.
  */
 
 /**
- * Returns the amount of memory that the server is using in KiB
+ * Average CPU usage of the server.
+ * <p>
+ *   This method measures the average CPU usage of the media server during the
+ *   requested interval. Normally you will want to choose an interval between 
+ *   1000
+ *   and 10000 ms.
+ * </p>
+ * <p>
+ *   The returned value represents the global system CPU usage of the media 
+ *   server,
+ *   as an average across all processing units (CPU cores).
+ * </p>
+ *
+ * @alias module:core/abstracts.ServerManager.getUsedCpu
+ *
+ * @param {external:Integer} interval
+ *  Time to measure the average CPU usage, in milliseconds.
+ *
+ * @param {module:core/abstracts.ServerManager~getUsedCpuCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+ServerManager.prototype.getUsedCpu = function(interval, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('int', 'interval', interval, {required: true});
+  //  
+
+  var params = {
+    interval: interval
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getUsedCpu', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.ServerManager~getUsedCpuCallback
+ * @param {external:Error} error
+ * @param {external:Number} result
+ *  CPU usage %.
+ */
+
+/**
+ * Returns the amount of memory that the server is using, in KiB
  *
  * @alias module:core/abstracts.ServerManager.getUsedMemory
  *
@@ -9835,7 +10177,7 @@ ServerManager.prototype.getUsedMemory = function(callback){
  * @callback module:core/abstracts.ServerManager~getUsedMemoryCallback
  * @param {external:Error} error
  * @param {external:int64} result
- *  The amount of KiB of memory being used
+ *  Used memory, in KiB.
  */
 
 
@@ -9997,7 +10339,9 @@ function noop(error, result) {
 
 /**
  * @classdesc
- *  Interface for endpoints the require a URI to work. An example of this, would
+ *  Interface for endpoints the require a URI to work.
+ *  An example of this, would be a :rom:cls:`PlayerEndpoint` whose URI property 
+ *  could be used to locate a file to stream.
  *
  * @abstract
  * @extends module:core/abstracts.Endpoint
@@ -15981,14 +16325,16 @@ function noop(error, result) {
 /**
  *
  * @classdesc
+ *  Provides the functionality to store contents.
  *  <p>
- *    Provides the functionality to store contents. The recorder can store in 
- *    local
- *    files or in a network resource. It receives a media stream from another
- *    MediaElement (i.e. the source), and stores it in the designated location.
+ *    The recorder can store in local files or in a network resource. It 
+ *    receives a
+ *    media stream from another {@link module:core/abstracts.MediaElement 
+ *    MediaElement} (i.e. the source), and
+ *    stores it in the designated location.
  *  </p>
  *  <p>
- *    The following information has to be provided In order to create a
+ *    The following information has to be provided in order to create a
  *    RecorderEndpoint, and cannot be changed afterwards:
  *  </p>
  *  <ul>
@@ -16023,9 +16369,11 @@ function noop(error, result) {
  *      value is <code>file:///var/lib/kurento/</code>
  *    </li>
  *    <li>
- *      The media profile (@MediaProfileSpecType) used to store the file. This 
- *      will
- *      determine the encoding. See below for more details about media profile.
+ *      The media profile ({@link 
+ *      module:elements.RecorderEndpoint#MediaProfileSpecType}) used to store 
+ *      the file.
+ *      This will determine the encoding. See below for more details about media
+ *      profile.
  *    </li>
  *    <li>
  *      Optionally, the user can select if the endpoint will stop processing 
@@ -16044,11 +16392,10 @@ function noop(error, result) {
  *    machine
  *    where media server is running, and also have the correct access rights.
  *    Otherwise, the media server won't be able to store any information, and an
- *    ErrorEvent will be fired. Please note that if you haven't subscribed to 
- *    that
- *    type of event, you can be left wondering why your media is not being 
- *    saved,
- *    while the error message was ignored.
+ *    {@link ErrorEvent} will be fired. Please note that if you haven't 
+ *    subscribed to
+ *    that type of event, you can be left wondering why your media is not being
+ *    saved, while the error message was ignored.
  *  </p>
  *  <p>
  *    The media profile is quite an important parameter, as it will determine
@@ -16060,10 +16407,12 @@ function noop(error, result) {
  *    higher
  *    CPU load and will impact overall performance of the media server.
  *  </p>
- *  For example: Say that your pipeline will receive <b>VP8</b>-encoded video 
- *  from
- *  WebRTC, and sends it to a RecorderEndpoint; depending on the format 
- *  selected...
+ *  <p>
+ *    For example: Say that your pipeline will receive <b>VP8</b>-encoded video 
+ *    from
+ *    WebRTC, and sends it to a RecorderEndpoint; depending on the format
+ *    selected...
+ *  </p>
  *  <ul>
  *    <li>
  *      WEBM: The input codec is the same as the recording format, so no 
@@ -16081,9 +16430,11 @@ function noop(error, result) {
  *      means more CPU load.
  *    </li>
  *  </ul>
- *  From this you can see how selecting the correct format for your application 
- *  is a
- *  very important decision.
+ *  <p>
+ *    From this you can see how selecting the correct format for your 
+ *    application is
+ *    a very important decision.
+ *  </p>
  *  <p>
  *    Recording will start as soon as the user invokes the record method. The
  *    recorder will then store, in the location indicated, the media that the 
@@ -16511,205 +16862,315 @@ function noop(error, result) {
  * Builder for the {@link module:elements.WebRtcEndpoint WebRtcEndpoint}
  *
  * @classdesc
+ *  Control interface for Kurento WebRTC endpoint.
  *  <p>
- *        Control interface for Kurento WebRTC endpoint.
- *        </p>
- *        <p>
- *        This endpoint is one side of a peer-to-peer WebRTC communication, 
- *        being the other peer a WebRTC capable browser -using the 
- *        RTCPeerConnection API-, a native WebRTC app or even another Kurento 
- *        Media Server.
- *        </p>
- *        <p>
- *        In order to establish a WebRTC communication, peers engage in an SDP 
- *        negotiation process, where one of the peers (the offerer) sends an 
- *        offer, while the other peer (the offeree) responds with an answer. 
- *        This endpoint can function in both situations
- *        <ul>
- *          <li>
- *            As offerer: The negotiation process is initiated by the media 
- *            server
- *            <ul style='list-style-type:circle'>
- *              <li>KMS generates the SDP offer through the 
- *              <code>generateOffer</code> method. This <i>offer</i> must then 
- *              be sent to the remote peer (the offeree) through the signaling 
- *              channel, for processing.</li>
- *              <li>The remote peer process the <i>offer</i>, and generates an 
- *              <i>answer</i> to this <i>offer</i>. The <i>answer</i> is sent 
- *              back to the media server.</li>
- *              <li>Upon receiving the <i>answer</i>, the endpoint must invoke 
- *              the <code>processAnswer</code> method.</li>
- *            </ul>
- *          </li>
- *          <li>
- *            As offeree: The negotiation process is initiated by the remote 
- *            peer
- *            <ul>
- *              <li>The remote peer, acting as offerer, generates an SDP 
- *              <i>offer</i> and sends it to the WebRTC endpoint in 
- *              Kurento.</li>
- *              <li>The endpoint will process the <i>offer</i> invoking the 
- *              <code>processOffer</code> method. The result of this method will
- *              <li>The SDP <i>answer</i> must be sent back to the offerer, so 
- *              it can be processed.</li>
- *            </ul>
- *          </li>
- *        </ul>
- *        </p>
- *        <p>
- *        SDPs are sent without ICE candidates, following the Trickle ICE 
- *        optimization. Once the SDP negotiation is completed, both peers 
- *        proceed with the ICE discovery process, intended to set up a 
- *        bidirectional media connection. During this process, each peer
- *        <ul>
- *          <li>Discovers ICE candidates for itself, containing pairs of IPs and
- *          <li>ICE candidates are sent via the signaling channel as they are 
- *          discovered, to the remote peer for probing.</li>
- *          <li>ICE connectivity checks are run as soon as the new candidate 
- *          description, from the remote peer, is available.</li>
- *        </ul>
- *        Once a suitable pair of candidates (one for each peer) is discovered, 
- *        the media session can start. The harvesting process in Kurento, begins
- *        </p>
- *        <p>
- *        It's important to keep in mind that WebRTC connection is an 
- *        asynchronous process, when designing interactions between different 
- *        MediaElements. For example, it would be pointless to start recording 
- *        before media is flowing. In order to be notified of state changes, the
- *        <ul>
- *          <li>
- *            <code>IceComponentStateChange</code>: This event informs only 
- *            about changes in the ICE connection state. Possible values are:
- *            <ul style='list-style-type:circle'>
- *              <li><code>DISCONNECTED</code>: No activity scheduled</li>
- *              <li><code>GATHERING</code>: Gathering local candidates</li>
- *              <li><code>CONNECTING</code>: Establishing connectivity</li>
- *              <li><code>CONNECTED</code>: At least one working candidate 
- *              pair</li>
- *              <li><code>READY</code>: ICE concluded, candidate pair selection 
- *              is now final</li>
- *              <li><code>FAILED</code>: Connectivity checks have been 
- *              completed, but media connection was not established</li>
- *            </ul>
- *            The transitions between states are covered in RFC5245.
- *            It could be said that it's network-only, as it only takes into 
- *            account the state of the network connection, ignoring other higher
- *          </li>
- *          <li>
- *            <code>IceCandidateFound</code>: Raised when a new candidate is 
- *            discovered. ICE candidates must be sent to the remote peer of the 
- *            connection. Failing to do so for some or all of the candidates 
- *            might render the connection unusable.
- *          </li>
- *          <li>
- *            <code>IceGatheringDone</code>: Raised when the ICE harvesting 
- *            process is completed. This means that all candidates have already 
- *            been discovered.
- *          </li>
- *          <li>
- *            <code>NewCandidatePairSelected</code>: Raised when a new ICE 
- *            candidate pair gets selected. The pair contains both local and 
- *            remote candidates being used for a component. This event can be 
- *            raised during a media session, if a new pair of candidates with 
- *            higher priority in the link are found.
- *          </li>
- *          <li>
- *            <code>DataChannelOpen</code>: Raised when a data channel is open.
- *          </li>
- *          <li>
- *            <code>DataChannelClose</code>: Raised when a data channel is 
- *            closed.
- *          </li>
- *        </ul>
- *        </p>
- *        <p>
- *        Registering to any of above events requires the application to provide
- *        </p>
- *        <p>
- *        Flow control and congestion management is one of the most important 
- *        features of WebRTC. WebRTC connections start with the lowest bandwidth
- *        </p>
- *        <p>
- *        The default bandwidth range of the endpoint is 100kbps-500kbps, but it
- *        <ul>
- *          <li>
- *            Input bandwidth control mechanism: Configuration interval used to 
- *            inform remote peer the range of bitrates that can be pushed into 
- *            this WebRtcEndpoint object.
- *            <ul style='list-style-type:circle'>
- *              <li>
- *                setMin/MaxVideoRecvBandwidth: sets Min/Max bitrate limits 
- *                expected for received video stream.
- *              </li>
- *              <li>
- *                setMin/MaxAudioRecvBandwidth: sets Min/Max bitrate limits 
- *                expected for received audio stream.
- *              </li>
- *            </ul>
- *            Max values are announced in the SDP, while min values are set to 
- *            limit the lower value of REMB packages. It follows that min values
- *          </li>
- *          <li>
- *            Output bandwidth control mechanism: Configuration interval used to
- *            <ul style='list-style-type:circle'>
- *              <li>
- *                setMin/MaxVideoSendBandwidth: sets Min/Max bitrate limits  for
- *              </li>
- *            </ul>
- *          </li>
- *        </ul>
- *        All bandwidth control parameters must be changed before the SDP 
- *        negotiation takes place, and can't be changed afterwards.
- *        </p>
- *        <p>
- *        DataChannels allow other media elements that make use of the DataPad, 
- *        to send arbitrary data. For instance, if there is a filter that 
- *        publishes event information, it'll be sent to the remote peer through 
- *        the channel. There is no API available for programmers to make use of 
- *        this feature in the WebRtcElement. DataChannels can be configured to 
- *        provide the following:
- *        <ul>
- *          <li>
- *            Reliable or partially reliable delivery of sent messages
- *          </li>
- *          <li>
- *            In-order or out-of-order delivery of sent messages
- *          </li>
- *        </ul>
- *        Unreliable, out-of-order delivery is equivalent to raw UDP semantics. 
- *        The message may make it, or it may not, and order is not important. 
- *        However, the channel can be configured to be <i>partially reliable</i>
- *        </p>
- *        <p>
- *        The possibility to create DataChannels in a WebRtcEndpoint must be 
- *        explicitly enabled when creating the endpoint, as this feature is 
- *        disabled by default. If this is the case, they can be created invoking
- *        <ul>
- *          <li>
- *           <code>label</code>: assigns a label to the DataChannel. This can 
- *           help identify each possible channel separately.
- *          </li>
- *          <li>
- *            <code>ordered</code>: specifies if the DataChannel guarantees 
- *            order, which is the default mode. If maxPacketLifetime and 
- *            maxRetransmits have not been set, this enables reliable mode.
- *          </li>
- *          <li>
- *            <code>maxPacketLifeTime</code>: The time window in milliseconds, 
- *            during which transmissions and retransmissions may take place in 
- *            unreliable mode. This forces unreliable mode, even if 
- *            <code>ordered</code> has been activated.
- *          </li>
- *          <li>
- *            <code>maxRetransmits</code>: maximum number of retransmissions 
- *            that are attempted in unreliable mode. This forces unreliable 
- *            mode, even if <code>ordered</code> has been activated.
- *          </li>
- *          <li>
- *            <code>Protocol</code>: Name of the subprotocol used for data 
- *            communication.
- *          </li>
- *        </ul>
+ *    This endpoint is one side of a peer-to-peer WebRTC communication, being 
+ *    the
+ *    other peer a WebRTC capable browser -using the RTCPeerConnection API-, a
+ *    native WebRTC app or even another Kurento Media Server.
+ *  </p>
+ *  <p>
+ *    In order to establish a WebRTC communication, peers engage in an SDP
+ *    negotiation process, where one of the peers (the offerer) sends an offer,
+ *    while the other peer (the offeree) responds with an answer. This endpoint 
+ *    can
+ *    function in both situations
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      As offerer: The negotiation process is initiated by the media server
+ *      <ul>
+ *        <li>
+ *          KMS generates the SDP offer through the
+ *          <code>generateOffer</code> method. This <i>offer</i> must then be 
+ *          sent
+ *          to the remote peer (the offeree) through the signaling channel, for
+ *          processing.
+ *        </li>
+ *        <li>
+ *          The remote peer processes the <i>offer</i>, and generates an
+ *          <i>answer</i>. The <i>answer</i> is sent back to the media server.
+ *        </li>
+ *        <li>
+ *          Upon receiving the <i>answer</i>, the endpoint must invoke the
+ *          <code>processAnswer</code> method.
+ *        </li>
+ *      </ul>
+ *    </li>
+ *    <li>
+ *      As offeree: The negotiation process is initiated by the remote peer
+ *      <ul>
+ *        <li>
+ *          The remote peer, acting as offerer, generates an SDP <i>offer</i> 
+ *          and
+ *          sends it to the WebRTC endpoint in Kurento.
+ *        </li>
+ *        <li>
+ *          The endpoint will process the <i>offer</i> invoking the
+ *          <code>processOffer</code> method. The result of this method will be 
+ *          a
+ *          string, containing an SDP <i>answer</i>.
+ *        </li>
+ *        <li>
+ *          The SDP <i>answer</i> must be sent back to the offerer, so it can be
+ *          processed.
+ *        </li>
+ *      </ul>
+ *    </li>
+ *  </ul>
+ *  <p>
+ *    SDPs are sent without ICE candidates, following the Trickle ICE 
+ *    optimization.
+ *    Once the SDP negotiation is completed, both peers proceed with the ICE
+ *    discovery process, intended to set up a bidirectional media connection. 
+ *    During
+ *    this process, each peer
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      Discovers ICE candidates for itself, containing pairs of IPs and ports.
+ *    </li>
+ *    <li>
+ *      ICE candidates are sent via the signaling channel as they are 
+ *      discovered, to
+ *      the remote peer for probing.
+ *    </li>
+ *    <li>
+ *      ICE connectivity checks are run as soon as the new candidate 
+ *      description,
+ *      from the remote peer, is available.
+ *    </li>
+ *  </ul>
+ *  <p>
+ *    Once a suitable pair of candidates (one for each peer) is discovered, the
+ *    media session can start. The harvesting process in Kurento, begins with 
+ *    the
+ *    invocation of the <code>gatherCandidates</code> method. Since the whole
+ *    Trickle ICE purpose is to speed-up connectivity, candidates are generated
+ *    asynchronously. Therefore, in order to capture the candidates, the user 
+ *    must
+ *    subscribe to the event <code>IceCandidateFound</code>. It is important 
+ *    that
+ *    the event listener is bound before invoking <code>gatherCandidates</code>,
+ *    otherwise a suitable candidate might be lost, and connection might not be
+ *    established.
+ *  </p>
+ *  <p>
+ *    It's important to keep in mind that WebRTC connection is an asynchronous
+ *    process, when designing interactions between different MediaElements. For
+ *    example, it would be pointless to start recording before media is flowing.
+ *    order to be notified of state changes, the application can subscribe to 
+ *    events
+ *    generated by the WebRtcEndpoint. Following is a full list of events 
+ *    generated
+ *    by WebRtcEndpoint:
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      <code>IceComponentStateChange</code>: This event informs only about 
+ *      changes
+ *      in the ICE connection state. Possible values are:
+ *      <ul>
+ *        <li><code>DISCONNECTED</code>: No activity scheduled</li>
+ *        <li><code>GATHERING</code>: Gathering local candidates</li>
+ *        <li><code>CONNECTING</code>: Establishing connectivity</li>
+ *        <li><code>CONNECTED</code>: At least one working candidate pair</li>
+ *        <li>
+ *          <code>READY</code>: ICE concluded, candidate pair selection is now 
+ *          final
+ *        </li>
+ *        <li>
+ *          <code>FAILED</code>: Connectivity checks have been completed, but 
+ *          media
+ *          connection was not established
+ *        </li>
+ *      </ul>
+ *      The transitions between states are covered in RFC5245. It could be said 
+ *      that
+ *      it's network-only, as it only takes into account the state of the 
+ *      network
+ *      connection, ignoring other higher level stuff, like DTLS handshake, RTCP
+ *      flow, etc. This implies that, while the component state is
+ *      <code>CONNECTED</code>, there might be no media flowing between the 
+ *      peers.
+ *      This makes this event useful only to receive low-level information about
+ *      connection between peers. Even more, while other events might leave a
+ *      graceful period of time before firing, this event fires immediately 
+ *      after
+ *      the state change is detected.
+ *    </li>
+ *    <li>
+ *      <code>IceCandidateFound</code>: Raised when a new candidate is 
+ *      discovered.
+ *      ICE candidates must be sent to the remote peer of the connection. 
+ *      Failing to
+ *      do so for some or all of the candidates might render the connection
+ *      unusable.
+ *    </li>
+ *    <li>
+ *      <code>IceGatheringDone</code>: Raised when the ICE harvesting process is
+ *      completed. This means that all candidates have already been discovered.
+ *    </li>
+ *    <li>
+ *      <code>NewCandidatePairSelected</code>: Raised when a new ICE candidate 
+ *      pair
+ *      gets selected. The pair contains both local and remote candidates being 
+ *      used
+ *      for a component. This event can be raised during a media session, if a 
+ *      new
+ *      pair of candidates with higher priority in the link are found.
+ *    </li>
+ *    <li><code>DataChannelOpen</code>: Raised when a data channel is open.</li>
+ *    <li><code>DataChannelClose</code>: Raised when a data channel is 
+ *    closed.</li>
+ *  </ul>
+ *  <p>
+ *    Registering to any of above events requires the application to provide a
+ *    callback function. Each event provides different information, so it is
+ *    recommended to consult the signature of the event listeners.
+ *  </p>
+ *  <p>
+ *    Flow control and congestion management is one of the most important 
+ *    features
+ *    of WebRTC. WebRTC connections start with the lowest bandwidth configured 
+ *    and
+ *    slowly ramps up to the maximum available bandwidth, or to the higher limit
+ *    the exploration range in case no bandwidth limitation is detected. Notice 
+ *    that
+ *    WebRtcEndpoints in Kurento are designed in a way that multiple WebRTC
+ *    connections fed by the same stream share quality. When a new connection is
+ *    added, as it requires to start with low bandwidth, it will cause the rest 
+ *    of
+ *    connections to experience a transient period of degraded quality, until it
+ *    stabilizes its bitrate. This doesn't apply when transcoding is involved.
+ *    Transcoders will adjust their output bitrate based in bandwidth 
+ *    requirements,
+ *    but it won't affect the original stream. If an incoming WebRTC stream 
+ *    needs to
+ *    be transcoded, for whatever reason, all WebRtcEndpoints fed from 
+ *    transcoder
+ *    output will share a separate quality than the ones connected directly to 
+ *    the
+ *    original stream.
+ *  </p>
+ *  <p>
+ *    The default bandwidth range of the endpoint is 100kbps-500kbps, but it can
+ *    changed separately for input/output directions and for audio/video 
+ *    streams.
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      Input bandwidth control mechanism: Configuration interval used to inform
+ *      remote peer the range of bitrates that can be pushed into this
+ *      WebRtcEndpoint object.
+ *      <ul>
+ *        <li>
+ *          setMin/MaxVideoRecvBandwidth: sets Min/Max bitrate limits expected 
+ *          for
+ *          received video stream.
+ *        </li>
+ *        <li>
+ *          setMin/MaxAudioRecvBandwidth: sets Min/Max bitrate limits expected 
+ *          for
+ *          received audio stream.
+ *        </li>
+ *      </ul>
+ *      Max values are announced in the SDP, while min values are set to limit 
+ *      the
+ *      lower value of REMB packages. It follows that min values will only have
+ *      effect in peers that support this control mechanism, such as Chrome.
+ *    </li>
+ *    <li>
+ *      Output bandwidth control mechanism: Configuration interval used to 
+ *      control
+ *      bitrate of the output video stream sent to remote peer. It is important 
+ *      to
+ *      keep in mind that pushed bitrate depends on network and remote peer
+ *      capabilities. Remote peers can also announce bandwidth limitation in 
+ *      their
+ *      SDPs (through the <code>b={modifier}:{value}</code> tag). Kurento will
+ *      always enforce bitrate limitations specified by the remote peer over
+ *      internal configurations.
+ *      <ul>
+ *        <li>
+ *          setMin/MaxVideoSendBandwidth: sets Min/Max bitrate limits for video 
+ *          sent
+ *          to remote peer
+ *        </li>
+ *      </ul>
+ *    </li>
+ *  </ul>
+ *  <p>
+ *    All bandwidth control parameters must be changed before the SDP 
+ *    negotiation
+ *    takes place, and can't be changed afterwards.
+ *  </p>
+ *  <p>
+ *    DataChannels allow other media elements that make use of the DataPad, to 
+ *    send
+ *    arbitrary data. For instance, if there is a filter that publishes event
+ *    information, it'll be sent to the remote peer through the channel. There 
+ *    is no
+ *    API available for programmers to make use of this feature in the
+ *    WebRtcElement. DataChannels can be configured to provide the following:
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      Reliable or partially reliable delivery of sent messages
+ *    </li>
+ *    <li>
+ *      In-order or out-of-order delivery of sent messages
+ *    </li>
+ *  </ul>
+ *  <p>
+ *    Unreliable, out-of-order delivery is equivalent to raw UDP semantics. The
+ *    message may make it, or it may not, and order is not important. However, 
+ *    the
+ *    channel can be configured to be <i>partially reliable</i> by specifying 
+ *    the
+ *    maximum number of retransmissions or setting a time limit for 
+ *    retransmissions:
+ *    the WebRTC stack will handle the acknowledgments and timeouts.
+ *  </p>
+ *  <p>
+ *    The possibility to create DataChannels in a WebRtcEndpoint must be 
+ *    explicitly
+ *    enabled when creating the endpoint, as this feature is disabled by 
+ *    default. If
+ *    this is the case, they can be created invoking the createDataChannel 
+ *    method.
+ *    The arguments for this method, all of them optional, provide the necessary
+ *    configuration:
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      <code>label</code>: assigns a label to the DataChannel. This can help
+ *      identify each possible channel separately.
+ *    </li>
+ *    <li>
+ *      <code>ordered</code>: specifies if the DataChannel guarantees order, 
+ *      which
+ *      is the default mode. If maxPacketLifetime and maxRetransmits have not 
+ *      been
+ *      set, this enables reliable mode.
+ *    </li>
+ *    <li>
+ *      <code>maxPacketLifeTime</code>: The time window in milliseconds, during
+ *      which transmissions and retransmissions may take place in unreliable 
+ *      mode.
+ *      This forces unreliable mode, even if <code>ordered</code> has been
+ *      activated.
+ *    </li>
+ *    <li>
+ *      <code>maxRetransmits</code>: maximum number of retransmissions that are
+ *      attempted in unreliable mode. This forces unreliable mode, even if
+ *      <code>ordered</code> has been activated.
+ *    </li>
+ *    <li>
+ *      <code>Protocol</code>: Name of the subprotocol used for data 
+ *      communication.
+ *    </li>
+ *  </ul>
  *
  * @extends module:core/abstracts.BaseRtpEndpoint
  *
@@ -16736,6 +17197,146 @@ inherits(WebRtcEndpoint, BaseRtpEndpoint);
 //
 // Public properties
 //
+
+/**
+ * External IP addresses.
+ * <p>
+ *   If you know what will be the external or public IP address of the media 
+ *   server
+ *   (e.g. because your deployment has an static IP), you can specify it here.
+ *   Doing so has several advantages:
+ * </p>
+ * <ol>
+ *   <li>
+ *     The WebRTC ICE gathering process will be much quicker. Normally, it needs
+ *     gather local IP addresses, but this step can be skipped if you provide 
+ *     them
+ *     beforehand.
+ *   </li>
+ *   <li>
+ *     It will ensure that the media server always decides to use the correct
+ *     network interface. With WebRTC ICE gathering it's possible that, under 
+ *     some
+ *     circumstances (in systems with virtual network interfaces such as
+ *     <code>docker0</code>) the ICE process ends up choosing the wrong local 
+ *     IP.
+ *   </li>
+ *   <li>
+ *     You will not need to configure STUN/TURN for the media server (see 
+ *     settings
+ *     below). STUN/TURN are needed only when the media server needs to find out
+ *     what is its own external IP. If you set it up here, then there is no need
+ *     for the STUN/TURN auto-discovery.
+ *   </li>
+ * </ol>
+ * <p>
+ *   <code>externalAddresses</code> is a comma-separated list of IP addresses;
+ *   domain names are NOT supported.
+ * </p>
+ * <p>Examples:</p>
+ * <ul>
+ *   <li><code>externalAddresses=1.1.1.1</code></li>
+ *   <li><code>externalAddresses=1.1.1.1,2.2.2.2,3.3.3.3</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#getExternalAddresses
+ *
+ * @param {module:elements.WebRtcEndpoint~getExternalAddressesCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getExternalAddresses = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getExternalAddresses', callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getExternalAddressesCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
+
+/**
+ * External IP addresses.
+ * <p>
+ *   If you know what will be the external or public IP address of the media 
+ *   server
+ *   (e.g. because your deployment has an static IP), you can specify it here.
+ *   Doing so has several advantages:
+ * </p>
+ * <ol>
+ *   <li>
+ *     The WebRTC ICE gathering process will be much quicker. Normally, it needs
+ *     gather local IP addresses, but this step can be skipped if you provide 
+ *     them
+ *     beforehand.
+ *   </li>
+ *   <li>
+ *     It will ensure that the media server always decides to use the correct
+ *     network interface. With WebRTC ICE gathering it's possible that, under 
+ *     some
+ *     circumstances (in systems with virtual network interfaces such as
+ *     <code>docker0</code>) the ICE process ends up choosing the wrong local 
+ *     IP.
+ *   </li>
+ *   <li>
+ *     You will not need to configure STUN/TURN for the media server (see 
+ *     settings
+ *     below). STUN/TURN are needed only when the media server needs to find out
+ *     what is its own external IP. If you set it up here, then there is no need
+ *     for the STUN/TURN auto-discovery.
+ *   </li>
+ * </ol>
+ * <p>
+ *   <code>externalAddresses</code> is a comma-separated list of IP addresses;
+ *   domain names are NOT supported.
+ * </p>
+ * <p>Examples:</p>
+ * <ul>
+ *   <li><code>externalAddresses=1.1.1.1</code></li>
+ *   <li><code>externalAddresses=1.1.1.1,2.2.2.2,3.3.3.3</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#setExternalAddresses
+ *
+ * @param {external:String} externalAddresses
+ * @param {module:elements.WebRtcEndpoint~setExternalAddressesCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.setExternalAddresses = function(externalAddresses, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('String', 'externalAddresses', externalAddresses, {required: true});
+  //  
+
+  var params = {
+    externalAddresses: externalAddresses
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setExternalAddresses', params, callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~setExternalAddressesCallback
+ * @param {external:Error} error
+ */
 
 /**
  * the ICE candidate pair (local and remote candidates) used by the ice library 
@@ -16803,7 +17404,20 @@ WebRtcEndpoint.prototype.getIceConnectionState = function(callback){
  */
 
 /**
- * address of the STUN server (Only IP address are supported)
+ * STUN server IP address.
+ * <p>The ICE process uses STUN to punch holes through NAT firewalls.</p>
+ * <p>
+ *   <code>stunServerAddress</code> MUST be an IP address; domain names are NOT
+ *   supported.
+ * </p>
+ * <p>
+ *   You need to use a well-working STUN server. Use this to check if it 
+ *   works:<br />
+ *   https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/<br
+ *   From that check, you should get at least one Server-Reflexive Candidate 
+ *   (type
+ *   <code>srflx</code>).
+ * </p>
  *
  * @alias module:elements.WebRtcEndpoint#getStunServerAddress
  *
@@ -16835,7 +17449,20 @@ WebRtcEndpoint.prototype.getStunServerAddress = function(callback){
  */
 
 /**
- * address of the STUN server (Only IP address are supported)
+ * STUN server IP address.
+ * <p>The ICE process uses STUN to punch holes through NAT firewalls.</p>
+ * <p>
+ *   <code>stunServerAddress</code> MUST be an IP address; domain names are NOT
+ *   supported.
+ * </p>
+ * <p>
+ *   You need to use a well-working STUN server. Use this to check if it 
+ *   works:<br />
+ *   https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/<br
+ *   From that check, you should get at least one Server-Reflexive Candidate 
+ *   (type
+ *   <code>srflx</code>).
+ * </p>
  *
  * @alias module:elements.WebRtcEndpoint#setStunServerAddress
  *
@@ -16867,7 +17494,7 @@ WebRtcEndpoint.prototype.setStunServerAddress = function(stunServerAddress, call
  */
 
 /**
- * port of the STUN server
+ * Port of the STUN server
  *
  * @alias module:elements.WebRtcEndpoint#getStunServerPort
  *
@@ -16899,7 +17526,7 @@ WebRtcEndpoint.prototype.getStunServerPort = function(callback){
  */
 
 /**
- * port of the STUN server
+ * Port of the STUN server
  *
  * @alias module:elements.WebRtcEndpoint#setStunServerPort
  *
@@ -16931,8 +17558,38 @@ WebRtcEndpoint.prototype.setStunServerPort = function(stunServerPort, callback){
  */
 
 /**
- * TURN server URL with this format: 
- * <code>user:password@address:port(?transport=[udp|tcp|tls])</code>.</br><code>address</code>
+ * TURN server URL.
+ * <p>
+ *   When STUN is not enough to open connections through some NAT firewalls, 
+ *   using
+ *   TURN is the remaining alternative.
+ * </p>
+ * <p>
+ *   Note that TURN is a superset of STUN, so you don't need to configure STUN 
+ *   if
+ *   you are using TURN.
+ * </p>
+ * <p>The provided URL should follow one of these formats:</p>
+ * <ul>
+ *   <li><code>user:password@ipaddress:port</code></li>
+ *   <li>
+ *     <code>user:password@ipaddress:port?transport=[udp|tcp|tls]</code>
+ *   </li>
+ * </ul>
+ * <p>
+ *   <code>ipaddress</code> MUST be an IP address; domain names are NOT 
+ *   supported.<br />
+ *   <code>transport</code> is OPTIONAL. Possible values: udp, tcp, tls. 
+ *   Default: udp.
+ * </p>
+ * <p>
+ *   You need to use a well-working TURN server. Use this to check if it 
+ *   works:<br />
+ *   https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/<br
+ *   From that check, you should get at least one Server-Reflexive Candidate 
+ *   (type
+ *   <code>srflx</code>) AND one Relay Candidate (type <code>relay</code>).
+ * </p>
  *
  * @alias module:elements.WebRtcEndpoint#getTurnUrl
  *
@@ -16964,8 +17621,38 @@ WebRtcEndpoint.prototype.getTurnUrl = function(callback){
  */
 
 /**
- * TURN server URL with this format: 
- * <code>user:password@address:port(?transport=[udp|tcp|tls])</code>.</br><code>address</code>
+ * TURN server URL.
+ * <p>
+ *   When STUN is not enough to open connections through some NAT firewalls, 
+ *   using
+ *   TURN is the remaining alternative.
+ * </p>
+ * <p>
+ *   Note that TURN is a superset of STUN, so you don't need to configure STUN 
+ *   if
+ *   you are using TURN.
+ * </p>
+ * <p>The provided URL should follow one of these formats:</p>
+ * <ul>
+ *   <li><code>user:password@ipaddress:port</code></li>
+ *   <li>
+ *     <code>user:password@ipaddress:port?transport=[udp|tcp|tls]</code>
+ *   </li>
+ * </ul>
+ * <p>
+ *   <code>ipaddress</code> MUST be an IP address; domain names are NOT 
+ *   supported.<br />
+ *   <code>transport</code> is OPTIONAL. Possible values: udp, tcp, tls. 
+ *   Default: udp.
+ * </p>
+ * <p>
+ *   You need to use a well-working TURN server. Use this to check if it 
+ *   works:<br />
+ *   https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/<br
+ *   From that check, you should get at least one Server-Reflexive Candidate 
+ *   (type
+ *   <code>srflx</code>) AND one Relay Candidate (type <code>relay</code>).
+ * </p>
  *
  * @alias module:elements.WebRtcEndpoint#setTurnUrl
  *
@@ -17070,21 +17757,37 @@ WebRtcEndpoint.prototype.closeDataChannel = function(channelId, callback){
  */
 
 /**
- * Create a new data channel, if data channels are supported. If they are not 
- * supported, this method throws an exception.
- *           Being supported means that the WebRtcEndpoint has been created with
- *           Otherwise, the method throws an exception, indicating that the 
- *           operation is not possible.</br>
- *           Data channels can work in either unreliable mode (analogous to User
- *           The two modes have a simple distinction:
- *           <ul>
- *             <li>Reliable mode guarantees the transmission of messages and 
- *             also the order in which they are delivered. This takes extra 
- *             overhead, thus potentially making this mode slower.</li>
- *             <li>Unreliable mode does not guarantee every message will get to 
- *             the other side nor what order they get there. This removes the 
- *             overhead, allowing this mode to work much faster.</li>
- *           </ul>
+ * Create a new data channel, if data channels are supported.
+ * <p>
+ *   Being supported means that the WebRtcEndpoint has been created with data
+ *   channel support, the client also supports data channels, and they have been
+ *   negotiated in the SDP exchange. Otherwise, the method throws an exception,
+ *   indicating that the operation is not possible.
+ * </p>
+ * <p>
+ *   Data channels can work in either unreliable mode (analogous to User 
+ *   Datagram
+ *   Protocol or UDP) or reliable mode (analogous to Transmission Control 
+ *   Protocol
+ *   or TCP). The two modes have a simple distinction:
+ * </p>
+ * <ul>
+ *   <li>
+ *     Reliable mode guarantees the transmission of messages and also the order 
+ *     in
+ *     which they are delivered. This takes extra overhead, thus potentially 
+ *     making
+ *     this mode slower.
+ *   </li>
+ *   <li>
+ *     Unreliable mode does not guarantee every message will get to the other 
+ *     side
+ *     nor what order they get there. This removes the overhead, allowing this 
+ *     mode
+ *     to work much faster.
+ *   </li>
+ * </ul>
+ * <p>If data channels are not supported, this method throws an exception.</p>
  *
  * @alias module:elements.WebRtcEndpoint.createDataChannel
  *
@@ -17098,15 +17801,12 @@ WebRtcEndpoint.prototype.closeDataChannel = function(channelId, callback){
  *
  * @param {external:Integer} [maxPacketLifeTime]
  *  The time window (in milliseconds) during which transmissions and 
- *  retransmissions may take place in unreliable mode.</br>
- *                <hr/><b>Note</b> This forces unreliable mode, even if 
- *                <code>ordered</code> has been activated
+ *  retransmissions may take place in unreliable mode.
+ *  Note that this forces unreliable mode, even if <code>ordered</code> has been
  *
  * @param {external:Integer} [maxRetransmits]
- *  maximum number of retransmissions that are attempted in unreliable 
- *  mode.</br>
- *                <hr/><b>Note</b> This forces unreliable mode, even if 
- *                <code>ordered</code> has been activated
+ *  maximum number of retransmissions that are attempted in unreliable mode.
+ *  Note that this forces unreliable mode, even if <code>ordered</code> has been
  *
  * @param {external:String} [protocol]
  *  Name of the subprotocol used for data communication
@@ -17173,9 +17873,14 @@ WebRtcEndpoint.prototype.createDataChannel = function(label, ordered, maxPacketL
  */
 
 /**
- * Start the gathering of ICE candidates.</br>It must be called after 
- * SdpEndpoint::generateOffer or SdpEndpoint::processOffer for Trickle ICE. If 
- * invoked before generating or processing an SDP offer, the candidates gathered
+ * Start the gathering of ICE candidates.
+ * <p>
+ *   It must be called after <code>SdpEndpoint::generateOffer</code> or
+ *   <code>SdpEndpoint::processOffer</code> for <strong>Trickle ICE</strong>. If
+ *   invoked before generating or processing an SDP offer, the candidates 
+ *   gathered
+ *   will be added to the SDP processed.
+ * </p>
  *
  * @alias module:elements.WebRtcEndpoint.gatherCandidates
  *
@@ -17560,8 +18265,8 @@ var ComplexType = require('kurento-client-core').complexTypes.ComplexType;
 
 
 /**
- * IceCandidate representation based on standard 
- * (http://www.w3.org/TR/webrtc/#rtcicecandidate-type).
+ * IceCandidate representation based on <code>RTCIceCandidate</code> interface.
+ * @see https://www.w3.org/TR/2018/CR-webrtc-20180927/#rtcicecandidate-interface
  *
  * @constructor module:elements/complexTypes.IceCandidate
  *
@@ -33202,7 +33907,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.12.0'});
+Object.defineProperty(exports, 'version', {value: '6.12.1-dev'});
 
 
 var HubPort = require('./HubPort');
@@ -33246,7 +33951,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.12.0'});
+Object.defineProperty(exports, 'version', {value: '6.12.1-dev'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -33304,7 +34009,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.12.0'});
+Object.defineProperty(exports, 'version', {value: '6.12.1-dev'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
