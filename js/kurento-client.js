@@ -6140,14 +6140,15 @@ function noop(error, result) {
  * @classdesc
  *  Handles RTP communications.
  *  <p>
- *    All endpoints that rely on the RTP protocol, like the RtpEndpoint or the
- *    WebRtcEndpoint, inherit from this class. The endpoint provides information
- *    about the connection state and the media state, which can be consulted at 
- *    any
- *    time through the {@link module:core/abstracts.BaseRtpEndpoint#mediaState} 
- *    and the {@link module:core/abstracts.BaseRtpEndpoint#connectionState}
- *    properties. It is also possible subscribe to events fired when these
- *    properties change.
+ *    All endpoints that rely on the RTP protocol, like the
+ *    <strong>RtpEndpoint</strong> or the <strong>WebRtcEndpoint</strong>, 
+ *    inherit
+ *    from this class. The endpoint provides information about the connection 
+ *    state
+ *    and the media state, which can be consulted at any time through the
+ *    {@link module:core/abstracts.BaseRtpEndpoint#mediaState} and the {@link 
+ *    module:core/abstracts.BaseRtpEndpoint#connectionState} properties. It is
+ *    also possible subscribe to events fired when these properties change.
  *  </p>
  *  <ul>
  *    <li>
@@ -6184,55 +6185,73 @@ function noop(error, result) {
  *  <p>
  *    Part of the bandwidth control of the video component of the media session 
  *    is
- *    done here. The values of the properties described are in kbps:
+ *    done here:
  *  </p>
  *  <ul>
  *    <li>
- *      Input bandwidth control mechanism: Configuration interval used to inform
- *      remote peer the range of bitrates that can be pushed into this
- *      BaseRtpEndpoint object.
+ *      Input bandwidth: Configuration value used to inform remote peers about 
+ *      the
+ *      bitrate that can be pushed into this endpoint.
  *      <ul>
  *        <li>
- *          setMinVideoRecvBandwidth: sets min bitrate limits expected for the
- *          received video stream. This value is set to limit the lower value of
- *          REMB packages, if supported by the implementing class.
+ *          <strong>{get,set}MinVideoRecvBandwidth</strong>: Minimum bitrate
+ *          expected for the received video stream. This is used to set a 
+ *          minimum
+ *          value of local REMB during bandwidth estimation, if supported by the
+ *          implementing class. It follows that min values will only have effect
+ *          remote peers that support this congestion control mechanism, such as
+ *          Chrome.
+ *        </li>
+ *        <li>
+ *          <strong>{get,set}Max{Audio,Video}RecvBandwidth</strong>: Maximum 
+ *          bitrate
+ *          expected for the received stream. This is used to put a limit on the
+ *          bitrate that the remote peer will send to this endpoint. The net 
+ *          effect
+ *          of setting this parameter is that
+ *          <i>when Kurento generates an SDP Offer</i>, an 'Application 
+ *          Specific'
+ *          (AS) maximum bandwidth attribute will be added to the SDP media 
+ *          section:
+ *          <code>b=AS:{value}</code>.
  *        </li>
  *      </ul>
- *      Max values are announced in the SDP, while min values are set to limit 
- *      the
- *      lower value of REMB packages. It follows that min values will only have
- *      effect in peers that support this control mechanism, such as Chrome.
  *    </li>
  *    <li>
- *      Output bandwidth control mechanism: Configuration interval used to 
- *      control
- *      bitrate of the output video stream sent to remote peer. It is important 
- *      to
- *      keep in mind that pushed bitrate depends on network and remote peer
- *      capabilities. Remote peers can also announce bandwidth limitation in 
- *      their
- *      SDPs (through the <code>b={modifier}:{value}</code> tag). Kurento will
- *      always enforce bitrate limitations specified by the remote peer over
- *      internal configurations.
+ *      Output bandwidth: Configuration values used to control bitrate of the 
+ *      output
+ *      video stream sent to remote peers. It is important to keep in mind that
+ *      pushed bitrate depends on network and remote peer capabilities. Remote 
+ *      peers
+ *      can also announce bandwidth limitation in their SDPs (through the
+ *      <code>b={modifier}:{value}</code> tag). Kurento will always enforce 
+ *      bitrate
+ *      limitations specified by the remote peer over internal configurations.
  *      <ul>
  *        <li>
- *          setMinVideoSendBandwidth: sets the minimum bitrate for video to be 
- *          sent
- *          to remote peer. 0 is considered unconstrained.
+ *          <strong>{get,set}MinVideoSendBandwidth</strong>: Minimum video 
+ *          bitrate
+ *          sent to remote peer.
  *        </li>
  *        <li>
- *          setMaxVideoSendBandwidth: sets maximum bitrate limits for video sent
- *          remote peer. 0 is considered unconstrained.
+ *          <strong>{get,set}MaxVideoSendBandwidth</strong>: Maximum video 
+ *          bitrate
+ *          sent to remote peer.
+ *        </li>
+ *        <li>
+ *          <strong>RembParams.rembOnConnect</strong>: Initial local REMB 
+ *          bandwidth
+ *          estimation that gets propagated when a new endpoint is connected.
  *        </li>
  *      </ul>
  *    </li>
  *  </ul>
  *  <p>
- *    <b>
+ *    <strong>
  *      All bandwidth control parameters must be changed before the SDP 
  *      negotiation
  *      takes place, and can't be changed afterwards.
- *    </b>
+ *    </strong>
  *  </p>
  *
  * @abstract
@@ -6290,7 +6309,7 @@ BaseRtpEndpoint.prototype.getConnectionState = function(callback){
  */
 
 /**
- * Maximum video transmission bitrate used for bandwidth
+ * Maximum video transmission bitrate used for local bandwidth
  * estimations in the congestion control algorithm (REMB).
  * <p>
  *   With this parameter you can control the maximum video quality that will be
@@ -6299,12 +6318,30 @@ BaseRtpEndpoint.prototype.getConnectionState = function(callback){
  *   get
  *   better.
  * </p>
+ * <p>
+ *   Note that the default value of <strong>500 kbps</strong> is a VERY
+ *   conservative one, and leads to a low maximum video quality. Most 
+ *   applications
+ *   will probably want to increase this parameter to higher values such as 2000
+ *   mbps) or even 10000 (10 mbps).
+ * </p>
+ * <p>
+ *   The REMB congestion control algorithm works by gradually increasing the 
+ *   output
+ *   video bitrate, until the available bandwidth is fully used or the maximum 
+ *   send
+ *   bitrate has been reached. This is a slow, progressive change, which starts 
+ *   at
+ *   300 kbps by default. You can change the default starting point of REMB
+ *   estimations, by setting the
+ *   <strong>RembParams.rembOnConnect</strong> parameter.
+ * </p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 500.</li>
  *   <li>
  *     0 = unconstrained: the video bitrate will grow until all the available
- *     network bandwidth is used by the stream.<br>
+ *     network bandwidth is used by the stream.<br />
  *     Note that this might have a bad effect if more than one stream is running
  *     (as all of them would try to raise the video bitrate indefinitely, until 
  *     the
@@ -6342,7 +6379,7 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
  */
 
 /**
- * Maximum video transmission bitrate used for bandwidth
+ * Maximum video transmission bitrate used for local bandwidth
  * estimations in the congestion control algorithm (REMB).
  * <p>
  *   With this parameter you can control the maximum video quality that will be
@@ -6351,12 +6388,30 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
  *   get
  *   better.
  * </p>
+ * <p>
+ *   Note that the default value of <strong>500 kbps</strong> is a VERY
+ *   conservative one, and leads to a low maximum video quality. Most 
+ *   applications
+ *   will probably want to increase this parameter to higher values such as 2000
+ *   mbps) or even 10000 (10 mbps).
+ * </p>
+ * <p>
+ *   The REMB congestion control algorithm works by gradually increasing the 
+ *   output
+ *   video bitrate, until the available bandwidth is fully used or the maximum 
+ *   send
+ *   bitrate has been reached. This is a slow, progressive change, which starts 
+ *   at
+ *   300 kbps by default. You can change the default starting point of REMB
+ *   estimations, by setting the
+ *   <strong>RembParams.rembOnConnect</strong> parameter.
+ * </p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 500.</li>
  *   <li>
  *     0 = unconstrained: the video bitrate will grow until all the available
- *     network bandwidth is used by the stream.<br>
+ *     network bandwidth is used by the stream.<br />
  *     Note that this might have a bad effect if more than one stream is running
  *     (as all of them would try to raise the video bitrate indefinitely, until 
  *     the
@@ -6431,12 +6486,22 @@ BaseRtpEndpoint.prototype.getMediaState = function(callback){
  */
 
 /**
- * Minimum bitrate announced for video reception.
+ * Minimum bitrate expected for the received video stream.
+ * <p>
+ *   This is used to set a minimum value of REMB during bandwidth estimation, if
+ *   supported by the implementing class. It follows that min values will only 
+ *   have
+ *   effect in remote peers that support this congestion control mechanism, such
+ *   Chrome.
+ * </p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
- *   <li>Default: 30.</li>
- *   <li>The absolute minimum value is 30 kbps, even if a lower value is 
- *   set.</li>
+ *   <li>Default: 0.</li>
+ *   <li>
+ *     Note: The absolute minimum REMB value is 30 kbps, even if a lower value 
+ *     is
+ *     set here.
+ *   </li>
  * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#getMinVideoRecvBandwidth
@@ -6469,12 +6534,22 @@ BaseRtpEndpoint.prototype.getMinVideoRecvBandwidth = function(callback){
  */
 
 /**
- * Minimum bitrate announced for video reception.
+ * Minimum bitrate expected for the received video stream.
+ * <p>
+ *   This is used to set a minimum value of REMB during bandwidth estimation, if
+ *   supported by the implementing class. It follows that min values will only 
+ *   have
+ *   effect in remote peers that support this congestion control mechanism, such
+ *   Chrome.
+ * </p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
- *   <li>Default: 30.</li>
- *   <li>The absolute minimum value is 30 kbps, even if a lower value is 
- *   set.</li>
+ *   <li>Default: 0.</li>
+ *   <li>
+ *     Note: The absolute minimum REMB value is 30 kbps, even if a lower value 
+ *     is
+ *     set here.
+ *   </li>
  * </ul>
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#setMinVideoRecvBandwidth
@@ -6507,7 +6582,7 @@ BaseRtpEndpoint.prototype.setMinVideoRecvBandwidth = function(minVideoRecvBandwi
  */
 
 /**
- * Minimum video transmission bitrate used for bandwidth
+ * Minimum video transmission bitrate used for local bandwidth
  * estimations in the congestion control algorithm (REMB).
  * <p>
  *   With this parameter you can control the minimum video quality that will be
@@ -6563,7 +6638,7 @@ BaseRtpEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
  */
 
 /**
- * Minimum video transmission bitrate used for bandwidth
+ * Minimum video transmission bitrate used for local bandwidth
  * estimations in the congestion control algorithm (REMB).
  * <p>
  *   With this parameter you can control the minimum video quality that will be
@@ -9376,11 +9451,19 @@ inherits(SdpEndpoint, SessionEndpoint);
 //
 
 /**
- * Maximum bandwidth for audio reception.
- * <p>This has to be set before the SDP is generated.</p>
+ * Maximum bitrate expected for the received audio stream.
+ * <p>
+ *   This is used to put a limit on the bitrate that the remote peer will send 
+ *   to
+ *   this endpoint. The net effect of setting this parameter is that
+ *   <i>when Kurento generates an SDP Offer</i>, an 'Application Specific' (AS)
+ *   maximum bandwidth attribute will be added to the SDP media section:
+ *   <code>b=AS:{value}</code>.
+ * </p>
+ * <p>Note: This parameter has to be set before the SDP is generated.</p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
- *   <li>Default: 500.</li>
+ *   <li>Default: 0.</li>
  *   <li>0 = unconstrained.</li>
  * </ul>
  *
@@ -9414,11 +9497,19 @@ SdpEndpoint.prototype.getMaxAudioRecvBandwidth = function(callback){
  */
 
 /**
- * Maximum bandwidth for audio reception.
- * <p>This has to be set before the SDP is generated.</p>
+ * Maximum bitrate expected for the received audio stream.
+ * <p>
+ *   This is used to put a limit on the bitrate that the remote peer will send 
+ *   to
+ *   this endpoint. The net effect of setting this parameter is that
+ *   <i>when Kurento generates an SDP Offer</i>, an 'Application Specific' (AS)
+ *   maximum bandwidth attribute will be added to the SDP media section:
+ *   <code>b=AS:{value}</code>.
+ * </p>
+ * <p>Note: This parameter has to be set before the SDP is generated.</p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
- *   <li>Default: 500.</li>
+ *   <li>Default: 0.</li>
  *   <li>0 = unconstrained.</li>
  * </ul>
  *
@@ -9452,11 +9543,19 @@ SdpEndpoint.prototype.setMaxAudioRecvBandwidth = function(maxAudioRecvBandwidth,
  */
 
 /**
- * Maximum bandwidth for video reception.
- * <p>This has to be set before the SDP is generated.</p>
+ * Maximum bitrate expected for the received video stream.
+ * <p>
+ *   This is used to put a limit on the bitrate that the remote peer will send 
+ *   to
+ *   this endpoint. The net effect of setting this parameter is that
+ *   <i>when Kurento generates an SDP Offer</i>, an 'Application Specific' (AS)
+ *   maximum bandwidth attribute will be added to the SDP media section:
+ *   <code>b=AS:{value}</code>.
+ * </p>
+ * <p>Note: This parameter has to be set before the SDP is generated.</p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
- *   <li>Default: 500.</li>
+ *   <li>Default: 0.</li>
  *   <li>0 = unconstrained.</li>
  * </ul>
  *
@@ -9490,11 +9589,19 @@ SdpEndpoint.prototype.getMaxVideoRecvBandwidth = function(callback){
  */
 
 /**
- * Maximum bandwidth for video reception.
- * <p>This has to be set before the SDP is generated.</p>
+ * Maximum bitrate expected for the received video stream.
+ * <p>
+ *   This is used to put a limit on the bitrate that the remote peer will send 
+ *   to
+ *   this endpoint. The net effect of setting this parameter is that
+ *   <i>when Kurento generates an SDP Offer</i>, an 'Application Specific' (AS)
+ *   maximum bandwidth attribute will be added to the SDP media section:
+ *   <code>b=AS:{value}</code>.
+ * </p>
+ * <p>Note: This parameter has to be set before the SDP is generated.</p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
- *   <li>Default: 500.</li>
+ *   <li>Default: 0.</li>
  *   <li>0 = unconstrained.</li>
  * </ul>
  *
@@ -14069,9 +14176,35 @@ var ComplexType = require('./ComplexType');
  *  Max fraction-lost to no determine too losses. This value is the denominator 
  *  of the fraction N/256, so the default value is about 4% of losses (12/256)
  * @property {external:Integer} rembOnConnect
- *  REMB propagated upstream when video sending is started in a new connected 
- *  endpoint.
- *    Unit: bps(bits per second)
+ *  Initial local REMB bandwidth estimation that gets propagated when a new 
+ *  endpoint is connected.
+ *  <p>
+ *    The REMB congestion control algorithm works by gradually increasing the 
+ *    output
+ *    video bitrate, until the available bandwidth is fully used or the maximum 
+ *    send
+ *    bitrate has been reached. This is a slow, progressive change, which starts
+ *    300 kbps by default. You can change the default starting point of REMB
+ *    estimations, by setting this parameter.
+ *  </p>
+ *  <p>
+ *    <b>WARNING</b>: If you set this parameter to a high value that is
+ *    <i>higher than the network capacity</i>, then all endpoints will start 
+ *    already
+ *    in a congested state, providing very bad video quality until the 
+ *    congestion
+ *    control algorithm is able to recover from the situation. Network 
+ *    congestion is
+ *    very unpredictable, so be careful when changing this parameter; for most 
+ *    use
+ *    cases it is safer to just start with a low initial value and allow the 
+ *    REMB
+ *    algorithm to raise until the optimum bitrate is reached.
+ *  </p>
+ *  <ul>
+ *    <li>Unit: bps (bits per second).</li>
+ *    <li>Default: 300000 (300 kbps).</li>
+ *  </ul>
  */
 function RembParams(rembParamsDict){
   if(!(this instanceof RembParams))
@@ -17054,56 +17187,89 @@ function noop(error, result) {
  *    original stream.
  *  </p>
  *  <p>
- *    The default bandwidth range of the endpoint is 100kbps-500kbps, but it can
- *    changed separately for input/output directions and for audio/video 
- *    streams.
+ *    The default bandwidth range of the endpoint is
+ *    <strong>[100 kbps, 500 kbps]</strong>, but it can be changed separately 
+ *    for
+ *    input/output directions and for audio/video streams.
+ *  </p>
+ *  <p>
+ *    <strong>
+ *      Check the extended documentation of these parameters in
+ *      {@link module:core/abstracts.SdpEndpoint SdpEndpoint}, {@link 
+ *      module:core/abstracts.BaseRtpEndpoint BaseRtpEndpoint}, and
+ *      :rom:cls:`RembParams`.
+ *    </strong>
  *  </p>
  *  <ul>
  *    <li>
- *      Input bandwidth control mechanism: Configuration interval used to inform
- *      remote peer the range of bitrates that can be pushed into this
- *      WebRtcEndpoint object.
+ *      Input bandwidth: Configuration value used to inform remote peers about 
+ *      the
+ *      bitrate that can be pushed into this endpoint.
  *      <ul>
  *        <li>
- *          setMin/MaxVideoRecvBandwidth: sets Min/Max bitrate limits expected 
- *          for
- *          received video stream.
+ *          <strong>{get,set}MinVideoRecvBandwidth</strong>: Minimum bitrate
+ *          expected for the received video stream. This is used to set a 
+ *          minimum
+ *          value of local REMB during bandwidth estimation, if supported by the
+ *          implementing class. It follows that min values will only have effect
+ *          remote peers that support this congestion control mechanism, such as
+ *          Chrome.
  *        </li>
  *        <li>
- *          setMin/MaxAudioRecvBandwidth: sets Min/Max bitrate limits expected 
- *          for
- *          received audio stream.
+ *          <strong>{get,set}Max{Audio,Video}RecvBandwidth</strong>: Maximum 
+ *          bitrate
+ *          expected for the received stream. This is used to put a limit on the
+ *          bitrate that the remote peer will send to this endpoint. The net 
+ *          effect
+ *          of setting this parameter is that
+ *          <i>when Kurento generates an SDP Offer</i>, an 'Application 
+ *          Specific'
+ *          (AS) maximum bandwidth attribute will be added to the SDP media 
+ *          section:
+ *          <code>b=AS:{value}</code>.
  *        </li>
  *      </ul>
- *      Max values are announced in the SDP, while min values are set to limit 
- *      the
- *      lower value of REMB packages. It follows that min values will only have
- *      effect in peers that support this control mechanism, such as Chrome.
+ *      Max values are announced in the SDP, while min values are used to set a
+ *      minimum value of local REMB during bandwidth estimation, if supported by
+ *      implementing class. It follows that min values will only have effect in
+ *      remote peers that support this congestion control mechanism, such as 
+ *      Chrome.
  *    </li>
  *    <li>
- *      Output bandwidth control mechanism: Configuration interval used to 
- *      control
- *      bitrate of the output video stream sent to remote peer. It is important 
- *      to
- *      keep in mind that pushed bitrate depends on network and remote peer
- *      capabilities. Remote peers can also announce bandwidth limitation in 
- *      their
- *      SDPs (through the <code>b={modifier}:{value}</code> tag). Kurento will
- *      always enforce bitrate limitations specified by the remote peer over
- *      internal configurations.
+ *      Output bandwidth: Configuration values used to control bitrate of the 
+ *      output
+ *      video stream sent to remote peers. It is important to keep in mind that
+ *      pushed bitrate depends on network and remote peer capabilities. Remote 
+ *      peers
+ *      can also announce bandwidth limitation in their SDPs (through the
+ *      <code>b={modifier}:{value}</code> tag). Kurento will always enforce 
+ *      bitrate
+ *      limitations specified by the remote peer over internal configurations.
  *      <ul>
  *        <li>
- *          setMin/MaxVideoSendBandwidth: sets Min/Max bitrate limits for video 
- *          sent
- *          to remote peer
+ *          <strong>{get,set}MinVideoSendBandwidth</strong>: Minimum video 
+ *          bitrate
+ *          sent to remote peer.
+ *        </li>
+ *        <li>
+ *          <strong>{get,set}MaxVideoSendBandwidth</strong>: Maximum video 
+ *          bitrate
+ *          sent to remote peer.
+ *        </li>
+ *        <li>
+ *          <strong>RembParams.rembOnConnect</strong>: Initial local REMB 
+ *          bandwidth
+ *          estimation that gets propagated when a new endpoint is connected.
  *        </li>
  *      </ul>
  *    </li>
  *  </ul>
  *  <p>
- *    All bandwidth control parameters must be changed before the SDP 
- *    negotiation
- *    takes place, and can't be changed afterwards.
+ *    <strong>
+ *      All bandwidth control parameters must be changed before the SDP 
+ *      negotiation
+ *      takes place, and can't be changed afterwards.
+ *    </strong>
  *  </p>
  *  <p>
  *    DataChannels allow other media elements that make use of the DataPad, to 
@@ -17222,11 +17388,12 @@ inherits(WebRtcEndpoint, BaseRtpEndpoint);
  *     IP.
  *   </li>
  *   <li>
- *     You will not need to configure STUN/TURN for the media server (see 
- *     settings
- *     below). STUN/TURN are needed only when the media server needs to find out
- *     what is its own external IP. If you set it up here, then there is no need
- *     for the STUN/TURN auto-discovery.
+ *     You will not need to configure STUN/TURN for the media server. STUN/TURN 
+ *     are
+ *     needed only when the media server needs to find out what is its own 
+ *     external
+ *     IP. If you set it up here, then there is no need for the STUN/TURN
+ *     auto-discovery.
  *   </li>
  * </ol>
  * <p>
@@ -17292,11 +17459,12 @@ WebRtcEndpoint.prototype.getExternalAddresses = function(callback){
  *     IP.
  *   </li>
  *   <li>
- *     You will not need to configure STUN/TURN for the media server (see 
- *     settings
- *     below). STUN/TURN are needed only when the media server needs to find out
- *     what is its own external IP. If you set it up here, then there is no need
- *     for the STUN/TURN auto-discovery.
+ *     You will not need to configure STUN/TURN for the media server. STUN/TURN 
+ *     are
+ *     needed only when the media server needs to find out what is its own 
+ *     external
+ *     IP. If you set it up here, then there is no need for the STUN/TURN
+ *     auto-discovery.
  *   </li>
  * </ol>
  * <p>
