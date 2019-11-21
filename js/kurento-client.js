@@ -6694,6 +6694,130 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
  */
 
 /**
+ * Maximum Transmission Unit (MTU) used for RTP.
+ * <p>
+ *   This setting affects the maximum size that will be used by RTP payloads. 
+ *   You
+ *   can change it from the default, if you think that a different value would 
+ *   be
+ *   beneficial for the typical network settings of your application.
+ * </p>
+ * <p>
+ *   The default value is 1200 Bytes. This is the same as in <b>libwebrtc</b> 
+ *   (from
+ *   webrtc.org), as used by `Firefox
+ *   <https://dxr.mozilla.org/mozilla-central/rev/b5c5ba07d3dbd0d07b66fa42a103f4df2c27d3a2/media/webrtc/trunk/webrtc/media/engine/constants.cc#16>`__
+ *   or `Chrome
+ *   <https://codesearch.chromium.org/chromium/src/third_party/webrtc/media/engine/constants.cc?l=15&rcl=6dd488b2e55125644263e4837f1abd950d5e410d>`__.
+ *   You can read more about this value in `Why RTP max packet size is 1200 in
+ *   WebRTC?
+ *   <https://groups.google.com/d/topic/discuss-webrtc/gH5ysR3SoZI/discussion>`__.
+ * </p>
+ * <p>
+ *   <b>WARNING</b>: Change this value ONLY if you really know what you are 
+ *   doing
+ *   and you have strong reasons to do so. Do NOT change this parameter just
+ *   because it <i>seems</i> to work better for some reduced scope tests. The
+ *   default value is a consensus chosen by people who have deep knowledge about
+ *   network optimization.
+ * </p>
+ * <ul>
+ *   <li>Unit: Bytes.</li>
+ *   <li>Default: 1200.</li>
+ * </ul>
+ *
+ * @alias module:core/abstracts.BaseRtpEndpoint#getMtu
+ *
+ * @param {module:core/abstracts.BaseRtpEndpoint~getMtuCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+BaseRtpEndpoint.prototype.getMtu = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getMtu', callback), this)
+};
+/**
+ * @callback module:core/abstracts.BaseRtpEndpoint~getMtuCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Maximum Transmission Unit (MTU) used for RTP.
+ * <p>
+ *   This setting affects the maximum size that will be used by RTP payloads. 
+ *   You
+ *   can change it from the default, if you think that a different value would 
+ *   be
+ *   beneficial for the typical network settings of your application.
+ * </p>
+ * <p>
+ *   The default value is 1200 Bytes. This is the same as in <b>libwebrtc</b> 
+ *   (from
+ *   webrtc.org), as used by `Firefox
+ *   <https://dxr.mozilla.org/mozilla-central/rev/b5c5ba07d3dbd0d07b66fa42a103f4df2c27d3a2/media/webrtc/trunk/webrtc/media/engine/constants.cc#16>`__
+ *   or `Chrome
+ *   <https://codesearch.chromium.org/chromium/src/third_party/webrtc/media/engine/constants.cc?l=15&rcl=6dd488b2e55125644263e4837f1abd950d5e410d>`__.
+ *   You can read more about this value in `Why RTP max packet size is 1200 in
+ *   WebRTC?
+ *   <https://groups.google.com/d/topic/discuss-webrtc/gH5ysR3SoZI/discussion>`__.
+ * </p>
+ * <p>
+ *   <b>WARNING</b>: Change this value ONLY if you really know what you are 
+ *   doing
+ *   and you have strong reasons to do so. Do NOT change this parameter just
+ *   because it <i>seems</i> to work better for some reduced scope tests. The
+ *   default value is a consensus chosen by people who have deep knowledge about
+ *   network optimization.
+ * </p>
+ * <ul>
+ *   <li>Unit: Bytes.</li>
+ *   <li>Default: 1200.</li>
+ * </ul>
+ *
+ * @alias module:core/abstracts.BaseRtpEndpoint#setMtu
+ *
+ * @param {external:Integer} mtu
+ * @param {module:core/abstracts.BaseRtpEndpoint~setMtuCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+BaseRtpEndpoint.prototype.setMtu = function(mtu, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('int', 'mtu', mtu, {required: true});
+  //  
+
+  var params = {
+    mtu: mtu
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setMtu', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.BaseRtpEndpoint~setMtuCallback
+ * @param {external:Error} error
+ */
+
+/**
  * Advanced parameters to configure the congestion control algorithm.
  *
  * @alias module:core/abstracts.BaseRtpEndpoint#getRembParams
@@ -17365,148 +17489,6 @@ inherits(WebRtcEndpoint, BaseRtpEndpoint);
 //
 
 /**
- * External IP addresses.
- * <p>
- *   If you know what will be the external or public IP address of the media 
- *   server
- *   (e.g. because your deployment has an static IP), you can specify it here.
- *   Doing so has several advantages:
- * </p>
- * <ol>
- *   <li>
- *     The WebRTC ICE gathering process will be much quicker. Normally, it needs
- *     gather local IP addresses, but this step can be skipped if you provide 
- *     them
- *     beforehand.
- *   </li>
- *   <li>
- *     It will ensure that the media server always decides to use the correct
- *     network interface. With WebRTC ICE gathering it's possible that, under 
- *     some
- *     circumstances (in systems with virtual network interfaces such as
- *     <code>docker0</code>) the ICE process ends up choosing the wrong local 
- *     IP.
- *   </li>
- *   <li>
- *     You will not need to configure STUN/TURN for the media server. STUN/TURN 
- *     are
- *     needed only when the media server needs to find out what is its own 
- *     external
- *     IP. If you set it up here, then there is no need for the STUN/TURN
- *     auto-discovery.
- *   </li>
- * </ol>
- * <p>
- *   <code>externalAddresses</code> is a comma-separated list of IP addresses;
- *   domain names are NOT supported.
- * </p>
- * <p>Examples:</p>
- * <ul>
- *   <li><code>externalAddresses=1.1.1.1</code></li>
- *   <li><code>externalAddresses=1.1.1.1,2.2.2.2,3.3.3.3</code></li>
- * </ul>
- *
- * @alias module:elements.WebRtcEndpoint#getExternalAddresses
- *
- * @param {module:elements.WebRtcEndpoint~getExternalAddressesCallback} [callback]
- *
- * @return {external:Promise}
- */
-WebRtcEndpoint.prototype.getExternalAddresses = function(callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  var usePromise = false;
-  
-  if (callback == undefined) {
-    usePromise = true;
-  }
-  
-  if(!arguments.length) callback = undefined;
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'getExternalAddresses', callback), this)
-};
-/**
- * @callback module:elements.WebRtcEndpoint~getExternalAddressesCallback
- * @param {external:Error} error
- * @param {external:String} result
- */
-
-/**
- * External IP addresses.
- * <p>
- *   If you know what will be the external or public IP address of the media 
- *   server
- *   (e.g. because your deployment has an static IP), you can specify it here.
- *   Doing so has several advantages:
- * </p>
- * <ol>
- *   <li>
- *     The WebRTC ICE gathering process will be much quicker. Normally, it needs
- *     gather local IP addresses, but this step can be skipped if you provide 
- *     them
- *     beforehand.
- *   </li>
- *   <li>
- *     It will ensure that the media server always decides to use the correct
- *     network interface. With WebRTC ICE gathering it's possible that, under 
- *     some
- *     circumstances (in systems with virtual network interfaces such as
- *     <code>docker0</code>) the ICE process ends up choosing the wrong local 
- *     IP.
- *   </li>
- *   <li>
- *     You will not need to configure STUN/TURN for the media server. STUN/TURN 
- *     are
- *     needed only when the media server needs to find out what is its own 
- *     external
- *     IP. If you set it up here, then there is no need for the STUN/TURN
- *     auto-discovery.
- *   </li>
- * </ol>
- * <p>
- *   <code>externalAddresses</code> is a comma-separated list of IP addresses;
- *   domain names are NOT supported.
- * </p>
- * <p>Examples:</p>
- * <ul>
- *   <li><code>externalAddresses=1.1.1.1</code></li>
- *   <li><code>externalAddresses=1.1.1.1,2.2.2.2,3.3.3.3</code></li>
- * </ul>
- *
- * @alias module:elements.WebRtcEndpoint#setExternalAddresses
- *
- * @param {external:String} externalAddresses
- * @param {module:elements.WebRtcEndpoint~setExternalAddressesCallback} [callback]
- *
- * @return {external:Promise}
- */
-WebRtcEndpoint.prototype.setExternalAddresses = function(externalAddresses, callback){
-  var transaction = (arguments[0] instanceof Transaction)
-                  ? Array.prototype.shift.apply(arguments)
-                  : undefined;
-
-  //  
-  // checkType('String', 'externalAddresses', externalAddresses, {required: true});
-  //  
-
-  var params = {
-    externalAddresses: externalAddresses
-  };
-
-  callback = (callback || noop).bind(this)
-
-  return disguise(this._invoke(transaction, 'setExternalAddresses', params, callback), this)
-};
-/**
- * @callback module:elements.WebRtcEndpoint~setExternalAddressesCallback
- * @param {external:Error} error
- */
-
-/**
  * the ICE candidate pair (local and remote candidates) used by the ice library 
  * for each stream.
  *
@@ -17569,6 +17551,134 @@ WebRtcEndpoint.prototype.getIceConnectionState = function(callback){
  * @callback module:elements.WebRtcEndpoint~getIceConnectionStateCallback
  * @param {external:Error} error
  * @param {module:elements/complexTypes.IceConnection} result
+ */
+
+/**
+ * Local network interfaces used for ICE gathering.
+ * <p>
+ *   If you know which network interfaces should be used to perform ICE (for 
+ *   WebRTC
+ *   connectivity), you can define them here. Doing so has several advantages:
+ * </p>
+ * <ul>
+ *   <li>
+ *     The WebRTC ICE gathering process will be much quicker. Normally, it needs
+ *     gather local candidates for all of the network interfaces, but this step 
+ *     can
+ *     be made faster if you limit it to only the interface that you know will
+ *     work.
+ *   </li>
+ *   <li>
+ *     It will ensure that the media server always decides to use the correct
+ *     network interface. With WebRTC ICE gathering it's possible that, under 
+ *     some
+ *     circumstances (in systems with virtual network interfaces such as
+ *     <code>docker0</code>) the ICE process ends up choosing the wrong local 
+ *     IP.
+ *   </li>
+ * </ul>
+ * <p>
+ *   <code>networkInterfaces</code> is a comma-separated list of network 
+ *   interface
+ *   names.
+ * </p>
+ * <p>Examples:</p>
+ * <ul>
+ *   <li><code>networkInterfaces=eth0</code></li>
+ *   <li><code>networkInterfaces=eth0,enp0s25</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#getNetworkInterfaces
+ *
+ * @param {module:elements.WebRtcEndpoint~getNetworkInterfacesCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getNetworkInterfaces = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getNetworkInterfaces', callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getNetworkInterfacesCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
+
+/**
+ * Local network interfaces used for ICE gathering.
+ * <p>
+ *   If you know which network interfaces should be used to perform ICE (for 
+ *   WebRTC
+ *   connectivity), you can define them here. Doing so has several advantages:
+ * </p>
+ * <ul>
+ *   <li>
+ *     The WebRTC ICE gathering process will be much quicker. Normally, it needs
+ *     gather local candidates for all of the network interfaces, but this step 
+ *     can
+ *     be made faster if you limit it to only the interface that you know will
+ *     work.
+ *   </li>
+ *   <li>
+ *     It will ensure that the media server always decides to use the correct
+ *     network interface. With WebRTC ICE gathering it's possible that, under 
+ *     some
+ *     circumstances (in systems with virtual network interfaces such as
+ *     <code>docker0</code>) the ICE process ends up choosing the wrong local 
+ *     IP.
+ *   </li>
+ * </ul>
+ * <p>
+ *   <code>networkInterfaces</code> is a comma-separated list of network 
+ *   interface
+ *   names.
+ * </p>
+ * <p>Examples:</p>
+ * <ul>
+ *   <li><code>networkInterfaces=eth0</code></li>
+ *   <li><code>networkInterfaces=eth0,enp0s25</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#setNetworkInterfaces
+ *
+ * @param {external:String} networkInterfaces
+ * @param {module:elements.WebRtcEndpoint~setNetworkInterfacesCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.setNetworkInterfaces = function(networkInterfaces, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('String', 'networkInterfaces', networkInterfaces, {required: true});
+  //  
+
+  var params = {
+    networkInterfaces: networkInterfaces
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setNetworkInterfaces', params, callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~setNetworkInterfacesCallback
+ * @param {external:Error} error
  */
 
 /**
