@@ -6195,25 +6195,12 @@ function noop(error, result) {
  *      <ul>
  *        <li>
  *          <strong>{get,set}MinVideoRecvBandwidth</strong>: Minimum bitrate
- *          expected for the received video stream. This is used to set a 
- *          minimum
- *          value of local REMB during bandwidth estimation, if supported by the
- *          implementing class. It follows that min values will only have effect
- *          remote peers that support this congestion control mechanism, such as
- *          Chrome.
+ *          requested on the received video stream.
  *        </li>
  *        <li>
  *          <strong>{get,set}Max{Audio,Video}RecvBandwidth</strong>: Maximum 
  *          bitrate
- *          expected for the received stream. This is used to put a limit on the
- *          bitrate that the remote peer will send to this endpoint. The net 
- *          effect
- *          of setting this parameter is that
- *          <i>when Kurento generates an SDP Offer</i>, an 'Application 
- *          Specific'
- *          (AS) maximum bandwidth attribute will be added to the SDP media 
- *          section:
- *          <code>b=AS:{value}</code>.
+ *          expected for the received stream.
  *        </li>
  *      </ul>
  *    </li>
@@ -6309,14 +6296,18 @@ BaseRtpEndpoint.prototype.getConnectionState = function(callback){
  */
 
 /**
- * Maximum video transmission bitrate used for local bandwidth
- * estimations in the congestion control algorithm (REMB).
+ * Maximum video bitrate sent to remote peer.
  * <p>
  *   With this parameter you can control the maximum video quality that will be
  *   sent when reacting to good network conditions. Setting this parameter to a
  *   high value permits the video quality to raise when the network conditions 
  *   get
  *   better.
+ * </p>
+ * <p>
+ *   This parameter provides a way to limit the bitrate requested by remote REMB
+ *   bandwidth estimations: the bitrate sent will be always equal or less than
+ *   this parameter, even if the remote peer requests higher bitrates.
  * </p>
  * <p>
  *   Note that the default value of <strong>500 kbps</strong> is a VERY
@@ -6333,8 +6324,7 @@ BaseRtpEndpoint.prototype.getConnectionState = function(callback){
  *   bitrate has been reached. This is a slow, progressive change, which starts 
  *   at
  *   300 kbps by default. You can change the default starting point of REMB
- *   estimations, by setting the
- *   <strong>RembParams.rembOnConnect</strong> parameter.
+ *   estimations, by setting <code>RembParams.rembOnConnect</code>.
  * </p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
@@ -6379,14 +6369,18 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
  */
 
 /**
- * Maximum video transmission bitrate used for local bandwidth
- * estimations in the congestion control algorithm (REMB).
+ * Maximum video bitrate sent to remote peer.
  * <p>
  *   With this parameter you can control the maximum video quality that will be
  *   sent when reacting to good network conditions. Setting this parameter to a
  *   high value permits the video quality to raise when the network conditions 
  *   get
  *   better.
+ * </p>
+ * <p>
+ *   This parameter provides a way to limit the bitrate requested by remote REMB
+ *   bandwidth estimations: the bitrate sent will be always equal or less than
+ *   this parameter, even if the remote peer requests higher bitrates.
  * </p>
  * <p>
  *   Note that the default value of <strong>500 kbps</strong> is a VERY
@@ -6403,8 +6397,7 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
  *   bitrate has been reached. This is a slow, progressive change, which starts 
  *   at
  *   300 kbps by default. You can change the default starting point of REMB
- *   estimations, by setting the
- *   <strong>RembParams.rembOnConnect</strong> parameter.
+ *   estimations, by setting <code>RembParams.rembOnConnect</code>.
  * </p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
@@ -6486,13 +6479,17 @@ BaseRtpEndpoint.prototype.getMediaState = function(callback){
  */
 
 /**
- * Minimum bitrate expected for the received video stream.
+ * Minimum bitrate requested on the received video stream.
  * <p>
- *   This is used to set a minimum value of REMB during bandwidth estimation, if
- *   supported by the implementing class. It follows that min values will only 
- *   have
- *   effect in remote peers that support this congestion control mechanism, such
- *   Chrome.
+ *   This is used to set a minimum value of local REMB during bandwidth 
+ *   estimation,
+ *   if supported by the implementing class. The REMB estimation will then be 
+ *   sent
+ *   to remote peers, requesting them to send at least the indicated video 
+ *   bitrate.
+ *   It follows that min values will only have effect in remote peers that 
+ *   support
+ *   this congestion control mechanism, such as Chrome.
  * </p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
@@ -6534,13 +6531,17 @@ BaseRtpEndpoint.prototype.getMinVideoRecvBandwidth = function(callback){
  */
 
 /**
- * Minimum bitrate expected for the received video stream.
+ * Minimum bitrate requested on the received video stream.
  * <p>
- *   This is used to set a minimum value of REMB during bandwidth estimation, if
- *   supported by the implementing class. It follows that min values will only 
- *   have
- *   effect in remote peers that support this congestion control mechanism, such
- *   Chrome.
+ *   This is used to set a minimum value of local REMB during bandwidth 
+ *   estimation,
+ *   if supported by the implementing class. The REMB estimation will then be 
+ *   sent
+ *   to remote peers, requesting them to send at least the indicated video 
+ *   bitrate.
+ *   It follows that min values will only have effect in remote peers that 
+ *   support
+ *   this congestion control mechanism, such as Chrome.
  * </p>
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
@@ -6582,14 +6583,20 @@ BaseRtpEndpoint.prototype.setMinVideoRecvBandwidth = function(minVideoRecvBandwi
  */
 
 /**
- * Minimum video transmission bitrate used for local bandwidth
- * estimations in the congestion control algorithm (REMB).
+ * Minimum video bitrate sent to remote peer.
  * <p>
  *   With this parameter you can control the minimum video quality that will be
  *   sent when reacting to bad network conditions. Setting this parameter to a 
  *   low
  *   value permits the video quality to drop when the network conditions get 
  *   worse.
+ * </p>
+ * <p>
+ *   This parameter provides a way to override the bitrate requested by remote 
+ *   REMB
+ *   bandwidth estimations: the bitrate sent will be always equal or greater 
+ *   than
+ *   this parameter, even if the remote peer requests even lower bitrates.
  * </p>
  * <p>
  *   Note that if you set this parameter too high (trying to avoid bad video
@@ -6638,14 +6645,20 @@ BaseRtpEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
  */
 
 /**
- * Minimum video transmission bitrate used for local bandwidth
- * estimations in the congestion control algorithm (REMB).
+ * Minimum video bitrate sent to remote peer.
  * <p>
  *   With this parameter you can control the minimum video quality that will be
  *   sent when reacting to bad network conditions. Setting this parameter to a 
  *   low
  *   value permits the video quality to drop when the network conditions get 
  *   worse.
+ * </p>
+ * <p>
+ *   This parameter provides a way to override the bitrate requested by remote 
+ *   REMB
+ *   bandwidth estimations: the bitrate sent will be always equal or greater 
+ *   than
+ *   this parameter, even if the remote peer requests even lower bitrates.
  * </p>
  * <p>
  *   Note that if you set this parameter too high (trying to avoid bad video
@@ -6705,13 +6718,22 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
  * <p>
  *   The default value is 1200 Bytes. This is the same as in <b>libwebrtc</b> 
  *   (from
- *   webrtc.org), as used by `Firefox
- *   <https://dxr.mozilla.org/mozilla-central/rev/b5c5ba07d3dbd0d07b66fa42a103f4df2c27d3a2/media/webrtc/trunk/webrtc/media/engine/constants.cc#16>`__
- *   or `Chrome
- *   <https://codesearch.chromium.org/chromium/src/third_party/webrtc/media/engine/constants.cc?l=15&rcl=6dd488b2e55125644263e4837f1abd950d5e410d>`__.
- *   You can read more about this value in `Why RTP max packet size is 1200 in
- *   WebRTC?
- *   <https://groups.google.com/d/topic/discuss-webrtc/gH5ysR3SoZI/discussion>`__.
+ *   webrtc.org), as used by
+ *   <a
+ *     href='https://dxr.mozilla.org/mozilla-central/rev/b5c5ba07d3dbd0d07b66fa42a103f4df2c27d3a2/media/webrtc/trunk/webrtc/media/engine/constants.cc#16'
+ *     >Firefox</a
+ *   >
+ *   or
+ *   <a
+ *     href='https://codesearch.chromium.org/chromium/src/third_party/webrtc/media/engine/constants.cc?l=15&rcl=6dd488b2e55125644263e4837f1abd950d5e410d'
+ *     >Chrome</a
+ *   >
+ *   . You can read more about this value in
+ *   <a
+ *     href='https://groups.google.com/d/topic/discuss-webrtc/gH5ysR3SoZI/discussion'
+ *     >Why RTP max packet size is 1200 in WebRTC?</a
+ *   >
+ *   .
  * </p>
  * <p>
  *   <b>WARNING</b>: Change this value ONLY if you really know what you are 
@@ -6767,13 +6789,22 @@ BaseRtpEndpoint.prototype.getMtu = function(callback){
  * <p>
  *   The default value is 1200 Bytes. This is the same as in <b>libwebrtc</b> 
  *   (from
- *   webrtc.org), as used by `Firefox
- *   <https://dxr.mozilla.org/mozilla-central/rev/b5c5ba07d3dbd0d07b66fa42a103f4df2c27d3a2/media/webrtc/trunk/webrtc/media/engine/constants.cc#16>`__
- *   or `Chrome
- *   <https://codesearch.chromium.org/chromium/src/third_party/webrtc/media/engine/constants.cc?l=15&rcl=6dd488b2e55125644263e4837f1abd950d5e410d>`__.
- *   You can read more about this value in `Why RTP max packet size is 1200 in
- *   WebRTC?
- *   <https://groups.google.com/d/topic/discuss-webrtc/gH5ysR3SoZI/discussion>`__.
+ *   webrtc.org), as used by
+ *   <a
+ *     href='https://dxr.mozilla.org/mozilla-central/rev/b5c5ba07d3dbd0d07b66fa42a103f4df2c27d3a2/media/webrtc/trunk/webrtc/media/engine/constants.cc#16'
+ *     >Firefox</a
+ *   >
+ *   or
+ *   <a
+ *     href='https://codesearch.chromium.org/chromium/src/third_party/webrtc/media/engine/constants.cc?l=15&rcl=6dd488b2e55125644263e4837f1abd950d5e410d'
+ *     >Chrome</a
+ *   >
+ *   . You can read more about this value in
+ *   <a
+ *     href='https://groups.google.com/d/topic/discuss-webrtc/gH5ysR3SoZI/discussion'
+ *     >Why RTP max packet size is 1200 in WebRTC?</a
+ *   >
+ *   .
  * </p>
  * <p>
  *   <b>WARNING</b>: Change this value ONLY if you really know what you are 
@@ -17321,7 +17352,7 @@ function noop(error, result) {
  *      Check the extended documentation of these parameters in
  *      {@link module:core/abstracts.SdpEndpoint SdpEndpoint}, {@link 
  *      module:core/abstracts.BaseRtpEndpoint BaseRtpEndpoint}, and
- *      :rom:cls:`RembParams`.
+ *      {@link module:core/complexTypes.RembParams RembParams}.
  *    </strong>
  *  </p>
  *  <ul>
@@ -17332,32 +17363,14 @@ function noop(error, result) {
  *      <ul>
  *        <li>
  *          <strong>{get,set}MinVideoRecvBandwidth</strong>: Minimum bitrate
- *          expected for the received video stream. This is used to set a 
- *          minimum
- *          value of local REMB during bandwidth estimation, if supported by the
- *          implementing class. It follows that min values will only have effect
- *          remote peers that support this congestion control mechanism, such as
- *          Chrome.
+ *          requested on the received video stream.
  *        </li>
  *        <li>
  *          <strong>{get,set}Max{Audio,Video}RecvBandwidth</strong>: Maximum 
  *          bitrate
- *          expected for the received stream. This is used to put a limit on the
- *          bitrate that the remote peer will send to this endpoint. The net 
- *          effect
- *          of setting this parameter is that
- *          <i>when Kurento generates an SDP Offer</i>, an 'Application 
- *          Specific'
- *          (AS) maximum bandwidth attribute will be added to the SDP media 
- *          section:
- *          <code>b=AS:{value}</code>.
+ *          expected for the received stream.
  *        </li>
  *      </ul>
- *      Max values are announced in the SDP, while min values are used to set a
- *      minimum value of local REMB during bandwidth estimation, if supported by
- *      implementing class. It follows that min values will only have effect in
- *      remote peers that support this congestion control mechanism, such as 
- *      Chrome.
  *    </li>
  *    <li>
  *      Output bandwidth: Configuration values used to control bitrate of the 
@@ -17487,6 +17500,124 @@ inherits(WebRtcEndpoint, BaseRtpEndpoint);
 //
 // Public properties
 //
+
+/**
+ * External (public) IP address of the media server.
+ * <p>
+ *   If you know what will be the external or public IP address of the media 
+ *   server
+ *   (e.g. because your deployment has an static IP), you can specify it here.
+ *   Doing so has the advantage of not needing to configure STUN/TURN for the 
+ *   media
+ *   server.
+ * </p>
+ * <p>
+ *   STUN/TURN are needed only when the media server sits behind a NAT and needs
+ *   find out its own external IP address. However, if you set a static external
+ *   address with this parameter, then there is no need for the STUN/TURN
+ *   auto-discovery.
+ * </p>
+ * <p>
+ *   The effect of this parameter is that ALL local ICE candidates that are
+ *   gathered (for WebRTC) will contain the provided external IP address instead
+ *   the local one.
+ * </p>
+ * <p>
+ *   <code>externalAddress</code> is an IPv4 or IPv6 address.
+ * </p>
+ * <p>Examples:</p>
+ * <ul>
+ *   <li><code>externalAddress=10.70.35.2</code></li>
+ *   <li><code>externalAddress=2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#getExternalAddress
+ *
+ * @param {module:elements.WebRtcEndpoint~getExternalAddressCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getExternalAddress = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getExternalAddress', callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getExternalAddressCallback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
+
+/**
+ * External (public) IP address of the media server.
+ * <p>
+ *   If you know what will be the external or public IP address of the media 
+ *   server
+ *   (e.g. because your deployment has an static IP), you can specify it here.
+ *   Doing so has the advantage of not needing to configure STUN/TURN for the 
+ *   media
+ *   server.
+ * </p>
+ * <p>
+ *   STUN/TURN are needed only when the media server sits behind a NAT and needs
+ *   find out its own external IP address. However, if you set a static external
+ *   address with this parameter, then there is no need for the STUN/TURN
+ *   auto-discovery.
+ * </p>
+ * <p>
+ *   The effect of this parameter is that ALL local ICE candidates that are
+ *   gathered (for WebRTC) will contain the provided external IP address instead
+ *   the local one.
+ * </p>
+ * <p>
+ *   <code>externalAddress</code> is an IPv4 or IPv6 address.
+ * </p>
+ * <p>Examples:</p>
+ * <ul>
+ *   <li><code>externalAddress=10.70.35.2</code></li>
+ *   <li><code>externalAddress=2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#setExternalAddress
+ *
+ * @param {external:String} externalAddress
+ * @param {module:elements.WebRtcEndpoint~setExternalAddressCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.setExternalAddress = function(externalAddress, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('String', 'externalAddress', externalAddress, {required: true});
+  //  
+
+  var params = {
+    externalAddress: externalAddress
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setExternalAddress', params, callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~setExternalAddressCallback
+ * @param {external:Error} error
+ */
 
 /**
  * the ICE candidate pair (local and remote candidates) used by the ice library 
@@ -34185,7 +34316,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.12.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.13.0'});
 
 
 var HubPort = require('./HubPort');
@@ -34229,7 +34360,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.12.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.13.0'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -34287,7 +34418,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.12.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.13.0'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
