@@ -20244,70 +20244,62 @@ var OpenCVFilter = require('./OpenCVFilter');
 exports.OpenCVFilter = OpenCVFilter;
 
 },{"./OpenCVFilter":110}],112:[function(require,module,exports){
-function Mapper()
-{
+function Mapper() {
   var sources = {};
 
-
-  this.forEach = function(callback)
-  {
-    for(var key in sources)
-    {
+  this.forEach = function (callback) {
+    for (var key in sources) {
       var source = sources[key];
 
-      for(var key2 in source)
+      for (var key2 in source)
         callback(source[key2]);
     };
   };
 
-  this.get = function(id, source)
-  {
+  this.get = function (id, source) {
     var ids = sources[source];
-    if(ids == undefined)
+    if (ids == undefined)
       return undefined;
 
     return ids[id];
   };
 
-  this.remove = function(id, source)
-  {
+  this.remove = function (id, source) {
     var ids = sources[source];
-    if(ids == undefined)
+    if (ids == undefined)
       return;
 
     delete ids[id];
 
     // Check it's empty
-    for(var i in ids){return false}
+    for (var i in ids) {
+      return false
+    }
 
     delete sources[source];
   };
 
-  this.set = function(value, id, source)
-  {
-    if(value == undefined)
+  this.set = function (value, id, source) {
+    if (value == undefined)
       return this.remove(id, source);
 
     var ids = sources[source];
-    if(ids == undefined)
+    if (ids == undefined)
       sources[source] = ids = {};
 
     ids[id] = value;
   };
 };
 
-
-Mapper.prototype.pop = function(id, source)
-{
+Mapper.prototype.pop = function (id, source) {
   var value = this.get(id, source);
-  if(value == undefined)
+  if (value == undefined)
     return undefined;
 
   this.remove(id, source);
 
   return value;
 };
-
 
 module.exports = Mapper;
 
@@ -20329,10 +20321,10 @@ module.exports = Mapper;
  *
  */
 
-var JsonRpcClient  = require('./jsonrpcclient');
+var JsonRpcClient = require('./jsonrpcclient');
 
+exports.JsonRpcClient = JsonRpcClient;
 
-exports.JsonRpcClient  = JsonRpcClient;
 },{"./jsonrpcclient":114}],114:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
@@ -20352,10 +20344,11 @@ exports.JsonRpcClient  = JsonRpcClient;
  */
 
 var RpcBuilder = require('../..');
-var WebSocketWithReconnection = require('./transports/webSocketWithReconnection');
+var WebSocketWithReconnection = require(
+  './transports/webSocketWithReconnection');
 
-Date.now = Date.now || function() {
-    return +new Date;
+Date.now = Date.now || function () {
+  return +new Date;
 };
 
 var PING_INTERVAL = 5000;
@@ -20389,225 +20382,234 @@ var Logger = console;
  */
 function JsonRpcClient(configuration) {
 
-    var self = this;
+  var self = this;
 
-    var wsConfig = configuration.ws;
+  var wsConfig = configuration.ws;
 
-    var notReconnectIfNumLessThan = -1;
+  var notReconnectIfNumLessThan = -1;
 
-    var pingNextNum = 0;
-    var enabledPings = true;
-    var pingPongStarted = false;
-    var pingInterval;
+  var pingNextNum = 0;
+  var enabledPings = true;
+  var pingPongStarted = false;
+  var pingInterval;
 
-    var status = DISCONNECTED;
+  var status = DISCONNECTED;
 
-    var onreconnecting = wsConfig.onreconnecting;
-    var onreconnected = wsConfig.onreconnected;
-    var onconnected = wsConfig.onconnected;
-    var onerror = wsConfig.onerror;
+  var onreconnecting = wsConfig.onreconnecting;
+  var onreconnected = wsConfig.onreconnected;
+  var onconnected = wsConfig.onconnected;
+  var onerror = wsConfig.onerror;
 
-    configuration.rpc.pull = function(params, request) {
-        request.reply(null, "push");
+  configuration.rpc.pull = function (params, request) {
+    request.reply(null, "push");
+  }
+
+  wsConfig.onreconnecting = function () {
+    Logger.debug("--------- ONRECONNECTING -----------");
+    if (status === RECONNECTING) {
+      Logger.error(
+        "Websocket already in RECONNECTING state when receiving a new ONRECONNECTING message. Ignoring it"
+      );
+      return;
     }
 
-    wsConfig.onreconnecting = function() {
-        Logger.debug("--------- ONRECONNECTING -----------");
-        if (status === RECONNECTING) {
-            Logger.error("Websocket already in RECONNECTING state when receiving a new ONRECONNECTING message. Ignoring it");
-            return;
-        }
-
-        status = RECONNECTING;
-        if (onreconnecting) {
-            onreconnecting();
-        }
+    status = RECONNECTING;
+    if (onreconnecting) {
+      onreconnecting();
     }
+  }
 
-    wsConfig.onreconnected = function() {
-        Logger.debug("--------- ONRECONNECTED -----------");
-        if (status === CONNECTED) {
-            Logger.error("Websocket already in CONNECTED state when receiving a new ONRECONNECTED message. Ignoring it");
-            return;
-        }
-        status = CONNECTED;
-
-        enabledPings = true;
-        updateNotReconnectIfLessThan();
-        usePing();
-
-        if (onreconnected) {
-            onreconnected();
-        }
+  wsConfig.onreconnected = function () {
+    Logger.debug("--------- ONRECONNECTED -----------");
+    if (status === CONNECTED) {
+      Logger.error(
+        "Websocket already in CONNECTED state when receiving a new ONRECONNECTED message. Ignoring it"
+      );
+      return;
     }
+    status = CONNECTED;
 
-    wsConfig.onconnected = function() {
-        Logger.debug("--------- ONCONNECTED -----------");
-        if (status === CONNECTED) {
-            Logger.error("Websocket already in CONNECTED state when receiving a new ONCONNECTED message. Ignoring it");
-            return;
-        }
-        status = CONNECTED;
+    enabledPings = true;
+    updateNotReconnectIfLessThan();
+    usePing();
 
-        enabledPings = true;
-        usePing();
-
-        if (onconnected) {
-            onconnected();
-        }
+    if (onreconnected) {
+      onreconnected();
     }
+  }
 
-    wsConfig.onerror = function(error) {
-        Logger.debug("--------- ONERROR -----------");
-
-        status = DISCONNECTED;
-
-        if (onerror) {
-            onerror(error);
-        }
+  wsConfig.onconnected = function () {
+    Logger.debug("--------- ONCONNECTED -----------");
+    if (status === CONNECTED) {
+      Logger.error(
+        "Websocket already in CONNECTED state when receiving a new ONCONNECTED message. Ignoring it"
+      );
+      return;
     }
+    status = CONNECTED;
 
-    var ws = new WebSocketWithReconnection(wsConfig);
+    enabledPings = true;
+    usePing();
 
-    Logger.debug('Connecting websocket to URI: ' + wsConfig.uri);
-
-    var rpcBuilderOptions = {
-        request_timeout: configuration.rpc.requestTimeout,
-        ping_request_timeout: configuration.rpc.heartbeatRequestTimeout
-    };
-
-    var rpc = new RpcBuilder(RpcBuilder.packers.JsonRPC, rpcBuilderOptions, ws,
-        function(request) {
-
-            Logger.debug('Received request: ' + JSON.stringify(request));
-
-            try {
-                var func = configuration.rpc[request.method];
-
-                if (func === undefined) {
-                    Logger.error("Method " + request.method + " not registered in client");
-                } else {
-                    func(request.params, request);
-                }
-            } catch (err) {
-                Logger.error('Exception processing request: ' + JSON.stringify(request));
-                Logger.error(err);
-            }
-        });
-
-    this.send = function(method, params, callback) {
-        if (method !== 'ping') {
-            Logger.debug('Request: method:' + method + " params:" + JSON.stringify(params));
-        }
-
-        var requestTime = Date.now();
-
-        rpc.encode(method, params, function(error, result) {
-            if (error) {
-                try {
-                    Logger.error("ERROR:" + error.message + " in Request: method:" +
-                        method + " params:" + JSON.stringify(params) + " request:" +
-                        error.request);
-                    if (error.data) {
-                        Logger.error("ERROR DATA:" + JSON.stringify(error.data));
-                    }
-                } catch (e) {}
-                error.requestTime = requestTime;
-            }
-            if (callback) {
-                if (result != undefined && result.value !== 'pong') {
-                    Logger.debug('Response: ' + JSON.stringify(result));
-                }
-                callback(error, result);
-            }
-        });
+    if (onconnected) {
+      onconnected();
     }
+  }
 
-    function updateNotReconnectIfLessThan() {
-        Logger.debug("notReconnectIfNumLessThan = " + pingNextNum + ' (old=' +
-            notReconnectIfNumLessThan + ')');
-        notReconnectIfNumLessThan = pingNextNum;
+  wsConfig.onerror = function (error) {
+    Logger.debug("--------- ONERROR -----------");
+
+    status = DISCONNECTED;
+
+    if (onerror) {
+      onerror(error);
     }
+  }
 
-    function sendPing() {
-        if (enabledPings) {
-            var params = null;
-            if (pingNextNum == 0 || pingNextNum == notReconnectIfNumLessThan) {
-                params = {
-                    interval: configuration.heartbeat || PING_INTERVAL
-                };
-            }
-            pingNextNum++;
+  var ws = new WebSocketWithReconnection(wsConfig);
 
-            self.send('ping', params, (function(pingNum) {
-                return function(error, result) {
-                    if (error) {
-                        Logger.debug("Error in ping request #" + pingNum + " (" +
-                            error.message + ")");
-                        if (pingNum > notReconnectIfNumLessThan) {
-                            enabledPings = false;
-                            updateNotReconnectIfLessThan();
-                            Logger.debug("Server did not respond to ping message #" +
-                                pingNum + ". Reconnecting... ");
-                            ws.reconnectWs();
-                        }
-                    }
-                }
-            })(pingNextNum));
+  Logger.debug('Connecting websocket to URI: ' + wsConfig.uri);
+
+  var rpcBuilderOptions = {
+    request_timeout: configuration.rpc.requestTimeout,
+    ping_request_timeout: configuration.rpc.heartbeatRequestTimeout
+  };
+
+  var rpc = new RpcBuilder(RpcBuilder.packers.JsonRPC, rpcBuilderOptions, ws,
+    function (request) {
+
+      Logger.debug('Received request: ' + JSON.stringify(request));
+
+      try {
+        var func = configuration.rpc[request.method];
+
+        if (func === undefined) {
+          Logger.error("Method " + request.method +
+            " not registered in client");
         } else {
-            Logger.debug("Trying to send ping, but ping is not enabled");
+          func(request.params, request);
         }
+      } catch (err) {
+        Logger.error('Exception processing request: ' + JSON.stringify(
+          request));
+        Logger.error(err);
+      }
+    });
+
+  this.send = function (method, params, callback) {
+    if (method !== 'ping') {
+      Logger.debug('Request: method:' + method + " params:" + JSON.stringify(
+        params));
     }
 
-    /*
-    * If configuration.hearbeat has any value, the ping-pong will work with the interval
-    * of configuration.hearbeat
-    */
-    function usePing() {
-        if (!pingPongStarted) {
-            Logger.debug("Starting ping (if configured)")
-            pingPongStarted = true;
+    var requestTime = Date.now();
 
-            if (configuration.heartbeat != undefined) {
-                pingInterval = setInterval(sendPing, configuration.heartbeat);
-                sendPing();
+    rpc.encode(method, params, function (error, result) {
+      if (error) {
+        try {
+          Logger.error("ERROR:" + error.message + " in Request: method:" +
+            method + " params:" + JSON.stringify(params) + " request:" +
+            error.request);
+          if (error.data) {
+            Logger.error("ERROR DATA:" + JSON.stringify(error.data));
+          }
+        } catch (e) {}
+        error.requestTime = requestTime;
+      }
+      if (callback) {
+        if (result != undefined && result.value !== 'pong') {
+          Logger.debug('Response: ' + JSON.stringify(result));
+        }
+        callback(error, result);
+      }
+    });
+  }
+
+  function updateNotReconnectIfLessThan() {
+    Logger.debug("notReconnectIfNumLessThan = " + pingNextNum + ' (old=' +
+      notReconnectIfNumLessThan + ')');
+    notReconnectIfNumLessThan = pingNextNum;
+  }
+
+  function sendPing() {
+    if (enabledPings) {
+      var params = null;
+      if (pingNextNum == 0 || pingNextNum == notReconnectIfNumLessThan) {
+        params = {
+          interval: configuration.heartbeat || PING_INTERVAL
+        };
+      }
+      pingNextNum++;
+
+      self.send('ping', params, (function (pingNum) {
+        return function (error, result) {
+          if (error) {
+            Logger.debug("Error in ping request #" + pingNum + " (" +
+              error.message + ")");
+            if (pingNum > notReconnectIfNumLessThan) {
+              enabledPings = false;
+              updateNotReconnectIfLessThan();
+              Logger.debug("Server did not respond to ping message #" +
+                pingNum + ". Reconnecting... ");
+              ws.reconnectWs();
             }
+          }
         }
+      })(pingNextNum));
+    } else {
+      Logger.debug("Trying to send ping, but ping is not enabled");
     }
+  }
 
-    this.close = function() {
-        Logger.debug("Closing jsonRpcClient explicitly by client");
+  /*
+   * If configuration.hearbeat has any value, the ping-pong will work with the interval
+   * of configuration.hearbeat
+   */
+  function usePing() {
+    if (!pingPongStarted) {
+      Logger.debug("Starting ping (if configured)")
+      pingPongStarted = true;
 
-        if (pingInterval != undefined) {
-            Logger.debug("Clearing ping interval");
-            clearInterval(pingInterval);
+      if (configuration.heartbeat != undefined) {
+        pingInterval = setInterval(sendPing, configuration.heartbeat);
+        sendPing();
+      }
+    }
+  }
+
+  this.close = function () {
+    Logger.debug("Closing jsonRpcClient explicitly by client");
+
+    if (pingInterval != undefined) {
+      Logger.debug("Clearing ping interval");
+      clearInterval(pingInterval);
+    }
+    pingPongStarted = false;
+    enabledPings = false;
+
+    if (configuration.sendCloseMessage) {
+      Logger.debug("Sending close message")
+      this.send('closeSession', null, function (error, result) {
+        if (error) {
+          Logger.error("Error sending close message: " + JSON.stringify(
+            error));
         }
-        pingPongStarted = false;
-        enabledPings = false;
-
-        if (configuration.sendCloseMessage) {
-            Logger.debug("Sending close message")
-            this.send('closeSession', null, function(error, result) {
-                if (error) {
-                    Logger.error("Error sending close message: " + JSON.stringify(error));
-                }
-                ws.close();
-            });
-        } else {
-			ws.close();
-        }
+        ws.close();
+      });
+    } else {
+      ws.close();
     }
+  }
 
-    // This method is only for testing
-    this.forceClose = function(millis) {
-        ws.forceClose(millis);
-    }
+  // This method is only for testing
+  this.forceClose = function (millis) {
+    ws.forceClose(millis);
+  }
 
-    this.reconnect = function() {
-        ws.reconnectWs();
-    }
+  this.reconnect = function () {
+    ws.reconnectWs();
+  }
 }
-
 
 module.exports = JsonRpcClient;
 
@@ -20629,10 +20631,10 @@ module.exports = JsonRpcClient;
  *
  */
 
-var WebSocketWithReconnection  = require('./webSocketWithReconnection');
+var WebSocketWithReconnection = require('./webSocketWithReconnection');
 
+exports.WebSocketWithReconnection = WebSocketWithReconnection;
 
-exports.WebSocketWithReconnection  = WebSocketWithReconnection;
 },{"./webSocketWithReconnection":116}],116:[function(require,module,exports){
 (function (global){
 /*
@@ -20665,9 +20667,9 @@ var Logger = console;
 
 var WebSocket = BrowserWebSocket;
 if (!WebSocket && typeof window === 'undefined') {
-    try {
-        WebSocket = require('ws');
-    } catch (e) { }
+  try {
+    WebSocket = require('ws');
+  } catch (e) {}
 }
 
 //var SockJS = require('sockjs-client');
@@ -20692,188 +20694,192 @@ config = {
 */
 function WebSocketWithReconnection(config) {
 
-    var closing = false;
-    var registerMessageHandler;
-    var wsUri = config.uri;
-    var useSockJS = config.useSockJS;
-    var reconnecting = false;
+  var closing = false;
+  var registerMessageHandler;
+  var wsUri = config.uri;
+  var useSockJS = config.useSockJS;
+  var reconnecting = false;
 
-    var forcingDisconnection = false;
+  var forcingDisconnection = false;
 
-    var ws;
+  var ws;
 
-    if (useSockJS) {
-        ws = new SockJS(wsUri);
+  if (useSockJS) {
+    ws = new SockJS(wsUri);
+  } else {
+    ws = new WebSocket(wsUri);
+  }
+
+  ws.onopen = function () {
+    logConnected(ws, wsUri);
+    if (config.onconnected) {
+      config.onconnected();
+    }
+  };
+
+  ws.onerror = function (error) {
+    Logger.error("Could not connect to " + wsUri +
+      " (invoking onerror if defined)", error);
+    if (config.onerror) {
+      config.onerror(error);
+    }
+  };
+
+  function logConnected(ws, wsUri) {
+    try {
+      Logger.debug("WebSocket connected to " + wsUri);
+    } catch (e) {
+      Logger.error(e);
+    }
+  }
+
+  var reconnectionOnClose = function () {
+    if (ws.readyState === CLOSED) {
+      if (closing) {
+        Logger.debug("Connection closed by user");
+      } else {
+        Logger.debug("Connection closed unexpectecly. Reconnecting...");
+        reconnectToSameUri(MAX_RETRIES, 1);
+      }
     } else {
-        ws = new WebSocket(wsUri);
+      Logger.debug("Close callback from previous websocket. Ignoring it");
+    }
+  };
+
+  ws.onclose = reconnectionOnClose;
+
+  function reconnectToSameUri(maxRetries, numRetries) {
+    Logger.debug("reconnectToSameUri (attempt #" + numRetries + ", max=" +
+      maxRetries + ")");
+
+    if (numRetries === 1) {
+      if (reconnecting) {
+        Logger.warn(
+          "Trying to reconnectToNewUri when reconnecting... Ignoring this reconnection."
+        )
+        return;
+      } else {
+        reconnecting = true;
+      }
+
+      if (config.onreconnecting) {
+        config.onreconnecting();
+      }
     }
 
-    ws.onopen = function() {
-        logConnected(ws, wsUri);
-        if (config.onconnected) {
-            config.onconnected();
-        }
-    };
+    if (forcingDisconnection) {
+      reconnectToNewUri(maxRetries, numRetries, wsUri);
 
-    ws.onerror = function(error) {
-        Logger.error("Could not connect to " + wsUri + " (invoking onerror if defined)", error);
-        if (config.onerror) {
-            config.onerror(error);
-        }
-    };
+    } else {
+      if (config.newWsUriOnReconnection) {
+        config.newWsUriOnReconnection(function (error, newWsUri) {
 
-    function logConnected(ws, wsUri) {
-        try {
-            Logger.debug("WebSocket connected to " + wsUri);
-        } catch (e) {
-            Logger.error(e);
-        }
+          if (error) {
+            Logger.debug(error);
+            setTimeout(function () {
+              reconnectToSameUri(maxRetries, numRetries + 1);
+            }, RETRY_TIME_MS);
+          } else {
+            reconnectToNewUri(maxRetries, numRetries, newWsUri);
+          }
+        })
+      } else {
+        reconnectToNewUri(maxRetries, numRetries, wsUri);
+      }
+    }
+  }
+
+  // TODO Test retries. How to force not connection?
+  function reconnectToNewUri(maxRetries, numRetries, reconnectWsUri) {
+    Logger.debug("Reconnection attempt #" + numRetries);
+
+    ws.close();
+
+    wsUri = reconnectWsUri || wsUri;
+
+    var newWs;
+    if (useSockJS) {
+      newWs = new SockJS(wsUri);
+    } else {
+      newWs = new WebSocket(wsUri);
     }
 
-    var reconnectionOnClose = function() {
-        if (ws.readyState === CLOSED) {
-            if (closing) {
-                Logger.debug("Connection closed by user");
-            } else {
-                Logger.debug("Connection closed unexpectecly. Reconnecting...");
-                reconnectToSameUri(MAX_RETRIES, 1);
-            }
-        } else {
-            Logger.debug("Close callback from previous websocket. Ignoring it");
-        }
+    newWs.onopen = function () {
+      Logger.debug("Reconnected after " + numRetries + " attempts...");
+      logConnected(newWs, wsUri);
+      reconnecting = false;
+      registerMessageHandler();
+      if (config.onreconnected()) {
+        config.onreconnected();
+      }
+
+      newWs.onclose = reconnectionOnClose;
     };
 
-    ws.onclose = reconnectionOnClose;
+    var onErrorOrClose = function (error) {
+      Logger.warn("Reconnection error: ", error);
 
-    function reconnectToSameUri(maxRetries, numRetries) {
-        Logger.debug("reconnectToSameUri (attempt #" + numRetries + ", max=" + maxRetries + ")");
-
-        if (numRetries === 1) {
-            if (reconnecting) {
-                Logger.warn("Trying to reconnectToNewUri when reconnecting... Ignoring this reconnection.")
-                return;
-            } else {
-                reconnecting = true;
-            }
-
-            if (config.onreconnecting) {
-                config.onreconnecting();
-            }
+      if (numRetries === maxRetries) {
+        if (config.ondisconnect) {
+          config.ondisconnect();
         }
+      } else {
+        setTimeout(function () {
+          reconnectToSameUri(maxRetries, numRetries + 1);
+        }, RETRY_TIME_MS);
+      }
+    };
 
-        if (forcingDisconnection) {
-            reconnectToNewUri(maxRetries, numRetries, wsUri);
+    newWs.onerror = onErrorOrClose;
 
-        } else {
-            if (config.newWsUriOnReconnection) {
-                config.newWsUriOnReconnection(function(error, newWsUri) {
+    ws = newWs;
+  }
 
-                    if (error) {
-                        Logger.debug(error);
-                        setTimeout(function() {
-                            reconnectToSameUri(maxRetries, numRetries + 1);
-                        }, RETRY_TIME_MS);
-                    } else {
-                        reconnectToNewUri(maxRetries, numRetries, newWsUri);
-                    }
-                })
-            } else {
-                reconnectToNewUri(maxRetries, numRetries, wsUri);
-            }
-        }
+  this.close = function () {
+    closing = true;
+    ws.close();
+  };
+
+  // This method is only for testing
+  this.forceClose = function (millis) {
+    Logger.debug("Testing: Force WebSocket close");
+
+    if (millis) {
+      Logger.debug("Testing: Change wsUri for " + millis +
+        " millis to simulate net failure");
+      var goodWsUri = wsUri;
+      wsUri = "wss://21.234.12.34.4:443/";
+
+      forcingDisconnection = true;
+
+      setTimeout(function () {
+        Logger.debug("Testing: Recover good wsUri " + goodWsUri);
+        wsUri = goodWsUri;
+
+        forcingDisconnection = false;
+
+      }, millis);
     }
 
-    // TODO Test retries. How to force not connection?
-    function reconnectToNewUri(maxRetries, numRetries, reconnectWsUri) {
-        Logger.debug("Reconnection attempt #" + numRetries);
+    ws.close();
+  };
 
-        ws.close();
+  this.reconnectWs = function () {
+    Logger.debug("reconnectWs");
+    reconnectToSameUri(MAX_RETRIES, 1, wsUri);
+  };
 
-        wsUri = reconnectWsUri || wsUri;
+  this.send = function (message) {
+    ws.send(message);
+  };
 
-        var newWs;
-        if (useSockJS) {
-            newWs = new SockJS(wsUri);
-        } else {
-            newWs = new WebSocket(wsUri);
-        }
-
-        newWs.onopen = function() {
-            Logger.debug("Reconnected after " + numRetries + " attempts...");
-            logConnected(newWs, wsUri);
-            reconnecting = false;
-            registerMessageHandler();
-            if (config.onreconnected()) {
-                config.onreconnected();
-            }
-
-            newWs.onclose = reconnectionOnClose;
-        };
-
-        var onErrorOrClose = function(error) {
-            Logger.warn("Reconnection error: ", error);
-
-            if (numRetries === maxRetries) {
-                if (config.ondisconnect) {
-                    config.ondisconnect();
-                }
-            } else {
-                setTimeout(function() {
-                    reconnectToSameUri(maxRetries, numRetries + 1);
-                }, RETRY_TIME_MS);
-            }
-        };
-
-        newWs.onerror = onErrorOrClose;
-
-        ws = newWs;
-    }
-
-    this.close = function() {
-        closing = true;
-        ws.close();
+  this.addEventListener = function (type, callback) {
+    registerMessageHandler = function () {
+      ws.addEventListener(type, callback);
     };
 
-
-    // This method is only for testing
-    this.forceClose = function(millis) {
-        Logger.debug("Testing: Force WebSocket close");
-
-        if (millis) {
-            Logger.debug("Testing: Change wsUri for " + millis + " millis to simulate net failure");
-            var goodWsUri = wsUri;
-            wsUri = "wss://21.234.12.34.4:443/";
-
-            forcingDisconnection = true;
-
-            setTimeout(function() {
-                Logger.debug("Testing: Recover good wsUri " + goodWsUri);
-                wsUri = goodWsUri;
-
-                forcingDisconnection = false;
-
-            }, millis);
-        }
-
-        ws.close();
-    };
-
-    this.reconnectWs = function() {
-        Logger.debug("reconnectWs");
-        reconnectToSameUri(MAX_RETRIES, 1, wsUri);
-    };
-
-    this.send = function(message) {
-        ws.send(message);
-    };
-
-    this.addEventListener = function(type, callback) {
-        registerMessageHandler = function() {
-            ws.addEventListener(type, callback);
-        };
-
-        registerMessageHandler();
-    };
+    registerMessageHandler();
+  };
 }
 
 module.exports = WebSocketWithReconnection;
@@ -20897,38 +20903,35 @@ module.exports = WebSocketWithReconnection;
  *
  */
 
-
 var defineProperty_IE8 = false
-if(Object.defineProperty)
-{
-  try
-  {
+if (Object.defineProperty) {
+  try {
     Object.defineProperty({}, "x", {});
-  }
-  catch(e)
-  {
+  } catch (e) {
     defineProperty_IE8 = true
   }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
 if (!Function.prototype.bind) {
-  Function.prototype.bind = function(oThis) {
+  Function.prototype.bind = function (oThis) {
     if (typeof this !== 'function') {
       // closest thing possible to the ECMAScript 5
       // internal IsCallable function
-      throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
+      throw new TypeError(
+        'Function.prototype.bind - what is trying to be bound is not callable'
+      );
     }
 
-    var aArgs   = Array.prototype.slice.call(arguments, 1),
-        fToBind = this,
-        fNOP    = function() {},
-        fBound  = function() {
-          return fToBind.apply(this instanceof fNOP && oThis
-                 ? this
-                 : oThis,
-                 aArgs.concat(Array.prototype.slice.call(arguments)));
-        };
+    var aArgs = Array.prototype.slice.call(arguments, 1),
+      fToBind = this,
+      fNOP = function () {},
+      fBound = function () {
+        return fToBind.apply(this instanceof fNOP && oThis ?
+          this :
+          oThis,
+          aArgs.concat(Array.prototype.slice.call(arguments)));
+      };
 
     fNOP.prototype = this.prototype;
     fBound.prototype = new fNOP();
@@ -20937,7 +20940,6 @@ if (!Function.prototype.bind) {
   };
 }
 
-
 var EventEmitter = require('events').EventEmitter;
 
 var inherits = require('inherits');
@@ -20945,21 +20947,16 @@ var inherits = require('inherits');
 var packers = require('./packers');
 var Mapper = require('./Mapper');
 
-
 var BASE_TIMEOUT = 5000;
 
+function unifyResponseMethods(responseMethods) {
+  if (!responseMethods) return {};
 
-function unifyResponseMethods(responseMethods)
-{
-  if(!responseMethods) return {};
-
-  for(var key in responseMethods)
-  {
+  for (var key in responseMethods) {
     var value = responseMethods[key];
 
-    if(typeof value == 'string')
-      responseMethods[key] =
-      {
+    if (typeof value == 'string')
+      responseMethods[key] = {
         response: value
       }
   };
@@ -20967,39 +20964,37 @@ function unifyResponseMethods(responseMethods)
   return responseMethods;
 };
 
-function unifyTransport(transport)
-{
-  if(!transport) return;
+function unifyTransport(transport) {
+  if (!transport) return;
 
   // Transport as a function
-  if(transport instanceof Function)
-    return {send: transport};
+  if (transport instanceof Function)
+    return {
+      send: transport
+    };
 
   // WebSocket & DataChannel
-  if(transport.send instanceof Function)
+  if (transport.send instanceof Function)
     return transport;
 
   // Message API (Inter-window & WebWorker)
-  if(transport.postMessage instanceof Function)
-  {
+  if (transport.postMessage instanceof Function) {
     transport.send = transport.postMessage;
     return transport;
   }
 
   // Stream API
-  if(transport.write instanceof Function)
-  {
+  if (transport.write instanceof Function) {
     transport.send = transport.write;
     return transport;
   }
 
   // Transports that only can receive messages, but not send
-  if(transport.onmessage !== undefined) return;
-  if(transport.pause instanceof Function) return;
+  if (transport.onmessage !== undefined) return;
+  if (transport.pause instanceof Function) return;
 
   throw new SyntaxError("Transport is not a function nor a valid object");
 };
-
 
 /**
  * Representation of a RPC notification
@@ -21011,20 +21006,21 @@ function unifyTransport(transport)
  * @param {String} method -method of the notification
  * @param params - parameters of the notification
  */
-function RpcNotification(method, params)
-{
-  if(defineProperty_IE8)
-  {
+function RpcNotification(method, params) {
+  if (defineProperty_IE8) {
     this.method = method
     this.params = params
-  }
-  else
-  {
-    Object.defineProperty(this, 'method', {value: method, enumerable: true});
-    Object.defineProperty(this, 'params', {value: params, enumerable: true});
+  } else {
+    Object.defineProperty(this, 'method', {
+      value: method,
+      enumerable: true
+    });
+    Object.defineProperty(this, 'params', {
+      value: params,
+      enumerable: true
+    });
   }
 };
-
 
 /**
  * @class
@@ -21039,146 +21035,128 @@ function RpcNotification(method, params)
  *
  * @param {Function} [onRequest]
  */
-function RpcBuilder(packer, options, transport, onRequest)
-{
+function RpcBuilder(packer, options, transport, onRequest) {
   var self = this;
 
-  if(!packer)
+  if (!packer)
     throw new SyntaxError('Packer is not defined');
 
-  if(!packer.pack || !packer.unpack)
+  if (!packer.pack || !packer.unpack)
     throw new SyntaxError('Packer is invalid');
 
   var responseMethods = unifyResponseMethods(packer.responseMethods);
 
-
-  if(options instanceof Function)
-  {
-    if(transport != undefined)
+  if (options instanceof Function) {
+    if (transport != undefined)
       throw new SyntaxError("There can't be parameters after onRequest");
 
     onRequest = options;
     transport = undefined;
-    options   = undefined;
+    options = undefined;
   };
 
-  if(options && options.send instanceof Function)
-  {
-    if(transport && !(transport instanceof Function))
+  if (options && options.send instanceof Function) {
+    if (transport && !(transport instanceof Function))
       throw new SyntaxError("Only a function can be after transport");
 
     onRequest = transport;
     transport = options;
-    options   = undefined;
+    options = undefined;
   };
 
-  if(transport instanceof Function)
-  {
-    if(onRequest != undefined)
+  if (transport instanceof Function) {
+    if (onRequest != undefined)
       throw new SyntaxError("There can't be parameters after onRequest");
 
     onRequest = transport;
     transport = undefined;
   };
 
-  if(transport && transport.send instanceof Function)
-    if(onRequest && !(onRequest instanceof Function))
+  if (transport && transport.send instanceof Function)
+    if (onRequest && !(onRequest instanceof Function))
       throw new SyntaxError("Only a function can be after transport");
 
   options = options || {};
 
-
   EventEmitter.call(this);
 
-  if(onRequest)
+  if (onRequest)
     this.on('request', onRequest);
 
-
-  if(defineProperty_IE8)
+  if (defineProperty_IE8)
     this.peerID = options.peerID
   else
-    Object.defineProperty(this, 'peerID', {value: options.peerID});
+    Object.defineProperty(this, 'peerID', {
+      value: options.peerID
+    });
 
   var max_retries = options.max_retries || 0;
 
-
-  function transportMessage(event)
-  {
+  function transportMessage(event) {
     self.decode(event.data || event);
   };
 
-  this.getTransport = function()
-  {
+  this.getTransport = function () {
     return transport;
   }
-  this.setTransport = function(value)
-  {
+  this.setTransport = function (value) {
     // Remove listener from old transport
-    if(transport)
-    {
+    if (transport) {
       // W3C transports
-      if(transport.removeEventListener)
+      if (transport.removeEventListener)
         transport.removeEventListener('message', transportMessage);
 
       // Node.js Streams API
-      else if(transport.removeListener)
+      else if (transport.removeListener)
         transport.removeListener('data', transportMessage);
     };
 
     // Set listener on new transport
-    if(value)
-    {
+    if (value) {
       // W3C transports
-      if(value.addEventListener)
+      if (value.addEventListener)
         value.addEventListener('message', transportMessage);
 
       // Node.js Streams API
-      else if(value.addListener)
+      else if (value.addListener)
         value.addListener('data', transportMessage);
     };
 
     transport = unifyTransport(value);
   }
 
-  if(!defineProperty_IE8)
-    Object.defineProperty(this, 'transport',
-    {
+  if (!defineProperty_IE8)
+    Object.defineProperty(this, 'transport', {
       get: this.getTransport.bind(this),
       set: this.setTransport.bind(this)
     })
 
   this.setTransport(transport);
 
-
-  var request_timeout      = options.request_timeout      || BASE_TIMEOUT;
+  var request_timeout = options.request_timeout || BASE_TIMEOUT;
   var ping_request_timeout = options.ping_request_timeout || request_timeout;
-  var response_timeout     = options.response_timeout     || BASE_TIMEOUT;
-  var duplicates_timeout   = options.duplicates_timeout   || BASE_TIMEOUT;
-
+  var response_timeout = options.response_timeout || BASE_TIMEOUT;
+  var duplicates_timeout = options.duplicates_timeout || BASE_TIMEOUT;
 
   var requestID = 0;
 
-  var requests  = new Mapper();
+  var requests = new Mapper();
   var responses = new Mapper();
   var processedResponses = new Mapper();
 
   var message2Key = {};
 
-
   /**
    * Store the response to prevent to process duplicate request later
    */
-  function storeResponse(message, id, dest)
-  {
-    var response =
-    {
+  function storeResponse(message, id, dest) {
+    var response = {
       message: message,
       /** Timeout to auto-clean old responses */
-      timeout: setTimeout(function()
-      {
-        responses.remove(id, dest);
-      },
-      response_timeout)
+      timeout: setTimeout(function () {
+          responses.remove(id, dest);
+        },
+        response_timeout)
     };
 
     responses.set(response, id, dest);
@@ -21187,17 +21165,14 @@ function RpcBuilder(packer, options, transport, onRequest)
   /**
    * Store the response to ignore duplicated messages later
    */
-  function storeProcessedResponse(ack, from)
-  {
-    var timeout = setTimeout(function()
-    {
-      processedResponses.remove(ack, from);
-    },
-    duplicates_timeout);
+  function storeProcessedResponse(ack, from) {
+    var timeout = setTimeout(function () {
+        processedResponses.remove(ack, from);
+      },
+      duplicates_timeout);
 
     processedResponses.set(timeout, ack, from);
   };
-
 
   /**
    * Representation of a RPC request
@@ -21212,22 +21187,18 @@ function RpcBuilder(packer, options, transport, onRequest)
    * @param {Integer} id - identifier of the request
    * @param [from] - source of the notification
    */
-  function RpcRequest(method, params, id, from, transport)
-  {
+  function RpcRequest(method, params, id, from, transport) {
     RpcNotification.call(this, method, params);
 
-    this.getTransport = function()
-    {
+    this.getTransport = function () {
       return transport;
     }
-    this.setTransport = function(value)
-    {
+    this.setTransport = function (value) {
       transport = unifyTransport(value);
     }
 
-    if(!defineProperty_IE8)
-      Object.defineProperty(this, 'transport',
-      {
+    if (!defineProperty_IE8)
+      Object.defineProperty(this, 'transport', {
         get: this.getTransport.bind(this),
         set: this.setTransport.bind(this)
       })
@@ -21237,13 +21208,11 @@ function RpcBuilder(packer, options, transport, onRequest)
     /**
      * @constant {Boolean} duplicated
      */
-    if(!(transport || self.getTransport()))
-    {
-      if(defineProperty_IE8)
+    if (!(transport || self.getTransport())) {
+      if (defineProperty_IE8)
         this.duplicated = Boolean(response)
       else
-        Object.defineProperty(this, 'duplicated',
-        {
+        Object.defineProperty(this, 'duplicated', {
           value: Boolean(response)
         });
     }
@@ -21260,23 +21229,19 @@ function RpcBuilder(packer, options, transport, onRequest)
      *
      * @returns {string}
      */
-    this.reply = function(error, result, transport)
-    {
+    this.reply = function (error, result, transport) {
       // Fix optional parameters
-      if(error instanceof Function || error && error.send instanceof Function)
-      {
-        if(result != undefined)
+      if (error instanceof Function || error && error
+        .send instanceof Function) {
+        if (result != undefined)
           throw new SyntaxError("There can't be parameters after callback");
 
         transport = error;
         result = null;
         error = undefined;
-      }
-
-      else if(result instanceof Function
-      || result && result.send instanceof Function)
-      {
-        if(transport != undefined)
+      } else if (result instanceof Function ||
+        result && result.send instanceof Function) {
+        if (transport != undefined)
           throw new SyntaxError("There can't be parameters after callback");
 
         transport = result;
@@ -21286,57 +21251,48 @@ function RpcBuilder(packer, options, transport, onRequest)
       transport = unifyTransport(transport);
 
       // Duplicated request, remove old response timeout
-      if(response)
+      if (response)
         clearTimeout(response.timeout);
 
-      if(from != undefined)
-      {
-        if(error)
+      if (from != undefined) {
+        if (error)
           error.dest = from;
 
-        if(result)
+        if (result)
           result.dest = from;
       };
 
       var message;
 
       // New request or overriden one, create new response with provided data
-      if(error || result != undefined)
-      {
-        if(self.peerID != undefined)
-        {
-          if(error)
+      if (error || result != undefined) {
+        if (self.peerID != undefined) {
+          if (error)
             error.from = self.peerID;
           else
             result.from = self.peerID;
         }
 
         // Protocol indicates that responses has own request methods
-        if(responseMethod)
-        {
-          if(responseMethod.error == undefined && error)
-            message =
-            {
+        if (responseMethod) {
+          if (responseMethod.error == undefined && error)
+            message = {
               error: error
             };
 
-          else
-          {
-            var method = error
-                       ? responseMethod.error
-                       : responseMethod.response;
+          else {
+            var method = error ?
+              responseMethod.error :
+              responseMethod.response;
 
-            message =
-            {
+            message = {
               method: method,
               params: error || result
             };
           }
-        }
-        else
-          message =
-          {
-            error:  error,
+        } else
+          message = {
+            error: error,
             result: result
           };
 
@@ -21344,12 +21300,14 @@ function RpcBuilder(packer, options, transport, onRequest)
       }
 
       // Duplicate & not-overriden request, re-send old response
-      else if(response)
+      else if (response)
         message = response.message;
 
       // New empty reply, response null value
       else
-        message = packer.pack({result: null}, id);
+        message = packer.pack({
+          result: null
+        }, id);
 
       // Store the response to prevent to process a duplicated request later
       storeResponse(message, id, from);
@@ -21357,7 +21315,7 @@ function RpcBuilder(packer, options, transport, onRequest)
       // Return the stored response so it can be directly send back
       transport = transport || this.getTransport() || self.getTransport();
 
-      if(transport)
+      if (transport)
         return transport.send(message);
 
       return message;
@@ -21365,16 +21323,14 @@ function RpcBuilder(packer, options, transport, onRequest)
   };
   inherits(RpcRequest, RpcNotification);
 
-
-  function cancel(message)
-  {
+  function cancel(message) {
     var key = message2Key[message];
-    if(!key) return;
+    if (!key) return;
 
     delete message2Key[message];
 
     var request = requests.pop(key.id, key.dest);
-    if(!request) return;
+    if (!request) return;
 
     clearTimeout(request.timeout);
 
@@ -21387,21 +21343,18 @@ function RpcBuilder(packer, options, transport, onRequest)
    *
    * If `message` is not given, cancel all the request
    */
-  this.cancel = function(message)
-  {
-    if(message) return cancel(message);
+  this.cancel = function (message) {
+    if (message) return cancel(message);
 
-    for(var message in message2Key)
+    for (var message in message2Key)
       cancel(message);
   };
 
-
-  this.close = function()
-  {
+  this.close = function () {
     // Prevent to receive new messages
     var transport = this.getTransport();
-    if(transport && transport.close)
-       transport.close();
+    if (transport && transport.close)
+      transport.close();
 
     // Request & processed responses
     this.cancel();
@@ -21409,12 +21362,10 @@ function RpcBuilder(packer, options, transport, onRequest)
     processedResponses.forEach(clearTimeout);
 
     // Responses
-    responses.forEach(function(response)
-    {
+    responses.forEach(function (response) {
       clearTimeout(response.timeout);
     });
   };
-
 
   /**
    * Generates and encode a JsonRPC 2.0 message
@@ -21428,102 +21379,89 @@ function RpcBuilder(packer, options, transport, onRequest)
    *
    * @returns {string} A raw JsonRPC 2.0 request or notification string
    */
-  this.encode = function(method, params, dest, transport, callback)
-  {
+  this.encode = function (method, params, dest, transport, callback) {
     // Fix optional parameters
-    if(params instanceof Function)
-    {
-      if(dest != undefined)
+    if (params instanceof Function) {
+      if (dest != undefined)
         throw new SyntaxError("There can't be parameters after callback");
 
-      callback  = params;
+      callback = params;
       transport = undefined;
-      dest      = undefined;
-      params    = undefined;
-    }
-
-    else if(dest instanceof Function)
-    {
-      if(transport != undefined)
+      dest = undefined;
+      params = undefined;
+    } else if (dest instanceof Function) {
+      if (transport != undefined)
         throw new SyntaxError("There can't be parameters after callback");
 
-      callback  = dest;
+      callback = dest;
       transport = undefined;
-      dest      = undefined;
-    }
-
-    else if(transport instanceof Function)
-    {
-      if(callback != undefined)
+      dest = undefined;
+    } else if (transport instanceof Function) {
+      if (callback != undefined)
         throw new SyntaxError("There can't be parameters after callback");
 
-      callback  = transport;
+      callback = transport;
       transport = undefined;
     };
 
-    if(self.peerID != undefined)
-    {
+    if (self.peerID != undefined) {
       params = params || {};
 
       params.from = self.peerID;
     };
 
-    if(dest != undefined)
-    {
+    if (dest != undefined) {
       params = params || {};
 
       params.dest = dest;
     };
 
     // Encode message
-    var message =
-    {
+    var message = {
       method: method,
       params: params
     };
 
-    if(callback)
-    {
+    if (callback) {
       var id = requestID++;
       var retried = 0;
 
       message = packer.pack(message, id);
 
-      function dispatchCallback(error, result)
-      {
+      function dispatchCallback(error, result) {
         self.cancel(message);
 
         callback(error, result);
       };
 
-      var request =
-      {
-        message:         message,
-        callback:        dispatchCallback,
+      var request = {
+        message: message,
+        callback: dispatchCallback,
         responseMethods: responseMethods[method] || {}
       };
 
       var encode_transport = unifyTransport(transport);
 
-      function sendRequest(transport)
-      {
+      function sendRequest(transport) {
         var rt = (method === 'ping' ? ping_request_timeout : request_timeout);
-        request.timeout = setTimeout(timeout, rt*Math.pow(2, retried++));
-        message2Key[message] = {id: id, dest: dest};
+        request.timeout = setTimeout(timeout, rt * Math.pow(2, retried++));
+        message2Key[message] = {
+          id: id,
+          dest: dest
+        };
         requests.set(request, id, dest);
 
         transport = transport || encode_transport || self.getTransport();
-        if(transport)
+        if (transport)
           return transport.send(message);
 
         return message;
       };
 
-      function retry(transport)
-      {
+      function retry(transport) {
         transport = unifyTransport(transport);
 
-        console.warn(retried+' retry for request message:',message);
+        console.warn(retried + ' retry for request message:', message);
 
         var timeout = processedResponses.pop(id, dest);
         clearTimeout(timeout);
@@ -21531,13 +21469,12 @@ function RpcBuilder(packer, options, transport, onRequest)
         return sendRequest(transport);
       };
 
-      function timeout()
-      {
-        if(retried < max_retries)
+      function timeout() {
+        if (retried < max_retries)
           return retry(transport);
 
         var error = new Error('Request has timed out');
-            error.request = message;
+        error.request = message;
 
         error.retry = retry;
 
@@ -21551,7 +21488,7 @@ function RpcBuilder(packer, options, transport, onRequest)
     message = packer.pack(message);
 
     transport = transport || this.getTransport();
-    if(transport)
+    if (transport)
       return transport.send(message);
 
     return message;
@@ -21568,23 +21505,19 @@ function RpcBuilder(packer, options, transport, onRequest)
    *
    * @throws {TypeError} - Message is not defined
    */
-  this.decode = function(message, transport)
-  {
-    if(!message)
+  this.decode = function (message, transport) {
+    if (!message)
       throw new TypeError("Message is not defined");
 
-    try
-    {
+    try {
       message = packer.unpack(message);
-    }
-    catch(e)
-    {
+    } catch (e) {
       // Ignore invalid messages
       return console.debug(e, message);
     };
 
-    var id     = message.id;
-    var ack    = message.ack;
+    var id = message.id;
+    var ack = message.ack;
     var method = message.method;
     var params = message.params || {};
 
@@ -21592,43 +21525,37 @@ function RpcBuilder(packer, options, transport, onRequest)
     var dest = params.dest;
 
     // Ignore messages send by us
-    if(self.peerID != undefined && from == self.peerID) return;
+    if (self.peerID != undefined && from == self.peerID) return;
 
     // Notification
-    if(id == undefined && ack == undefined)
-    {
+    if (id == undefined && ack == undefined) {
       var notification = new RpcNotification(method, params);
 
-      if(self.emit('request', notification)) return;
+      if (self.emit('request', notification)) return;
       return notification;
     };
 
-
-    function processRequest()
-    {
+    function processRequest() {
       // If we have a transport and it's a duplicated request, reply inmediatly
       transport = unifyTransport(transport) || self.getTransport();
-      if(transport)
-      {
+      if (transport) {
         var response = responses.get(id, from);
-        if(response)
+        if (response)
           return transport.send(response.message);
       };
 
       var idAck = (id != undefined) ? id : ack;
       var request = new RpcRequest(method, params, idAck, from, transport);
 
-      if(self.emit('request', request)) return;
+      if (self.emit('request', request)) return;
       return request;
     };
 
-    function processResponse(request, error, result)
-    {
+    function processResponse(request, error, result) {
       request.callback(error, result);
     };
 
-    function duplicatedResponse(timeout)
-    {
+    function duplicatedResponse(timeout) {
       console.warn("Response already processed", message);
 
       // Update duplicated responses timeout
@@ -21636,29 +21563,25 @@ function RpcBuilder(packer, options, transport, onRequest)
       storeProcessedResponse(ack, from);
     };
 
-
     // Request, or response with own method
-    if(method)
-    {
+    if (method) {
       // Check if it's a response with own method
-      if(dest == undefined || dest == self.peerID)
-      {
+      if (dest == undefined || dest == self.peerID) {
         var request = requests.get(ack, from);
-        if(request)
-        {
+        if (request) {
           var responseMethods = request.responseMethods;
 
-          if(method == responseMethods.error)
+          if (method == responseMethods.error)
             return processResponse(request, params);
 
-          if(method == responseMethods.response)
+          if (method == responseMethods.response)
             return processResponse(request, null, params);
 
           return processRequest();
         }
 
         var processed = processedResponses.get(ack, from);
-        if(processed)
+        if (processed)
           return duplicatedResponse(processed);
       }
 
@@ -21666,22 +21589,22 @@ function RpcBuilder(packer, options, transport, onRequest)
       return processRequest();
     };
 
-    var error  = message.error;
+    var error = message.error;
     var result = message.result;
 
     // Ignore responses not send to us
-    if(error  && error.dest  && error.dest  != self.peerID) return;
-    if(result && result.dest && result.dest != self.peerID) return;
+    if (error && error.dest && error.dest != self.peerID) return;
+    if (result && result.dest && result.dest != self.peerID) return;
 
     // Response
     var request = requests.get(ack, from);
-    if(!request)
-    {
+    if (!request) {
       var processed = processedResponses.get(ack, from);
-      if(processed)
+      if (processed)
         return duplicatedResponse(processed);
 
-      return console.warn("No callback was defined for this message", message);
+      return console.warn("No callback was defined for this message",
+        message);
     };
 
     // Process response
@@ -21690,9 +21613,7 @@ function RpcBuilder(packer, options, transport, onRequest)
 };
 inherits(RpcBuilder, EventEmitter);
 
-
 RpcBuilder.RpcNotification = RpcNotification;
-
 
 module.exports = RpcBuilder;
 
@@ -21716,37 +21637,31 @@ RpcBuilder.packers = packers;
  *
  * @return {String} - the stringified JsonRPC 2.0 message
  */
-function pack(message, id)
-{
-  var result =
-  {
+function pack(message, id) {
+  var result = {
     jsonrpc: "2.0"
   };
 
   // Request
-  if(message.method)
-  {
+  if (message.method) {
     result.method = message.method;
 
-    if(message.params)
+    if (message.params)
       result.params = message.params;
 
     // Request is a notification
-    if(id != undefined)
+    if (id != undefined)
       result.id = id;
   }
 
   // Response
-  else if(id != undefined)
-  {
-    if(message.error)
-    {
-      if(message.result !== undefined)
+  else if (id != undefined) {
+    if (message.error) {
+      if (message.result !== undefined)
         throw new TypeError("Both result and error are defined");
 
       result.error = message.error;
-    }
-    else if(message.result !== undefined)
+    } else if (message.result !== undefined)
       result.result = message.result;
     else
       throw new TypeError("No result or error is defined");
@@ -21766,35 +21681,34 @@ function pack(message, id)
  *
  * @return {Object} - object filled with the JsonRPC 2.0 message content
  */
-function unpack(message)
-{
+function unpack(message) {
   var result = message;
 
-  if(typeof message === 'string' || message instanceof String) {
+  if (typeof message === 'string' || message instanceof String) {
     result = JSON.parse(message);
   }
 
   // Check if it's a valid message
 
   var version = result.jsonrpc;
-  if(version !== '2.0')
-    throw new TypeError("Invalid JsonRPC version '" + version + "': " + message);
+  if (version !== '2.0')
+    throw new TypeError("Invalid JsonRPC version '" + version + "': " +
+      message);
 
   // Response
-  if(result.method == undefined)
-  {
-    if(result.id == undefined)
-      throw new TypeError("Invalid message: "+message);
+  if (result.method == undefined) {
+    if (result.id == undefined)
+      throw new TypeError("Invalid message: " + message);
 
     var result_defined = result.result !== undefined;
-    var error_defined  = result.error  !== undefined;
+    var error_defined = result.error !== undefined;
 
     // Check only result or error is defined, not both or none
-    if(result_defined && error_defined)
-      throw new TypeError("Both result and error are defined: "+message);
+    if (result_defined && error_defined)
+      throw new TypeError("Both result and error are defined: " + message);
 
-    if(!result_defined && !error_defined)
-      throw new TypeError("No result or error is defined: "+message);
+    if (!result_defined && !error_defined)
+      throw new TypeError("No result or error is defined: " + message);
 
     result.ack = result.id;
     delete result.id;
@@ -21804,32 +21718,27 @@ function unpack(message)
   return result;
 };
 
-
-exports.pack   = pack;
+exports.pack = pack;
 exports.unpack = unpack;
 
 },{}],119:[function(require,module,exports){
-function pack(message)
-{
+function pack(message) {
   throw new TypeError("Not yet implemented");
 };
 
-function unpack(message)
-{
+function unpack(message) {
   throw new TypeError("Not yet implemented");
 };
 
-
-exports.pack   = pack;
+exports.pack = pack;
 exports.unpack = unpack;
 
 },{}],120:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
-var XmlRPC  = require('./XmlRPC');
-
+var XmlRPC = require('./XmlRPC');
 
 exports.JsonRPC = JsonRPC;
-exports.XmlRPC  = XmlRPC;
+exports.XmlRPC = XmlRPC;
 
 },{"./JsonRPC":118,"./XmlRPC":119}],121:[function(require,module,exports){
 (function (process){
@@ -34316,7 +34225,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.13.0'});
+Object.defineProperty(exports, 'version', {value: '6.13.1-dev'});
 
 
 var HubPort = require('./HubPort');
@@ -34360,7 +34269,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.13.0'});
+Object.defineProperty(exports, 'version', {value: '6.13.1-dev'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -34418,7 +34327,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.13.0'});
+Object.defineProperty(exports, 'version', {value: '6.13.1-dev'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
