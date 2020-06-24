@@ -1993,7 +1993,11 @@ disguiseThenable.unthenable = unthenable
 module.exports = disguiseThenable
 
 },{}],8:[function(require,module,exports){
-Object.defineProperty(Error.prototype, 'toJSON', {
+if ("toJSON" in Error.prototype) {
+  return;
+}
+
+Object.defineProperty(Error.prototype, "toJSON", {
   value: function () {
     var alt = {};
 
