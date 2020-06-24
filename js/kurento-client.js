@@ -1447,7 +1447,7 @@ function MediaObjectCreator(host, encodeCreate, encodeRpc, encodeTransaction,
 
 module.exports = MediaObjectCreator;
 
-},{"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./register":8,"async":"async","extend":22}],3:[function(require,module,exports){
+},{"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./register":9,"async":"async","extend":22}],3:[function(require,module,exports){
 /*
  * (C) Copyright 2013-2014 Kurento (http://kurento.org/)
  *
@@ -1666,7 +1666,7 @@ TransactionsManager.TransactionNotCommitedException =
   TransactionNotCommitedException;
 TransactionsManager.TransactionRollbackException = TransactionRollbackException;
 
-},{"domain":19,"events":21,"inherits":"inherits","promisecallback":"promisecallback"}],4:[function(require,module,exports){
+},{"domain":20,"events":21,"inherits":"inherits","promisecallback":"promisecallback"}],4:[function(require,module,exports){
 /**
  * Loader for the kurento-client package on the browser
  */
@@ -1993,6 +1993,21 @@ disguiseThenable.unthenable = unthenable
 module.exports = disguiseThenable
 
 },{}],8:[function(require,module,exports){
+Object.defineProperty(Error.prototype, 'toJSON', {
+  value: function () {
+    var alt = {};
+
+    Object.getOwnPropertyNames(this).forEach(function (key) {
+      alt[key] = this[key];
+    }, this);
+
+    return alt;
+  },
+  configurable: true,
+  writable: true,
+});
+
+},{}],9:[function(require,module,exports){
 var checkType = require('./checkType');
 
 var abstracts = {};
@@ -2113,7 +2128,7 @@ register.classes = classes;
 register.complexTypes = complexTypes;
 register.modules = modules;
 
-},{"./checkType":5}],9:[function(require,module,exports){
+},{"./checkType":5}],10:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2164,7 +2179,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":10,"./lib/function_call.js":11,"./lib/strategy/exponential":12,"./lib/strategy/fibonacci":13}],10:[function(require,module,exports){
+},{"./lib/backoff":11,"./lib/function_call.js":12,"./lib/strategy/exponential":13,"./lib/strategy/fibonacci":14}],11:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2250,7 +2265,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":21,"util":151}],11:[function(require,module,exports){
+},{"events":21,"util":151}],12:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2479,7 +2494,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":10,"./strategy/fibonacci":13,"events":21,"util":151}],12:[function(require,module,exports){
+},{"./backoff":11,"./strategy/fibonacci":14,"events":21,"util":151}],13:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2515,7 +2530,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":14,"util":151}],13:[function(require,module,exports){
+},{"./strategy":15,"util":151}],14:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2552,7 +2567,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":14,"util":151}],14:[function(require,module,exports){
+},{"./strategy":15,"util":151}],15:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2652,7 +2667,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":21,"util":151}],15:[function(require,module,exports){
+},{"events":21,"util":151}],16:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -2806,9 +2821,9 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],16:[function(require,module,exports){
-
 },{}],17:[function(require,module,exports){
+
+},{}],18:[function(require,module,exports){
 (function (Buffer){
 /*!
  * The buffer module from node.js, for the browser.
@@ -4589,7 +4604,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"base64-js":15,"buffer":17,"ieee754":23}],18:[function(require,module,exports){
+},{"base64-js":16,"buffer":18,"ieee754":23}],19:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -4700,7 +4715,7 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":24}],19:[function(require,module,exports){
+},{"../../is-buffer/index.js":24}],20:[function(require,module,exports){
 // This file should be ES5 compatible
 /* eslint prefer-spread:0, no-var:0, prefer-reflect:0, no-magic-numbers:0 */
 'use strict'
@@ -4772,21 +4787,7 @@ module.exports = (function () {
 	return domain
 }).call(this)
 
-},{"events":21}],20:[function(require,module,exports){
-Object.defineProperty(Error.prototype, 'toJSON', {
-    value: function () {
-        var alt = {};
-
-        Object.getOwnPropertyNames(this).forEach(function (key) {
-            alt[key] = this[key];
-        }, this);
-
-        return alt;
-    },
-    configurable: true
-});
-
-},{}],21:[function(require,module,exports){
+},{"events":21}],21:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5556,7 +5557,7 @@ function isBuffer (o) {
     || /\[object (.+Array|Array.+)\]/.test(Object.prototype.toString.call(o));
 }
 
-},{"buffer":17}],27:[function(require,module,exports){
+},{"buffer":18}],27:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -22884,7 +22885,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":130,"./_stream_writable":132,"core-util-is":18,"inherits":"inherits","process-nextick-args":121}],129:[function(require,module,exports){
+},{"./_stream_readable":130,"./_stream_writable":132,"core-util-is":19,"inherits":"inherits","process-nextick-args":121}],129:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -22932,7 +22933,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":131,"core-util-is":18,"inherits":"inherits"}],130:[function(require,module,exports){
+},{"./_stream_transform":131,"core-util-is":19,"inherits":"inherits"}],130:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -23954,7 +23955,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":128,"./internal/streams/BufferList":133,"./internal/streams/destroy":134,"./internal/streams/stream":135,"_process":122,"core-util-is":18,"events":21,"inherits":"inherits","isarray":25,"process-nextick-args":121,"safe-buffer":136,"string_decoder/":137,"util":16}],131:[function(require,module,exports){
+},{"./_stream_duplex":128,"./internal/streams/BufferList":133,"./internal/streams/destroy":134,"./internal/streams/stream":135,"_process":122,"core-util-is":19,"events":21,"inherits":"inherits","isarray":25,"process-nextick-args":121,"safe-buffer":136,"string_decoder/":137,"util":17}],131:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -24169,7 +24170,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":128,"core-util-is":18,"inherits":"inherits"}],132:[function(require,module,exports){
+},{"./_stream_duplex":128,"core-util-is":19,"inherits":"inherits"}],132:[function(require,module,exports){
 (function (process,global,setImmediate){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -24859,7 +24860,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":128,"./internal/streams/destroy":134,"./internal/streams/stream":135,"_process":122,"core-util-is":18,"inherits":"inherits","process-nextick-args":121,"safe-buffer":136,"timers":146,"util-deprecate":149}],133:[function(require,module,exports){
+},{"./_stream_duplex":128,"./internal/streams/destroy":134,"./internal/streams/stream":135,"_process":122,"core-util-is":19,"inherits":"inherits","process-nextick-args":121,"safe-buffer":136,"timers":146,"util-deprecate":149}],133:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -24939,7 +24940,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":136,"util":16}],134:[function(require,module,exports){
+},{"safe-buffer":136,"util":17}],134:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -25081,7 +25082,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":17}],137:[function(require,module,exports){
+},{"buffer":18}],137:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -25524,7 +25525,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":9,"events":21}],143:[function(require,module,exports){
+},{"backoff":10,"events":21}],143:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -34283,7 +34284,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.14.0'});
+Object.defineProperty(exports, 'version', {value: '6.14.1-dev'});
 
 
 var HubPort = require('./HubPort');
@@ -34327,7 +34328,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.14.0'});
+Object.defineProperty(exports, 'version', {value: '6.14.1-dev'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -34385,7 +34386,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.14.0'});
+Object.defineProperty(exports, 'version', {value: '6.14.1-dev'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
@@ -34428,7 +34429,7 @@ exports.abstracts = require('./abstracts');
  * @license ALv2
  */
 
-require('error-tojson');
+require('./errorToJson');
 
 var checkType = require('./checkType');
 
@@ -34464,7 +34465,7 @@ register('kurento-client-core')
 register('kurento-client-elements')
 register('kurento-client-filters')
 
-},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./disguise":7,"./register":8,"error-tojson":20}],"promisecallback":[function(require,module,exports){
+},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./disguise":7,"./errorToJson":8,"./register":9}],"promisecallback":[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
