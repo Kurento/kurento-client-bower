@@ -34465,11 +34465,11 @@ KurentoClient.TransactionsManager = TransactionsManager;
 
 // Register Kurento basic elements
 
-register('kurento-client-core')
-register('kurento-client-elements')
-register('kurento-client-filters')
+register(require('kurento-client-core'))
+register(require('kurento-client-elements'))
+register(require('kurento-client-filters'))
 
-},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./disguise":7,"./errorToJson":8,"./register":9}],"promisecallback":[function(require,module,exports){
+},{"./KurentoClient":1,"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./disguise":7,"./errorToJson":8,"./register":9,"kurento-client-core":"kurento-client-core","kurento-client-elements":"kurento-client-elements","kurento-client-filters":"kurento-client-filters"}],"promisecallback":[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
