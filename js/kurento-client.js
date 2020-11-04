@@ -927,6 +927,10 @@ function KurentoClient(ws_uri, options, callback) {
     this.close = function () {
       closed = true;
 
+      enabledPings = false;
+      clearInterval(pingInterval);
+      pingPongStarted = false;
+
       prevRpc_result.then(re.disconnect.bind(re));
     };
 
@@ -1159,7 +1163,7 @@ KurentoClient.getComplexType = function (complexType) {
 
 module.exports = KurentoClient;
 
-},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","events":21,"extend":22,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":117,"promisecallback":"promisecallback","reconnect-ws":143,"url":147}],2:[function(require,module,exports){
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","events":21,"extend":22,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":118,"promisecallback":"promisecallback","reconnect-ws":144,"url":148}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
@@ -2269,7 +2273,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":21,"util":151}],12:[function(require,module,exports){
+},{"events":21,"util":152}],12:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2498,7 +2502,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":11,"./strategy/fibonacci":14,"events":21,"util":151}],13:[function(require,module,exports){
+},{"./backoff":11,"./strategy/fibonacci":14,"events":21,"util":152}],13:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2534,7 +2538,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":15,"util":151}],14:[function(require,module,exports){
+},{"./strategy":15,"util":152}],14:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2571,7 +2575,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":15,"util":151}],15:[function(require,module,exports){
+},{"./strategy":15,"util":152}],15:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2671,7 +2675,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":21,"util":151}],16:[function(require,module,exports){
+},{"events":21,"util":152}],16:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -2828,7 +2832,7 @@ function fromByteArray (uint8) {
 },{}],17:[function(require,module,exports){
 
 },{}],18:[function(require,module,exports){
-(function (Buffer){
+(function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -4607,9 +4611,9 @@ function numberIsNaN (obj) {
   return obj !== obj // eslint-disable-line no-self-compare
 }
 
-}).call(this,require("buffer").Buffer)
+}).call(this)}).call(this,require("buffer").Buffer)
 },{"base64-js":16,"buffer":18,"ieee754":23}],19:[function(require,module,exports){
-(function (Buffer){
+(function (Buffer){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4718,7 +4722,7 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 
-}).call(this,{"isBuffer":require("../../is-buffer/index.js")})
+}).call(this)}).call(this,{"isBuffer":require("../../is-buffer/index.js")})
 },{"../../is-buffer/index.js":24}],20:[function(require,module,exports){
 // This file should be ES5 compatible
 /* eslint prefer-spread:0, no-var:0, prefer-reflect:0, no-magic-numbers:0 */
@@ -5436,6 +5440,7 @@ module.exports = function extend() {
 };
 
 },{}],23:[function(require,module,exports){
+/*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -8461,10 +8466,14 @@ MediaElement.prototype.isMediaTranscoding = function(mediaType, binName, callbac
  */
 
 /**
- * Sets the type of data for the audio stream.
+ * Set the type of data for the audio stream.
  * <p>
  *   MediaElements that do not support configuration of audio capabilities will
  *   throw a MEDIA_OBJECT_ILLEGAL_PARAM_ERROR exception.
+ * </p>
+ * <p>
+ *   NOTE: This method is not implemented yet by the Media Server to do anything
+ *   useful.
  * </p>
  *
  * @alias module:core/abstracts.MediaElement.setAudioFormat
@@ -8536,10 +8545,14 @@ MediaElement.prototype.setOutputBitrate = function(bitrate, callback){
  */
 
 /**
- * Sets the type of data for the video stream.
+ * Set the type of data for the video stream.
  * <p>
  *   MediaElements that do not support configuration of video capabilities will
  *   throw a MEDIA_OBJECT_ILLEGAL_PARAM_ERROR exception
+ * </p>
+ * <p>
+ *   NOTE: This method is not implemented yet by the Media Server to do anything
+ *   useful.
  * </p>
  *
  * @alias module:core/abstracts.MediaElement.setVideoFormat
@@ -9619,10 +9632,9 @@ function noop(error, result) {
 
 /**
  * @classdesc
- *  Interface implemented by Endpoints that require an SDP negotiation for the 
- *  setup
- *  of a networked media session with remote peers.
- *  <p>The API provides the following functionality:</p>
+ *  Interface implemented by Endpoints that require an SDP Offer/Answer 
+ *  negotiation in order to configure a media session.
+ *  <p>Functionality provided by this API:</p>
  *  <ul>
  *    <li>Generate SDP offers.</li>
  *    <li>Process SDP offers.</li>
@@ -9849,26 +9861,48 @@ SdpEndpoint.prototype.setMaxVideoRecvBandwidth = function(maxVideoRecvBandwidth,
  *
  * @alias module:core/abstracts.SdpEndpoint.generateOffer
  *
+ * @param {module:core/complexTypes.OfferOptions} [options]
+ *  An <code>OfferOptions</code> providing options requested for the offer.
+ *
  * @param {module:core/abstracts.SdpEndpoint~generateOfferCallback} [callback]
  *
  * @return {external:Promise}
  */
-SdpEndpoint.prototype.generateOffer = function(callback){
+SdpEndpoint.prototype.generateOffer = function(options, callback){
   var transaction = (arguments[0] instanceof Transaction)
                   ? Array.prototype.shift.apply(arguments)
                   : undefined;
 
-  var usePromise = false;
-  
-  if (callback == undefined) {
-    usePromise = true;
+  callback = arguments[arguments.length-1] instanceof Function
+           ? Array.prototype.pop.call(arguments)
+           : undefined;
+
+  switch(arguments.length){
+    case 0: options = undefined;
+    break;
+    case 1: 
+    break;
+
+    default:
+      var error = new RangeError('Number of params ('+arguments.length+') not in range [0-1]');
+          error.length = arguments.length;
+          error.min = 0;
+          error.max = 1;
+
+      throw error;
   }
-  
-  if(!arguments.length) callback = undefined;
+
+  //  
+  // checkType('OfferOptions', 'options', options);
+  //  
+
+  var params = {
+    options: options
+  };
 
   callback = (callback || noop).bind(this)
 
-  return disguise(this._invoke(transaction, 'generateOffer', callback), this)
+  return disguise(this._invoke(transaction, 'generateOffer', params, callback), this)
 };
 /**
  * @callback module:core/abstracts.SdpEndpoint~generateOfferCallback
@@ -11496,7 +11530,7 @@ module.exports = ElementStats;
 
 ElementStats.check = checkElementStats;
 
-},{"./Stats":77,"inherits":"inherits","kurento-client":"kurento-client"}],48:[function(require,module,exports){
+},{"./Stats":78,"inherits":"inherits","kurento-client":"kurento-client"}],48:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12284,6 +12318,110 @@ var kurentoClient = require('kurento-client');
 var checkType = kurentoClient.checkType;
 var ChecktypeError = checkType.ChecktypeError;
 
+var ComplexType = require('./ComplexType');
+
+
+/**
+ * Used to customize the offer created by 
+ * <code>SdpEndpoint.generateOffer</code>.
+ *
+ * @constructor module:core/complexTypes.OfferOptions
+ *
+ * @property {external:Boolean} offerToReceiveAudio
+ *  Whether or not to offer to the remote peer the opportunity to send audio.
+ * @property {external:Boolean} offerToReceiveVideo
+ *  Whether or not to offer to the remote peer the opportunity to send video.
+ */
+function OfferOptions(offerOptionsDict){
+  if(!(this instanceof OfferOptions))
+    return new OfferOptions(offerOptionsDict)
+
+  offerOptionsDict = offerOptionsDict || {}
+
+  // Check offerOptionsDict has the required fields
+  // 
+  // checkType('boolean', 'offerOptionsDict.offerToReceiveAudio', offerOptionsDict.offerToReceiveAudio);
+  //  
+  // checkType('boolean', 'offerOptionsDict.offerToReceiveVideo', offerOptionsDict.offerToReceiveVideo);
+  //  
+
+  // Init parent class
+  OfferOptions.super_.call(this, offerOptionsDict)
+
+  // Set object properties
+  Object.defineProperties(this, {
+    offerToReceiveAudio: {
+      writable: true,
+      enumerable: true,
+      value: offerOptionsDict.offerToReceiveAudio
+    },
+    offerToReceiveVideo: {
+      writable: true,
+      enumerable: true,
+      value: offerOptionsDict.offerToReceiveVideo
+    }
+  })
+}
+inherits(OfferOptions, ComplexType)
+
+// Private identifiers to allow re-construction of the complexType on the server
+// They need to be enumerable so JSON.stringify() can access to them
+Object.defineProperties(OfferOptions.prototype, {
+  __module__: {
+    enumerable: true,
+    value: "kurento"
+  },
+  __type__: {
+    enumerable: true,
+    value: "OfferOptions"
+  }
+})
+
+/**
+ * Checker for {@link module:core/complexTypes.OfferOptions}
+ *
+ * @memberof module:core/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:core/complexTypes.OfferOptions} value
+ */
+function checkOfferOptions(key, value)
+{
+  if(!(value instanceof OfferOptions))
+    throw ChecktypeError(key, OfferOptions, value);
+};
+
+
+module.exports = OfferOptions;
+
+OfferOptions.check = checkOfferOptions;
+
+},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],59:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+var inherits = require('inherits');
+
+var kurentoClient = require('kurento-client');
+
+var checkType = kurentoClient.checkType;
+var ChecktypeError = checkType.ChecktypeError;
+
 var RTCStats = require('./RTCStats');
 
 
@@ -12379,7 +12517,7 @@ module.exports = RTCCertificateStats;
 
 RTCCertificateStats.check = checkRTCCertificateStats;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],59:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],60:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12511,7 +12649,7 @@ module.exports = RTCCodec;
 
 RTCCodec.check = checkRTCCodec;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],60:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],61:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12562,7 +12700,7 @@ function checkRTCDataChannelState(key, value)
 
 module.exports = checkRTCDataChannelState;
 
-},{"kurento-client":"kurento-client"}],61:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],62:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12723,7 +12861,7 @@ module.exports = RTCDataChannelStats;
 
 RTCDataChannelStats.check = checkRTCDataChannelStats;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],62:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],63:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -12867,7 +13005,7 @@ module.exports = RTCIceCandidateAttributes;
 
 RTCIceCandidateAttributes.check = checkRTCIceCandidateAttributes;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],63:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],64:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13081,7 +13219,7 @@ module.exports = RTCIceCandidatePairStats;
 
 RTCIceCandidatePairStats.check = checkRTCIceCandidatePairStats;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],64:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],65:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13196,7 +13334,7 @@ module.exports = RTCInboundRTPStreamStats;
 
 RTCInboundRTPStreamStats.check = checkRTCInboundRTPStreamStats;
 
-},{"./RTCRTPStreamStats":69,"inherits":"inherits","kurento-client":"kurento-client"}],65:[function(require,module,exports){
+},{"./RTCRTPStreamStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],66:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13301,7 +13439,7 @@ module.exports = RTCMediaStreamStats;
 
 RTCMediaStreamStats.check = checkRTCMediaStreamStats;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],66:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],67:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13522,7 +13660,7 @@ module.exports = RTCMediaStreamTrackStats;
 
 RTCMediaStreamTrackStats.check = checkRTCMediaStreamTrackStats;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],67:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],68:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13647,7 +13785,7 @@ module.exports = RTCOutboundRTPStreamStats;
 
 RTCOutboundRTPStreamStats.check = checkRTCOutboundRTPStreamStats;
 
-},{"./RTCRTPStreamStats":69,"inherits":"inherits","kurento-client":"kurento-client"}],68:[function(require,module,exports){
+},{"./RTCRTPStreamStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],69:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13752,7 +13890,7 @@ module.exports = RTCPeerConnectionStats;
 
 RTCPeerConnectionStats.check = checkRTCPeerConnectionStats;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],69:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],70:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -13963,7 +14101,7 @@ module.exports = RTCRTPStreamStats;
 
 RTCRTPStreamStats.check = checkRTCRTPStreamStats;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],70:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],71:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14050,7 +14188,7 @@ module.exports = RTCStats;
 
 RTCStats.check = checkRTCStats;
 
-},{"./Stats":77,"inherits":"inherits","kurento-client":"kurento-client"}],71:[function(require,module,exports){
+},{"./Stats":78,"inherits":"inherits","kurento-client":"kurento-client"}],72:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14102,7 +14240,7 @@ function checkRTCStatsIceCandidatePairState(key, value)
 
 module.exports = checkRTCStatsIceCandidatePairState;
 
-},{"kurento-client":"kurento-client"}],72:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],73:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14153,7 +14291,7 @@ function checkRTCStatsIceCandidateType(key, value)
 
 module.exports = checkRTCStatsIceCandidateType;
 
-},{"kurento-client":"kurento-client"}],73:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],74:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14309,7 +14447,7 @@ module.exports = RTCTransportStats;
 
 RTCTransportStats.check = checkRTCTransportStats;
 
-},{"./RTCStats":70,"inherits":"inherits","kurento-client":"kurento-client"}],74:[function(require,module,exports){
+},{"./RTCStats":71,"inherits":"inherits","kurento-client":"kurento-client"}],75:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14506,7 +14644,7 @@ module.exports = RembParams;
 
 RembParams.check = checkRembParams;
 
-},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],75:[function(require,module,exports){
+},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],76:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14627,7 +14765,7 @@ module.exports = ServerInfo;
 
 ServerInfo.check = checkServerInfo;
 
-},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],76:[function(require,module,exports){
+},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],77:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14678,7 +14816,7 @@ function checkServerType(key, value)
 
 module.exports = checkServerType;
 
-},{"kurento-client":"kurento-client"}],77:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],78:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14800,7 +14938,7 @@ module.exports = Stats;
 
 Stats.check = checkStats;
 
-},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],78:[function(require,module,exports){
+},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],79:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14851,7 +14989,7 @@ function checkStatsType(key, value)
 
 module.exports = checkStatsType;
 
-},{"kurento-client":"kurento-client"}],79:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],80:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -14954,7 +15092,7 @@ module.exports = Tag;
 
 Tag.check = checkTag;
 
-},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],80:[function(require,module,exports){
+},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],81:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15005,7 +15143,7 @@ function checkUriEndpointState(key, value)
 
 module.exports = checkUriEndpointState;
 
-},{"kurento-client":"kurento-client"}],81:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],82:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15108,7 +15246,7 @@ module.exports = VideoCaps;
 
 VideoCaps.check = checkVideoCaps;
 
-},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],82:[function(require,module,exports){
+},{"./ComplexType":44,"inherits":"inherits","kurento-client":"kurento-client"}],83:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15159,7 +15297,7 @@ function checkVideoCodec(key, value)
 
 module.exports = checkVideoCodec;
 
-},{"kurento-client":"kurento-client"}],83:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],84:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15205,6 +15343,7 @@ var MediaState = require('./MediaState');
 var MediaTranscodingState = require('./MediaTranscodingState');
 var MediaType = require('./MediaType');
 var ModuleInfo = require('./ModuleInfo');
+var OfferOptions = require('./OfferOptions');
 var RembParams = require('./RembParams');
 var RTCCertificateStats = require('./RTCCertificateStats');
 var RTCCodec = require('./RTCCodec');
@@ -15250,6 +15389,7 @@ exports.MediaState = MediaState;
 exports.MediaTranscodingState = MediaTranscodingState;
 exports.MediaType = MediaType;
 exports.ModuleInfo = ModuleInfo;
+exports.OfferOptions = OfferOptions;
 exports.RembParams = RembParams;
 exports.RTCCertificateStats = RTCCertificateStats;
 exports.RTCCodec = RTCCodec;
@@ -15276,7 +15416,7 @@ exports.UriEndpointState = UriEndpointState;
 exports.VideoCaps = VideoCaps;
 exports.VideoCodec = VideoCodec;
 
-},{"./AudioCaps":41,"./AudioCodec":42,"./CodecConfiguration":43,"./ComplexType":44,"./ConnectionState":45,"./ElementConnectionData":46,"./ElementStats":47,"./EndpointStats":48,"./FilterType":49,"./Fraction":50,"./GstreamerDotDetails":51,"./MediaFlowState":52,"./MediaLatencyStat":53,"./MediaState":54,"./MediaTranscodingState":55,"./MediaType":56,"./ModuleInfo":57,"./RTCCertificateStats":58,"./RTCCodec":59,"./RTCDataChannelState":60,"./RTCDataChannelStats":61,"./RTCIceCandidateAttributes":62,"./RTCIceCandidatePairStats":63,"./RTCInboundRTPStreamStats":64,"./RTCMediaStreamStats":65,"./RTCMediaStreamTrackStats":66,"./RTCOutboundRTPStreamStats":67,"./RTCPeerConnectionStats":68,"./RTCRTPStreamStats":69,"./RTCStats":70,"./RTCStatsIceCandidatePairState":71,"./RTCStatsIceCandidateType":72,"./RTCTransportStats":73,"./RembParams":74,"./ServerInfo":75,"./ServerType":76,"./Stats":77,"./StatsType":78,"./Tag":79,"./UriEndpointState":80,"./VideoCaps":81,"./VideoCodec":82}],84:[function(require,module,exports){
+},{"./AudioCaps":41,"./AudioCodec":42,"./CodecConfiguration":43,"./ComplexType":44,"./ConnectionState":45,"./ElementConnectionData":46,"./ElementStats":47,"./EndpointStats":48,"./FilterType":49,"./Fraction":50,"./GstreamerDotDetails":51,"./MediaFlowState":52,"./MediaLatencyStat":53,"./MediaState":54,"./MediaTranscodingState":55,"./MediaType":56,"./ModuleInfo":57,"./OfferOptions":58,"./RTCCertificateStats":59,"./RTCCodec":60,"./RTCDataChannelState":61,"./RTCDataChannelStats":62,"./RTCIceCandidateAttributes":63,"./RTCIceCandidatePairStats":64,"./RTCInboundRTPStreamStats":65,"./RTCMediaStreamStats":66,"./RTCMediaStreamTrackStats":67,"./RTCOutboundRTPStreamStats":68,"./RTCPeerConnectionStats":69,"./RTCRTPStreamStats":70,"./RTCStats":71,"./RTCStatsIceCandidatePairState":72,"./RTCStatsIceCandidateType":73,"./RTCTransportStats":74,"./RembParams":75,"./ServerInfo":76,"./ServerType":77,"./Stats":78,"./StatsType":79,"./Tag":80,"./UriEndpointState":81,"./VideoCaps":82,"./VideoCodec":83}],85:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15489,7 +15629,7 @@ module.exports = AlphaBlending;
 
 AlphaBlending.check = checkAlphaBlending;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],85:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],86:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15580,7 +15720,7 @@ module.exports = Composite;
 
 Composite.check = checkComposite;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],86:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],87:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15725,7 +15865,7 @@ module.exports = Dispatcher;
 
 Dispatcher.check = checkDispatcher;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],87:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],88:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -15895,7 +16035,7 @@ module.exports = DispatcherOneToMany;
 
 DispatcherOneToMany.check = checkDispatcherOneToMany;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],88:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],89:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16029,7 +16169,7 @@ module.exports = HttpPostEndpoint;
 
 HttpPostEndpoint.check = checkHttpPostEndpoint;
 
-},{"./abstracts/HttpEndpoint":94,"inherits":"inherits","kurento-client":"kurento-client"}],89:[function(require,module,exports){
+},{"./abstracts/HttpEndpoint":95,"inherits":"inherits","kurento-client":"kurento-client"}],90:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16225,7 +16365,7 @@ module.exports = Mixer;
 
 Mixer.check = checkMixer;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],90:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],91:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16522,7 +16662,27 @@ PlayerEndpoint.prototype.play = function(callback){
  *  belongs to.
  *
  * @property {external:Integer} [networkCache]
- *  When using RTSP sources: Amount of milliseconds to buffer
+ *  RTSP buffer length.
+ *  <p>
+ *    When receiving media from an RTSP source, the streamed video can suffer 
+ *    spikes
+ *    or stuttering, caused by hardware or network issues. Having a reception 
+ *    buffer
+ *    helps alleviate these problems, because it smoothes the stream of incoming
+ *    data to the receiving endpoint.
+ *  </p>
+ *  <p>
+ *    Finding a buffer length that works best for your connection might take 
+ *    some
+ *    tweaking, which can be done with this optional property. Note that a 
+ *    longer
+ *    buffer will be able to fix bigger network spikes, but at the cost of
+ *    introducing more latency to the media playback.
+ *  </p>
+ *  <ul>
+ *    <li>Unit: milliseconds.</li>
+ *    <li>Default: 2000.</li>
+ *  </ul>
  *
  * @property {external:String} uri
  *  URI pointing to the video. It has to be accessible to the KMS process.
@@ -16608,7 +16768,7 @@ module.exports = PlayerEndpoint;
 
 PlayerEndpoint.check = checkPlayerEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],91:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],92:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -16652,10 +16812,11 @@ function noop(error, result) {
 /**
  *
  * @classdesc
- *  Provides the functionality to store contents.
+ *  Provides functionality to store media contents.
  *  <p>
- *    The Recorder can store media in local files or in a network resource. It
- *    receives a media stream from another {@link 
+ *    The RecorderEndpoint can store media in local files or in a network 
+ *    resource.
+ *    It receives a media stream from another {@link 
  *    module:core/abstracts.MediaElement MediaElement} (i.e. the
  *    source), and stores it in the designated location.
  *  </p>
@@ -16676,7 +16837,10 @@ function noop(error, result) {
  *          </ul>
  *        </li>
  *        <li>
- *          HTTP: Method PUT used against a remote server.
+ *          HTTP: A POST request will be used against a remote server. The 
+ *          server
+ *          must support using the <i>chunked</i> encoding mode (HTTP header
+ *          <code>Transfer-Encoding: chunked</code>).
  *          <ul>
  *            <li><code>http(s)://{server-ip}/path/to/file</code></li>
  *            <li>
@@ -16729,7 +16893,8 @@ function noop(error, result) {
  *    </li>
  *    <li>
  *      To save into an HTTP server, the server must be accessible through the
- *      network, and also have the correct access rights.
+ *      network, and also have the correct access rights to the destination 
+ *      path.
  *    </li>
  *  </ul>
  *  <p>
@@ -16988,7 +17153,7 @@ module.exports = RecorderEndpoint;
 
 RecorderEndpoint.check = checkRecorderEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],92:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],93:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17172,7 +17337,7 @@ module.exports = RtpEndpoint;
 
 RtpEndpoint.check = checkRtpEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],93:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],94:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -17571,30 +17736,34 @@ inherits(WebRtcEndpoint, BaseRtpEndpoint);
 /**
  * External IP address of the media server.
  * <p>
- *   This setting is normally NOT needed. Only use it if you know what you're
- *   doing, and understand 100% WHY you want it. For the majority of cases, you
- *   should prefer configuring STUN or TURN servers over using this setting.
- * </p>
- * <p>
- *   This setting implements a hack that will mangle all local ICE candidates so
- *   that their candidate address is replaced with the provided external 
- *   address,
- *   even for candidates of type 'host'. In doing so, this KMS will not need a
- *   STUN or TURN server, but remote peers will still be able to contact it.
+ *   Forces all local IPv4 and IPv6 ICE candidates to have the given address. 
+ *   This
+ *   is really nothing more than a hack, but it's very effective to force a 
+ *   public
+ *   IP address when one is known in advance for the media server. In doing so, 
+ *   KMS
+ *   will not need a STUN or TURN server, but remote peers will still be able to
+ *   contact it.
  * </p>
  * <p>
  *   You can try using this setting if KMS is deployed on a publicly accessible
  *   server, without NAT, and with a static public IP address. But if it doesn't
- *   work for you, just go back to using the STUN or TURN settings above.
+ *   work for you, just go back to configuring a STUN or TURN server for ICE.
  * </p>
  * <p>
- *   <code>externalAddress</code> is an IPv4 or IPv6 address.
+ *   Only set this parameter if you know what you're doing, and you understand 
+ *   100%
+ *   WHY you need it. For the majority of cases, you should just prefer to
+ *   configure a STUN or TURN server.
  * </p>
+ * <p><code>externalAddress</code> is a single IPv4 or IPv6 address.</p>
  * <p>Examples:</p>
  * <ul>
- *   <li><code>externalAddress=10.70.35.2</code></li>
+ *   <li><code>externalAddress=198.51.100.1</code></li>
  *   <li><code>externalAddress=2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></li>
  * </ul>
+ * @deprecated Use <code>externalIPv4</code> and/or <code>externalIPv6</code> 
+ * instead.
  *
  * @alias module:elements.WebRtcEndpoint#getExternalAddress
  *
@@ -17628,30 +17797,34 @@ WebRtcEndpoint.prototype.getExternalAddress = function(callback){
 /**
  * External IP address of the media server.
  * <p>
- *   This setting is normally NOT needed. Only use it if you know what you're
- *   doing, and understand 100% WHY you want it. For the majority of cases, you
- *   should prefer configuring STUN or TURN servers over using this setting.
- * </p>
- * <p>
- *   This setting implements a hack that will mangle all local ICE candidates so
- *   that their candidate address is replaced with the provided external 
- *   address,
- *   even for candidates of type 'host'. In doing so, this KMS will not need a
- *   STUN or TURN server, but remote peers will still be able to contact it.
+ *   Forces all local IPv4 and IPv6 ICE candidates to have the given address. 
+ *   This
+ *   is really nothing more than a hack, but it's very effective to force a 
+ *   public
+ *   IP address when one is known in advance for the media server. In doing so, 
+ *   KMS
+ *   will not need a STUN or TURN server, but remote peers will still be able to
+ *   contact it.
  * </p>
  * <p>
  *   You can try using this setting if KMS is deployed on a publicly accessible
  *   server, without NAT, and with a static public IP address. But if it doesn't
- *   work for you, just go back to using the STUN or TURN settings above.
+ *   work for you, just go back to configuring a STUN or TURN server for ICE.
  * </p>
  * <p>
- *   <code>externalAddress</code> is an IPv4 or IPv6 address.
+ *   Only set this parameter if you know what you're doing, and you understand 
+ *   100%
+ *   WHY you need it. For the majority of cases, you should just prefer to
+ *   configure a STUN or TURN server.
  * </p>
+ * <p><code>externalAddress</code> is a single IPv4 or IPv6 address.</p>
  * <p>Examples:</p>
  * <ul>
- *   <li><code>externalAddress=10.70.35.2</code></li>
+ *   <li><code>externalAddress=198.51.100.1</code></li>
  *   <li><code>externalAddress=2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></li>
  * </ul>
+ * @deprecated Use <code>externalIPv4</code> and/or <code>externalIPv6</code> 
+ * instead.
  *
  * @alias module:elements.WebRtcEndpoint#setExternalAddress
  *
@@ -17679,6 +17852,238 @@ WebRtcEndpoint.prototype.setExternalAddress = function(externalAddress, callback
 };
 /**
  * @callback module:elements.WebRtcEndpoint~setExternalAddressCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * External IPv4 address of the media server.
+ * <p>
+ *   Forces all local IPv4 ICE candidates to have the given address. This is 
+ *   really
+ *   nothing more than a hack, but it's very effective to force a public IP 
+ *   address
+ *   when one is known in advance for the media server. In doing so, KMS will 
+ *   not
+ *   need a STUN or TURN server, but remote peers will still be able to contact 
+ *   it.
+ * </p>
+ * <p>
+ *   You can try using this setting if KMS is deployed on a publicly accessible
+ *   server, without NAT, and with a static public IP address. But if it doesn't
+ *   work for you, just go back to configuring a STUN or TURN server for ICE.
+ * </p>
+ * <p>
+ *   Only set this parameter if you know what you're doing, and you understand 
+ *   100%
+ *   WHY you need it. For the majority of cases, you should just prefer to
+ *   configure a STUN or TURN server.
+ * </p>
+ * <p><code>externalIPv4</code> is a single IPv4 address.</p>
+ * <p>Example:</p>
+ * <ul>
+ *   <li><code>externalIPv4=198.51.100.1</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#getExternalIPv4
+ *
+ * @param {module:elements.WebRtcEndpoint~getExternalIPv4Callback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getExternalIPv4 = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getExternalIPv4', callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getExternalIPv4Callback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
+
+/**
+ * External IPv4 address of the media server.
+ * <p>
+ *   Forces all local IPv4 ICE candidates to have the given address. This is 
+ *   really
+ *   nothing more than a hack, but it's very effective to force a public IP 
+ *   address
+ *   when one is known in advance for the media server. In doing so, KMS will 
+ *   not
+ *   need a STUN or TURN server, but remote peers will still be able to contact 
+ *   it.
+ * </p>
+ * <p>
+ *   You can try using this setting if KMS is deployed on a publicly accessible
+ *   server, without NAT, and with a static public IP address. But if it doesn't
+ *   work for you, just go back to configuring a STUN or TURN server for ICE.
+ * </p>
+ * <p>
+ *   Only set this parameter if you know what you're doing, and you understand 
+ *   100%
+ *   WHY you need it. For the majority of cases, you should just prefer to
+ *   configure a STUN or TURN server.
+ * </p>
+ * <p><code>externalIPv4</code> is a single IPv4 address.</p>
+ * <p>Example:</p>
+ * <ul>
+ *   <li><code>externalIPv4=198.51.100.1</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#setExternalIPv4
+ *
+ * @param {external:String} externalIPv4
+ * @param {module:elements.WebRtcEndpoint~setExternalIPv4Callback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.setExternalIPv4 = function(externalIPv4, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('String', 'externalIPv4', externalIPv4, {required: true});
+  //  
+
+  var params = {
+    externalIPv4: externalIPv4
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setExternalIPv4', params, callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~setExternalIPv4Callback
+ * @param {external:Error} error
+ */
+
+/**
+ * External IPv6 address of the media server.
+ * <p>
+ *   Forces all local IPv6 ICE candidates to have the given address. This is 
+ *   really
+ *   nothing more than a hack, but it's very effective to force a public IP 
+ *   address
+ *   when one is known in advance for the media server. In doing so, KMS will 
+ *   not
+ *   need a STUN or TURN server, but remote peers will still be able to contact 
+ *   it.
+ * </p>
+ * <p>
+ *   You can try using this setting if KMS is deployed on a publicly accessible
+ *   server, without NAT, and with a static public IP address. But if it doesn't
+ *   work for you, just go back to configuring a STUN or TURN server for ICE.
+ * </p>
+ * <p>
+ *   Only set this parameter if you know what you're doing, and you understand 
+ *   100%
+ *   WHY you need it. For the majority of cases, you should just prefer to
+ *   configure a STUN or TURN server.
+ * </p>
+ * <p><code>externalIPv6</code> is a single IPv6 address.</p>
+ * <p>Example:</p>
+ * <ul>
+ *   <li><code>externalIPv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#getExternalIPv6
+ *
+ * @param {module:elements.WebRtcEndpoint~getExternalIPv6Callback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getExternalIPv6 = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getExternalIPv6', callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getExternalIPv6Callback
+ * @param {external:Error} error
+ * @param {external:String} result
+ */
+
+/**
+ * External IPv6 address of the media server.
+ * <p>
+ *   Forces all local IPv6 ICE candidates to have the given address. This is 
+ *   really
+ *   nothing more than a hack, but it's very effective to force a public IP 
+ *   address
+ *   when one is known in advance for the media server. In doing so, KMS will 
+ *   not
+ *   need a STUN or TURN server, but remote peers will still be able to contact 
+ *   it.
+ * </p>
+ * <p>
+ *   You can try using this setting if KMS is deployed on a publicly accessible
+ *   server, without NAT, and with a static public IP address. But if it doesn't
+ *   work for you, just go back to configuring a STUN or TURN server for ICE.
+ * </p>
+ * <p>
+ *   Only set this parameter if you know what you're doing, and you understand 
+ *   100%
+ *   WHY you need it. For the majority of cases, you should just prefer to
+ *   configure a STUN or TURN server.
+ * </p>
+ * <p><code>externalIPv6</code> is a single IPv6 address.</p>
+ * <p>Example:</p>
+ * <ul>
+ *   <li><code>externalIPv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></li>
+ * </ul>
+ *
+ * @alias module:elements.WebRtcEndpoint#setExternalIPv6
+ *
+ * @param {external:String} externalIPv6
+ * @param {module:elements.WebRtcEndpoint~setExternalIPv6Callback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.setExternalIPv6 = function(externalIPv6, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('String', 'externalIPv6', externalIPv6, {required: true});
+  //  
+
+  var params = {
+    externalIPv6: externalIPv6
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setExternalIPv6', params, callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~setExternalIPv6Callback
  * @param {external:Error} error
  */
 
@@ -18444,7 +18849,7 @@ module.exports = WebRtcEndpoint;
 
 WebRtcEndpoint.check = checkWebRtcEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],94:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],95:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18572,7 +18977,7 @@ module.exports = HttpEndpoint;
 
 HttpEndpoint.check = checkHttpEndpoint;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],95:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],96:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18605,7 +19010,7 @@ var HttpEndpoint = require('./HttpEndpoint');
 
 exports.HttpEndpoint = HttpEndpoint;
 
-},{"./HttpEndpoint":94}],96:[function(require,module,exports){
+},{"./HttpEndpoint":95}],97:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18656,7 +19061,7 @@ function checkCertificateKeyType(key, value)
 
 module.exports = checkCertificateKeyType;
 
-},{"kurento-client":"kurento-client"}],97:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],98:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18707,7 +19112,7 @@ function checkCryptoSuite(key, value)
 
 module.exports = checkCryptoSuite;
 
-},{"kurento-client":"kurento-client"}],98:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],99:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18822,7 +19227,7 @@ module.exports = IceCandidate;
 
 IceCandidate.check = checkIceCandidate;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],99:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],100:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18943,7 +19348,7 @@ module.exports = IceCandidatePair;
 
 IceCandidatePair.check = checkIceCandidatePair;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],100:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],101:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -18994,7 +19399,7 @@ function checkIceComponentState(key, value)
 
 module.exports = checkIceComponentState;
 
-},{"kurento-client":"kurento-client"}],101:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],102:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19106,7 +19511,7 @@ module.exports = IceConnection;
 
 IceConnection.check = checkIceConnection;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],102:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],103:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19158,7 +19563,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"kurento-client":"kurento-client"}],103:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],104:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19296,7 +19701,7 @@ module.exports = SDES;
 
 SDES.check = checkSDES;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],104:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],105:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19416,7 +19821,7 @@ module.exports = VideoInfo;
 
 VideoInfo.check = checkVideoInfo;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],105:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],106:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19465,7 +19870,7 @@ exports.MediaProfileSpecType = MediaProfileSpecType;
 exports.SDES = SDES;
 exports.VideoInfo = VideoInfo;
 
-},{"./CertificateKeyType":96,"./CryptoSuite":97,"./IceCandidate":98,"./IceCandidatePair":99,"./IceComponentState":100,"./IceConnection":101,"./MediaProfileSpecType":102,"./SDES":103,"./VideoInfo":104}],106:[function(require,module,exports){
+},{"./CertificateKeyType":97,"./CryptoSuite":98,"./IceCandidate":99,"./IceCandidatePair":100,"./IceComponentState":101,"./IceConnection":102,"./MediaProfileSpecType":103,"./SDES":104,"./VideoInfo":105}],107:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19685,7 +20090,7 @@ module.exports = FaceOverlayFilter;
 
 FaceOverlayFilter.check = checkFaceOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],107:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],108:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19885,7 +20290,7 @@ module.exports = GStreamerFilter;
 
 GStreamerFilter.check = checkGStreamerFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],108:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20103,7 +20508,7 @@ module.exports = ImageOverlayFilter;
 
 ImageOverlayFilter.check = checkImageOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20195,7 +20600,7 @@ module.exports = ZBarFilter;
 
 ZBarFilter.check = checkZBarFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20273,7 +20678,7 @@ module.exports = OpenCVFilter;
 
 OpenCVFilter.check = checkOpenCVFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],112:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20306,7 +20711,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":110}],112:[function(require,module,exports){
+},{"./OpenCVFilter":111}],113:[function(require,module,exports){
 function Mapper() {
   var sources = {};
 
@@ -20366,7 +20771,7 @@ Mapper.prototype.pop = function (id, source) {
 
 module.exports = Mapper;
 
-},{}],113:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -20388,7 +20793,7 @@ var JsonRpcClient = require('./jsonrpcclient');
 
 exports.JsonRpcClient = JsonRpcClient;
 
-},{"./jsonrpcclient":114}],114:[function(require,module,exports){
+},{"./jsonrpcclient":115}],115:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -20676,7 +21081,7 @@ function JsonRpcClient(configuration) {
 
 module.exports = JsonRpcClient;
 
-},{"../..":117,"./transports/webSocketWithReconnection":116}],115:[function(require,module,exports){
+},{"../..":118,"./transports/webSocketWithReconnection":117}],116:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -20698,8 +21103,8 @@ var WebSocketWithReconnection = require('./webSocketWithReconnection');
 
 exports.WebSocketWithReconnection = WebSocketWithReconnection;
 
-},{"./webSocketWithReconnection":116}],116:[function(require,module,exports){
-(function (global){
+},{"./webSocketWithReconnection":117}],117:[function(require,module,exports){
+(function (global){(function (){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
@@ -20947,8 +21352,8 @@ function WebSocketWithReconnection(config) {
 
 module.exports = WebSocketWithReconnection;
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"ws":154}],117:[function(require,module,exports){
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"ws":155}],118:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -21687,7 +22092,7 @@ RpcBuilder.clients = clients;
 RpcBuilder.clients.transports = transports;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":112,"./clients":113,"./clients/transports":115,"./packers":120,"events":21,"inherits":"inherits"}],118:[function(require,module,exports){
+},{"./Mapper":113,"./clients":114,"./clients/transports":116,"./packers":121,"events":21,"inherits":"inherits"}],119:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -21784,7 +22189,7 @@ function unpack(message) {
 exports.pack = pack;
 exports.unpack = unpack;
 
-},{}],119:[function(require,module,exports){
+},{}],120:[function(require,module,exports){
 function pack(message) {
   throw new TypeError("Not yet implemented");
 };
@@ -21796,15 +22201,15 @@ function unpack(message) {
 exports.pack = pack;
 exports.unpack = unpack;
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC = require('./XmlRPC');
 
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC = XmlRPC;
 
-},{"./JsonRPC":118,"./XmlRPC":119}],121:[function(require,module,exports){
-(function (process){
+},{"./JsonRPC":119,"./XmlRPC":120}],122:[function(require,module,exports){
+(function (process){(function (){
 'use strict';
 
 if (typeof process === 'undefined' ||
@@ -21851,8 +22256,8 @@ function nextTick(fn, arg1, arg2, arg3) {
 }
 
 
-}).call(this,require('_process'))
-},{"_process":122}],122:[function(require,module,exports){
+}).call(this)}).call(this,require('_process'))
+},{"_process":123}],123:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -22038,8 +22443,8 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],123:[function(require,module,exports){
-(function (global){
+},{}],124:[function(require,module,exports){
+(function (global){(function (){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
 
@@ -22574,8 +22979,8 @@ process.umask = function() { return 0; };
 
 }(this));
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],124:[function(require,module,exports){
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],125:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -22661,7 +23066,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],125:[function(require,module,exports){
+},{}],126:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -22748,16 +23153,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],126:[function(require,module,exports){
+},{}],127:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":124,"./encode":125}],127:[function(require,module,exports){
+},{"./decode":125,"./encode":126}],128:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":128}],128:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":129}],129:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -22889,7 +23294,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":130,"./_stream_writable":132,"core-util-is":19,"inherits":"inherits","process-nextick-args":121}],129:[function(require,module,exports){
+},{"./_stream_readable":131,"./_stream_writable":133,"core-util-is":19,"inherits":"inherits","process-nextick-args":122}],130:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -22937,8 +23342,8 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":131,"core-util-is":19,"inherits":"inherits"}],130:[function(require,module,exports){
-(function (process,global){
+},{"./_stream_transform":132,"core-util-is":19,"inherits":"inherits"}],131:[function(require,module,exports){
+(function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23958,8 +24363,8 @@ function indexOf(xs, x) {
   }
   return -1;
 }
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":128,"./internal/streams/BufferList":133,"./internal/streams/destroy":134,"./internal/streams/stream":135,"_process":122,"core-util-is":19,"events":21,"inherits":"inherits","isarray":25,"process-nextick-args":121,"safe-buffer":136,"string_decoder/":137,"util":17}],131:[function(require,module,exports){
+}).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./_stream_duplex":129,"./internal/streams/BufferList":134,"./internal/streams/destroy":135,"./internal/streams/stream":136,"_process":123,"core-util-is":19,"events":21,"inherits":"inherits","isarray":25,"process-nextick-args":122,"safe-buffer":137,"string_decoder/":138,"util":17}],132:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -24174,8 +24579,8 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":128,"core-util-is":19,"inherits":"inherits"}],132:[function(require,module,exports){
-(function (process,global,setImmediate){
+},{"./_stream_duplex":129,"core-util-is":19,"inherits":"inherits"}],133:[function(require,module,exports){
+(function (process,global,setImmediate){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -24863,8 +25268,8 @@ Writable.prototype._destroy = function (err, cb) {
   this.end();
   cb(err);
 };
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":128,"./internal/streams/destroy":134,"./internal/streams/stream":135,"_process":122,"core-util-is":19,"inherits":"inherits","process-nextick-args":121,"safe-buffer":136,"timers":146,"util-deprecate":149}],133:[function(require,module,exports){
+}).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
+},{"./_stream_duplex":129,"./internal/streams/destroy":135,"./internal/streams/stream":136,"_process":123,"core-util-is":19,"inherits":"inherits","process-nextick-args":122,"safe-buffer":137,"timers":147,"util-deprecate":150}],134:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -24944,7 +25349,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":136,"util":17}],134:[function(require,module,exports){
+},{"safe-buffer":137,"util":17}],135:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -25019,10 +25424,10 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":121}],135:[function(require,module,exports){
+},{"process-nextick-args":122}],136:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":21}],136:[function(require,module,exports){
+},{"events":21}],137:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -25086,7 +25491,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":18}],137:[function(require,module,exports){
+},{"buffer":18}],138:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -25383,10 +25788,10 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":136}],138:[function(require,module,exports){
+},{"safe-buffer":137}],139:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":139}],139:[function(require,module,exports){
+},{"./readable":140}],140:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -25395,13 +25800,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":128,"./lib/_stream_passthrough.js":129,"./lib/_stream_readable.js":130,"./lib/_stream_transform.js":131,"./lib/_stream_writable.js":132}],140:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":129,"./lib/_stream_passthrough.js":130,"./lib/_stream_readable.js":131,"./lib/_stream_transform.js":132,"./lib/_stream_writable.js":133}],141:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":139}],141:[function(require,module,exports){
+},{"./readable":140}],142:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":132}],142:[function(require,module,exports){
+},{"./lib/_stream_writable.js":133}],143:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -25529,7 +25934,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":10,"events":21}],143:[function(require,module,exports){
+},{"backoff":10,"events":21}],144:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -25548,7 +25953,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":142,"websocket-stream":152}],144:[function(require,module,exports){
+},{"reconnect-core":143,"websocket-stream":153}],145:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -25677,8 +26082,8 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":21,"inherits":"inherits","readable-stream/duplex.js":127,"readable-stream/passthrough.js":138,"readable-stream/readable.js":139,"readable-stream/transform.js":140,"readable-stream/writable.js":141}],145:[function(require,module,exports){
-(function (process){
+},{"events":21,"inherits":"inherits","readable-stream/duplex.js":128,"readable-stream/passthrough.js":139,"readable-stream/readable.js":140,"readable-stream/transform.js":141,"readable-stream/writable.js":142}],146:[function(require,module,exports){
+(function (process){(function (){
 var Stream = require('stream')
 
 // through
@@ -25788,9 +26193,9 @@ function through (write, end, opts) {
 }
 
 
-}).call(this,require('_process'))
-},{"_process":122,"stream":144}],146:[function(require,module,exports){
-(function (setImmediate,clearImmediate){
+}).call(this)}).call(this,require('_process'))
+},{"_process":123,"stream":145}],147:[function(require,module,exports){
+(function (setImmediate,clearImmediate){(function (){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
 var slice = Array.prototype.slice;
@@ -25867,8 +26272,8 @@ exports.setImmediate = typeof setImmediate === "function" ? setImmediate : funct
 exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate : function(id) {
   delete immediateIds[id];
 };
-}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":122,"timers":146}],147:[function(require,module,exports){
+}).call(this)}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
+},{"process/browser.js":123,"timers":147}],148:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -26602,7 +27007,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":148,"punycode":123,"querystring":126}],148:[function(require,module,exports){
+},{"./util":149,"punycode":124,"querystring":127}],149:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -26620,8 +27025,8 @@ module.exports = {
   }
 };
 
-},{}],149:[function(require,module,exports){
-(function (global){
+},{}],150:[function(require,module,exports){
+(function (global){(function (){
 
 /**
  * Module exports.
@@ -26690,16 +27095,16 @@ function config (name) {
   return String(val).toLowerCase() === 'true';
 }
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],150:[function(require,module,exports){
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],151:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],151:[function(require,module,exports){
-(function (process,global){
+},{}],152:[function(require,module,exports){
+(function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -27287,9 +27692,9 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":150,"_process":122,"inherits":"inherits"}],152:[function(require,module,exports){
-(function (process){
+}).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./support/isBuffer":151,"_process":123,"inherits":"inherits"}],153:[function(require,module,exports){
+(function (process){(function (){
 var through = require('through')
 var isBuffer = require('isbuffer')
 var WebSocketPoly = require('ws')
@@ -27383,8 +27788,8 @@ WebsocketStream.prototype.end = function(data) {
   this._end = true
 }
 
-}).call(this,require('_process'))
-},{"_process":122,"isbuffer":26,"through":145,"ws":153}],153:[function(require,module,exports){
+}).call(this)}).call(this,require('_process'))
+},{"_process":123,"isbuffer":26,"through":146,"ws":154}],154:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -27429,10 +27834,10 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],154:[function(require,module,exports){
+},{}],155:[function(require,module,exports){
 'use strict';
 
-module.exports = function() {
+module.exports = function () {
   throw new Error(
     'ws does not work in the browser. Browser clients must use the native ' +
       'WebSocket object'
@@ -27440,7 +27845,7 @@ module.exports = function() {
 };
 
 },{}],"async":[function(require,module,exports){
-(function (process,global,setImmediate){
+(function (process,global,setImmediate){(function (){
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -33051,9 +33456,9 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"_process":122,"timers":146}],"es6-promise":[function(require,module,exports){
-(function (process,global){
+}).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
+},{"_process":123,"timers":147}],"es6-promise":[function(require,module,exports){
+(function (process,global){(function (){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
  * @copyright Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors (Conversion to ES6 API by Jake Archibald)
@@ -34229,8 +34634,8 @@ return Promise$1;
 
 
 
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":122}],"inherits":[function(require,module,exports){
+}).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"_process":123}],"inherits":[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -34288,7 +34693,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.14.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.15.0'});
 
 
 var HubPort = require('./HubPort');
@@ -34303,7 +34708,7 @@ exports.PassThrough = PassThrough;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./HubPort":27,"./MediaPipeline":28,"./PassThrough":29,"./abstracts":40,"./complexTypes":83}],"kurento-client-elements":[function(require,module,exports){
+},{"./HubPort":27,"./MediaPipeline":28,"./PassThrough":29,"./abstracts":40,"./complexTypes":84}],"kurento-client-elements":[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -34332,7 +34737,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.14.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.15.0'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -34361,7 +34766,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":84,"./Composite":85,"./Dispatcher":86,"./DispatcherOneToMany":87,"./HttpPostEndpoint":88,"./Mixer":89,"./PlayerEndpoint":90,"./RecorderEndpoint":91,"./RtpEndpoint":92,"./WebRtcEndpoint":93,"./abstracts":95,"./complexTypes":105}],"kurento-client-filters":[function(require,module,exports){
+},{"./AlphaBlending":85,"./Composite":86,"./Dispatcher":87,"./DispatcherOneToMany":88,"./HttpPostEndpoint":89,"./Mixer":90,"./PlayerEndpoint":91,"./RecorderEndpoint":92,"./RtpEndpoint":93,"./WebRtcEndpoint":94,"./abstracts":96,"./complexTypes":106}],"kurento-client-filters":[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -34390,7 +34795,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.14.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.15.0'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
@@ -34406,7 +34811,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":106,"./GStreamerFilter":107,"./ImageOverlayFilter":108,"./ZBarFilter":109,"./abstracts":111}],"kurento-client":[function(require,module,exports){
+},{"./FaceOverlayFilter":107,"./GStreamerFilter":108,"./ImageOverlayFilter":109,"./ZBarFilter":110,"./abstracts":112}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
