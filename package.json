@@ -1,0 +1,5 @@
+{
+  "description": "Media API for the Kurento Web SDK",
+  "name": "kurento-client-bower",
+  "version": "6.15.0"
+}
