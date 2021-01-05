@@ -1997,23 +1997,21 @@ disguiseThenable.unthenable = unthenable
 module.exports = disguiseThenable
 
 },{}],8:[function(require,module,exports){
-if ("toJSON" in Error.prototype) {
-  return;
+if (!("toJSON" in Error.prototype)) {
+  Object.defineProperty(Error.prototype, "toJSON", {
+    value: function () {
+      var alt = {};
+
+      Object.getOwnPropertyNames(this).forEach(function (key) {
+        alt[key] = this[key];
+      }, this);
+
+      return alt;
+    },
+    configurable: true,
+    writable: true,
+  });
 }
-
-Object.defineProperty(Error.prototype, "toJSON", {
-  value: function () {
-    var alt = {};
-
-    Object.getOwnPropertyNames(this).forEach(function (key) {
-      alt[key] = this[key];
-    }, this);
-
-    return alt;
-  },
-  configurable: true,
-  writable: true,
-});
 
 },{}],9:[function(require,module,exports){
 var checkType = require('./checkType');
@@ -2803,9 +2801,7 @@ function fromByteArray (uint8) {
 
   // go through the array every three bytes, we'll deal with trailing stuff later
   for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-    parts.push(encodeChunk(
-      uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)
-    ))
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
   }
 
   // pad the end with zeros, but make sure to not forget the extra bytes
