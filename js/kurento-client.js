@@ -16406,63 +16406,121 @@ function noop(error, result) {
  * Create a PlayerEndpoint
  *
  * @classdesc
- *        <p>
- *        Retrieves content from seekable or non-seekable sources, and injects 
- *        them into <a 
- *        href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a>,
- *        <ul>
- *          <li>
- *            Files: Mounted in the local file system.
- *            <ul><li>file:///path/to/file</li></ul>
- *          </li>
- *          <li>
- *            RTSP: Those of IP cameras would be a good example.
- *            <ul>
- *              <li>rtsp://<server-ip></li>
- *              <li>rtsp://username:password@<server-ip></li>
- *            </ul>
- *          </li>
- *          <li>
- *            HTTP: Any file available in an HTTP server
- *            <ul>
- *              <li>http(s)://<server-ip>/path/to/file</li>
- *              <li>http(s)://username:password@<server-ip>/path/to/file</li>
- *            </ul>
- *          </li>
- *        </ul>
- *        </p>
- *        <p>
- *        For the player to stream the contents of the file, the server must 
- *        have access to the resource. In case of local files, the user running 
- *        the process must have read permissions over the file. For network 
- *        resources, the path to the resource must be accessible: IP and port 
- *        access not blocked, correct credentials, etc.The resource location 
- *        can’t be changed after the player is created, and a new player should 
- *        be created for streaming a different resource.
- *        </p>
- *        <p>
- *        The list of valid operations is
- *        <ul>
- *          <li>*play*: starts streaming media. If invoked after pause, it will 
- *          resume playback.</li>
- *          <li>*stop*: stops streaming media. If play is invoked afterwards, 
- *          the file will be streamed from the beginning.</li>
- *          <li>*pause*: pauses media streaming. Play must be invoked in order 
- *          to resume playback.</li>
- *          <li>*seek*: If the source supports “jumps” in the timeline, then the
- *            <ul>
- *              <li>*setPosition*: allows to set the position in the file.</li>
- *              <li>*getPosition*: returns the current position being 
- *              streamed.</li>
- *            </ul>
- *          </li>
- *        </ul>
- *        </p>
- *        <p>
- *        <h2>Events fired:</h2>
- *        <ul><li>EndOfStreamEvent: If the file is streamed 
- *        completely.</li></ul>
- *        </p>
+ *  Retrieves content from external sources.
+ *  <p>
+ *    PlayerEndpoint will access the given resource, read all available data, 
+ *    and
+ *    inject it into <a 
+ *    href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a>.
+ *    will be available for passing through any other Filter or Endpoint to 
+ *    which
+ *    the PlayerEndpoint gets connected.
+ *  </p>
+ *  <p>
+ *    The source can provide either seekable or non-seekable media; this will
+ *    dictate whether the PlayerEndpoint is able (or not) to seek through the 
+ *    file,
+ *    for example to jump to any given timestamp.
+ *  </p>
+ *  <p>The <strong>Source URI</strong> supports these formats:</p>
+ *  <ul>
+ *    <li>
+ *      File: A file path that will be read from the local file system. Example:
+ *      <ul>
+ *        <li><code>file:///path/to/file</code></li>
+ *      </ul>
+ *    </li>
+ *    <li>
+ *      HTTP: Any file available in an HTTP server. Examples:
+ *      <ul>
+ *        <li><code>http(s)://{server-ip}/path/to/file</code></li>
+ *        <li>
+ *          <code>
+ *            http(s)://{username}:{password}@{server-ip}:{server-port}/path/to/file
+ *          </code>
+ *        </li>
+ *      </ul>
+ *    </li>
+ *    <li>
+ *      RTSP: Typically used to capture a feed from an IP Camera. Examples:
+ *      <ul>
+ *        <li><code>rtsp://{server-ip}</code></li>
+ *        <li>
+ *          <code>
+ *            rtsp://{username}:{password}@{server-ip}:{server-port}/path/to/file
+ *          </code>
+ *        </li>
+ *      </ul>
+ *    </li>
+ *    <li>
+ *      <strong>
+ *        NOTE (for current versions of Kurento 6.x): special characters are not
+ *        supported in <code>{username}</code> or <code>{password}</code>.
+ *      </strong>
+ *      This means that <code>{username}</code> cannot contain colons
+ *      (<code>:</code>), and <code>{password}</code> cannot contain 'at' signs
+ *      (<code>@</code>). This is a limitation of GStreamer 1.8 (the underlying
+ *      media framework behind Kurento), and is already fixed in newer versions
+ *      (which the upcoming Kurento 7.x will use).
+ *    </li>
+ *    <li>
+ *      <strong>
+ *        NOTE (for upcoming Kurento 7.x): special characters in
+ *        <code>{username}</code> or <code>{password}</code> must be 
+ *        url-encoded.
+ *      </strong>
+ *      This means that colons (<code>:</code>) should be replaced with
+ *      <code>%3A</code>, and 'at' signs (<code>@</code>) should be replaced 
+ *      with
+ *      <code>%40</code>.
+ *    </li>
+ *  </ul>
+ *  <p>
+ *    Note that
+ *    <strong> PlayerEndpoint requires read permissions to the source </strong>
+ *    ; otherwise, the media server won't be able to retrieve any data, and an
+ *    {@link ErrorEvent} will be fired. Make sure your application subscribes to
+ *    event, otherwise troubleshooting issues will be difficult.
+ *  </p>
+ *  <p>The list of valid operations is:</p>
+ *  <ul>
+ *    <li>
+ *      <strong><code>play</code></strong>
+ *      : Starts streaming media. If invoked after pause, it will resume 
+ *      playback.
+ *    </li>
+ *    <li>
+ *      <strong><code>stop</code></strong>
+ *      : Stops streaming media. If play is invoked afterwards, the file will be
+ *      streamed from the beginning.
+ *    </li>
+ *    <li>
+ *      <strong><code>pause</code></strong>
+ *      : Pauses media streaming. Play must be invoked in order to resume 
+ *      playback.
+ *    </li>
+ *    <li>
+ *      <strong><code>seek</code></strong>
+ *      : If the source supports seeking to a different time position, then the
+ *      PlayerEndpoint can:
+ *      <ul>
+ *        <li>
+ *          <strong><code>setPosition</code></strong>
+ *          : Allows to set the position in the file.
+ *        </li>
+ *        <li>
+ *          <strong><code>getPosition</code></strong>
+ *          : Returns the current position being streamed.
+ *        </li>
+ *      </ul>
+ *    </li>
+ *  </ul>
+ *  <h2>Events fired</h2>
+ *  <ul>
+ *    <li>
+ *      <strong>EndOfStreamEvent</strong>: If the file is streamed completely.
+ *    </li>
+ *  </ul>
  *
  * @extends module:core/abstracts.UriEndpoint
  *
@@ -16806,19 +16864,21 @@ function noop(error, result) {
 
 
 /**
+ * Builder for the {@link module:elements.RecorderEndpoint RecorderEndpoint}
  *
  * @classdesc
  *  Provides functionality to store media contents.
  *  <p>
- *    The RecorderEndpoint can store media in local files or in a network 
- *    resource.
- *    It receives a media stream from another {@link 
- *    module:core/abstracts.MediaElement MediaElement} (i.e. the
- *    source), and stores it in the designated location.
+ *    RecorderEndpoint can store media into local files or send it to a remote
+ *    network storage. When another {@link module:core/abstracts.MediaElement 
+ *    MediaElement} is connected to a
+ *    RecorderEndpoint, the media coming from the former will be encapsulated 
+ *    into
+ *    the selected recording format and stored in the designated location.
  *  </p>
  *  <p>
- *    The following information has to be provided in order to create a
- *    RecorderEndpoint, and cannot be changed afterwards:
+ *    These parameters must be provided to create a RecorderEndpoint, and they
+ *    cannot be changed afterwards:
  *  </p>
  *  <ul>
  *    <li>
@@ -16827,7 +16887,8 @@ function noop(error, result) {
  *      are supported:
  *      <ul>
  *        <li>
- *          File: A file path that exists in the local file system.
+ *          File: A file path that will be written into the local file system.
+ *          Example:
  *          <ul>
  *            <li><code>file:///path/to/file</code></li>
  *          </ul>
@@ -16836,78 +16897,101 @@ function noop(error, result) {
  *          HTTP: A POST request will be used against a remote server. The 
  *          server
  *          must support using the <i>chunked</i> encoding mode (HTTP header
- *          <code>Transfer-Encoding: chunked</code>).
+ *          <code>Transfer-Encoding: chunked</code>). Examples:
  *          <ul>
  *            <li><code>http(s)://{server-ip}/path/to/file</code></li>
  *            <li>
  *              <code>
- *                http(s)://{username}:{password}@{server-ip}/path/to/file
+ *                http(s)://{username}:{password}@{server-ip}:{server-port}/path/to/file
  *              </code>
  *            </li>
  *          </ul>
  *        </li>
+ *        <li>
+ *          Relative URIs (with no schema) are supported. They are completed by
+ *          prepending a default URI defined by property <i>defaultPath</i>. 
+ *          This
+ *          property is defined in the configuration file
+ *          <i>/etc/kurento/modules/kurento/UriEndpoint.conf.ini</i>, and the
+ *          default value is <code>file:///var/lib/kurento/</code>
+ *        </li>
+ *        <li>
+ *          <strong>
+ *            NOTE (for current versions of Kurento 6.x): special characters are
+ *            supported in <code>{username}</code> or <code>{password}</code>.
+ *          </strong>
+ *          This means that <code>{username}</code> cannot contain colons
+ *          (<code>:</code>), and <code>{password}</code> cannot contain 'at' 
+ *          signs
+ *          (<code>@</code>). This is a limitation of GStreamer 1.8 (the 
+ *          underlying
+ *          media framework behind Kurento), and is already fixed in newer 
+ *          versions
+ *          (which the upcoming Kurento 7.x will use).
+ *        </li>
+ *        <li>
+ *          <strong>
+ *            NOTE (for upcoming Kurento 7.x): special characters in
+ *            <code>{username}</code> or <code>{password}</code> must be
+ *            url-encoded.
+ *          </strong>
+ *          This means that colons (<code>:</code>) should be replaced with
+ *          <code>%3A</code>, and 'at' signs (<code>@</code>) should be replaced
+ *          with <code>%40</code>.
+ *        </li>
  *      </ul>
  *    </li>
  *    <li>
- *      Relative URIs (with no schema) are supported. They are completed by
- *      prepending a default URI defined by property <i>defaultPath</i>. This
- *      property is defined in the configuration file
- *      <i>/etc/kurento/modules/kurento/UriEndpoint.conf.ini</i>, and the 
- *      default
- *      value is <code>file:///var/lib/kurento/</code>
- *    </li>
- *    <li>
- *      The <stron>Media Profile</stron> ({@link 
- *      module:elements.RecorderEndpoint#MediaProfileSpecType}) used for
+ *      <strong>Media Profile</strong> ({@link 
+ *      module:elements.RecorderEndpoint#MediaProfileSpecType}), used for
  *      storage. This will determine the video and audio encoding. See below for
  *      more details about Media Profile.
  *    </li>
  *    <li>
- *      Optionally, the user can select if the endpoint will stop processing 
- *      once
- *      the <strong>EndOfStream</strong> event is detected.
+ *      <strong>EndOfStream</strong> (optional), a parameter that dictates if 
+ *      the
+ *      recording should be automatically stopped once the EOS event is 
+ *      detected.
  *    </li>
  *  </ul>
  *  <p>
+ *    Note that
  *    <strong>
- *      RecorderEndpoint requires access to the resource where stream is going 
- *      to be
- *      recorded
+ *      RecorderEndpoint requires write permissions to the destination
  *    </strong>
- *    . Otherwise, the media server won't be able to store any information, and 
+ *    ; otherwise, the media server won't be able to store any information, and 
  *    an
- *    {@link ErrorEvent} will be fired. Please note that if you haven't 
- *    subscribed to
- *    that type of event, you can be left wondering why your media is not being
- *    saved, while the error message was ignored.
+ *    {@link ErrorEvent} will be fired. Make sure your application subscribes to
+ *    event, otherwise troubleshooting issues will be difficult.
  *  </p>
  *  <ul>
  *    <li>
- *      To write local files (if you use <code>file://</code>), the user running
- *      media server (by default, user <code>kurento</code>) needs to have write
- *      permissions for the requested path.
+ *      To write local files (if you use <code>file://</code>), the system user 
+ *      that
+ *      is owner of the media server process needs to have write permissions for
+ *      requested path. By default, this user is named '<code>kurento</code>'.
  *    </li>
  *    <li>
- *      To save into an HTTP server, the server must be accessible through the
- *      network, and also have the correct access rights to the destination 
+ *      To record through HTTP, the remote server must be accessible through the
+ *      network, and also have the correct write permissions for the destination
  *      path.
  *    </li>
  *  </ul>
  *  <p>
- *    The media profile is quite an important parameter, as it will determine
- *    whether the server needs to perform on-the-fly transcoding of the media. 
- *    If
- *    the input stream codec if not compatible with the selected media profile, 
+ *    The <strong>Media Profile</strong> is quite an important parameter, as it 
+ *    will
+ *    determine whether the server needs to perform on-the-fly transcoding of 
  *    the
- *    media will be transcoded into a suitable format. This will result in a 
- *    higher
- *    CPU load and will impact overall performance of the media server.
+ *    media. If the input stream codec if not compatible with the selected media
+ *    profile, the media will be transcoded into a suitable format. This will 
+ *    result
+ *    in a higher CPU load and will impact overall performance of the media 
+ *    server.
  *  </p>
  *  <p>
- *    For example: Say that your pipeline will receive <b>VP8</b>-encoded video 
- *    from
- *    WebRTC, and sends it to a RecorderEndpoint; depending on the format
- *    selected...
+ *    For example: If your pipeline receives <b>VP8</b>-encoded video from 
+ *    WebRTC,
+ *    and sends it to a RecorderEndpoint; depending on the format selected...
  *  </p>
  *  <ul>
  *    <li>
@@ -16942,25 +17026,31 @@ function noop(error, result) {
  *    as it gets it.
  *  </p>
  *  <p>
- *    Stopping the recording process is done through the
- *    <code>stopAndWait</code> method, which will return only after all the
- *    information was stored correctly. If the file is empty, this means that no
- *    media arrived at the recorder.
+ *    <strong>Recording must be stopped</strong> when no more data should be 
+ *    stored.
+ *    This can be with the <code>stopAndWait</code> method, which blocks and 
+ *    returns
+ *    only after all the information was stored correctly.
  *  </p>
  *  <p>
+ *    <strong>
+ *      If your output file is empty, this means that the recorder is waiting 
+ *      for
+ *      input media.
+ *    </strong>
  *    When another endpoint is connected to the recorder, by default both AUDIO 
  *    and
  *    VIDEO media types are expected, unless specified otherwise when invoking 
  *    the
- *    connect method. Failing to provide both types, will result in teh 
- *    recording
- *    buffering the received media: it won't be written to the file until the
- *    recording is stopped. This is due to the recorder waiting for the other 
- *    type
- *    of media to arrive, so they are synchronized.
+ *    <code>connect</code> method. Failing to provide both types, will result in
+ *    RecorderEndpoint buffering the received media: it won't be written to the 
+ *    file
+ *    until the recording is stopped. The recorder waits until all types of 
+ *    media
+ *    start arriving, in order to synchronize them appropriately.
  *  </p>
  *  <p>
- *    The source endpoint can be hot-swapped, while the recording is taking 
+ *    The source endpoint can be hot-swapped while the recording is taking 
  *    place.
  *    The recorded file will then contain different feeds. When switching video
  *    sources, if the new video has different size, the recorder will retain the
@@ -16970,9 +17060,9 @@ function noop(error, result) {
  *  </p>
  *  <p>
  *    <strong>
- *      It is recommended to start recording only after media arrives
+ *      It is recommended to start recording only after media arrives.
  *    </strong>
- *    . For this, you may use the <code>MediaFlowInStateChange</code> and
+ *    For this, you may use the <code>MediaFlowInStateChange</code> and
  *    <code>MediaFlowOutStateChange</code>
  *    events of your endpoints, and synchronize the recording with the moment 
  *    media
@@ -17089,21 +17179,20 @@ RecorderEndpoint.prototype.stopAndWait = function(callback){
  *
  * @property {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
  *  Sets the media profile used for recording. If the profile is different than 
- *  the one being recieved at the sink pad, media will be trnascoded, resulting 
+ *  the one being received at the sink pad, media will be transcoded, resulting 
  *  in a higher CPU load. For instance, when recording a VP8 encoded video from 
- *  a WebRTC endpoint in MP4, the load is higher that when recording in WEBM.
+ *  a WebRTC endpoint in MP4, the load is higher that when recording to WEBM.
  *
  * @property {external:Boolean} [stopOnEndOfStream]
  *  Forces the recorder endpoint to finish processing data when an <a 
  *  href="http://www.kurento.org/docs/current/glossary.html#term-eos">EOS</a> is
  *
  * @property {external:String} uri
- *  URI where the recording will be stored. It has to be accessible to the KMS 
- *  process.
+ *  URI where the recording will be stored. It must be accessible from the media
  *                <ul>
  *                  <li>Local server resources: The user running the Kurento 
  *                  Media Server must have write permission over the file.</li>
- *                  <li>Network resources: Must be accessible from the server 
+ *                  <li>Network resources: Must be accessible from the network 
  *                  where the media server is running.</li>
  *                </ul>
  */
