@@ -1163,7 +1163,7 @@ KurentoClient.getComplexType = function (complexType) {
 
 module.exports = KurentoClient;
 
-},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","events":21,"extend":22,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":118,"promisecallback":"promisecallback","reconnect-ws":144,"url":148}],2:[function(require,module,exports){
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","events":21,"extend":22,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":119,"promisecallback":"promisecallback","reconnect-ws":145,"url":149}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
@@ -2271,7 +2271,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":21,"util":152}],12:[function(require,module,exports){
+},{"events":21,"util":153}],12:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2500,7 +2500,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":11,"./strategy/fibonacci":14,"events":21,"util":152}],13:[function(require,module,exports){
+},{"./backoff":11,"./strategy/fibonacci":14,"events":21,"util":153}],13:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2536,7 +2536,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":15,"util":152}],14:[function(require,module,exports){
+},{"./strategy":15,"util":153}],14:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2573,7 +2573,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":15,"util":152}],15:[function(require,module,exports){
+},{"./strategy":15,"util":153}],15:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2673,7 +2673,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":21,"util":152}],16:[function(require,module,exports){
+},{"events":21,"util":153}],16:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -6229,41 +6229,44 @@ function noop(error, result) {
  *  </p>
  *  <ul>
  *    <li>
- *      Input bandwidth: Configuration value used to inform remote peers about 
- *      the
- *      bitrate that can be pushed into this endpoint.
+ *      Input bandwidth: Values used to inform remote peers about the bitrate 
+ *      that
+ *      can be sent to this endpoint.
  *      <ul>
  *        <li>
- *          <strong>{get,set}MinVideoRecvBandwidth</strong>: Minimum bitrate
- *          requested on the received video stream.
+ *          <strong>MinVideoRecvBandwidth</strong>: Minimum input bitrate, 
+ *          requested
+ *          from WebRTC senders with REMB (Default: 30 Kbps).
  *        </li>
  *        <li>
- *          <strong>{get,set}Max{Audio,Video}RecvBandwidth</strong>: Maximum 
- *          bitrate
- *          expected for the received stream.
+ *          <strong>MaxAudioRecvBandwidth</strong> and
+ *          <strong>MaxVideoRecvBandwidth</strong>: Maximum input bitrate, 
+ *          signaled
+ *          in SDP Offers to WebRTC and RTP senders (Default: unlimited).
  *        </li>
  *      </ul>
  *    </li>
  *    <li>
- *      Output bandwidth: Configuration values used to control bitrate of the 
- *      output
- *      video stream sent to remote peers. It is important to keep in mind that
- *      pushed bitrate depends on network and remote peer capabilities. Remote 
- *      peers
- *      can also announce bandwidth limitation in their SDPs (through the
- *      <code>b={modifier}:{value}</code> tag). Kurento will always enforce 
- *      bitrate
- *      limitations specified by the remote peer over internal configurations.
+ *      Output bandwidth: Values used to control bitrate of the video streams 
+ *      sent
+ *      to remote peers. It is important to keep in mind that pushed bitrate 
+ *      depends
+ *      on network and remote peer capabilities. Remote peers can also announce
+ *      bandwidth limitation in their SDPs (through the
+ *      <code>b={modifier}:{value}</code> attribute). Kurento will always 
+ *      enforce
+ *      bitrate limitations specified by the remote peer over internal
+ *      configurations.
  *      <ul>
  *        <li>
- *          <strong>{get,set}MinVideoSendBandwidth</strong>: Minimum video 
+ *          <strong>MinVideoSendBandwidth</strong>: REMB override of minimum 
  *          bitrate
- *          sent to remote peer.
+ *          sent to WebRTC receivers (Default: 100 Kbps).
  *        </li>
  *        <li>
- *          <strong>{get,set}MaxVideoSendBandwidth</strong>: Maximum video 
+ *          <strong>MaxVideoSendBandwidth</strong>: REMB override of maximum 
  *          bitrate
- *          sent to remote peer.
+ *          sent to WebRTC receivers (Default: 500 Kbps).
  *        </li>
  *        <li>
  *          <strong>RembParams.rembOnConnect</strong>: Initial local REMB 
@@ -6336,7 +6339,7 @@ BaseRtpEndpoint.prototype.getConnectionState = function(callback){
  */
 
 /**
- * Maximum video bitrate sent to remote peer.
+ * REMB override of maximum bitrate sent to WebRTC receivers.
  * <p>
  *   With this parameter you can control the maximum video quality that will be
  *   sent when reacting to good network conditions. Setting this parameter to a
@@ -6346,15 +6349,16 @@ BaseRtpEndpoint.prototype.getConnectionState = function(callback){
  * </p>
  * <p>
  *   This parameter provides a way to limit the bitrate requested by remote REMB
- *   bandwidth estimations: the bitrate sent will be always equal or less than
- *   this parameter, even if the remote peer requests higher bitrates.
+ *   bandwidth estimations: the bitrate sent will be always equal or less than 
+ *   this
+ *   parameter, even if the remote peer requests higher bitrates.
  * </p>
  * <p>
  *   Note that the default value of <strong>500 kbps</strong> is a VERY
  *   conservative one, and leads to a low maximum video quality. Most 
  *   applications
- *   will probably want to increase this parameter to higher values such as 2000
- *   mbps) or even 10000 (10 mbps).
+ *   will probably want to increase this to higher values such as 2000 kbps (2
+ *   mbps).
  * </p>
  * <p>
  *   The REMB congestion control algorithm works by gradually increasing the 
@@ -6370,8 +6374,9 @@ BaseRtpEndpoint.prototype.getConnectionState = function(callback){
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 500.</li>
  *   <li>
- *     0 = unconstrained: the video bitrate will grow until all the available
- *     network bandwidth is used by the stream.<br />
+ *     0 = unlimited: the video bitrate will grow until all the available 
+ *     network
+ *     bandwidth is used by the stream.<br />
  *     Note that this might have a bad effect if more than one stream is running
  *     (as all of them would try to raise the video bitrate indefinitely, until 
  *     the
@@ -6409,7 +6414,7 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
  */
 
 /**
- * Maximum video bitrate sent to remote peer.
+ * REMB override of maximum bitrate sent to WebRTC receivers.
  * <p>
  *   With this parameter you can control the maximum video quality that will be
  *   sent when reacting to good network conditions. Setting this parameter to a
@@ -6419,15 +6424,16 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
  * </p>
  * <p>
  *   This parameter provides a way to limit the bitrate requested by remote REMB
- *   bandwidth estimations: the bitrate sent will be always equal or less than
- *   this parameter, even if the remote peer requests higher bitrates.
+ *   bandwidth estimations: the bitrate sent will be always equal or less than 
+ *   this
+ *   parameter, even if the remote peer requests higher bitrates.
  * </p>
  * <p>
  *   Note that the default value of <strong>500 kbps</strong> is a VERY
  *   conservative one, and leads to a low maximum video quality. Most 
  *   applications
- *   will probably want to increase this parameter to higher values such as 2000
- *   mbps) or even 10000 (10 mbps).
+ *   will probably want to increase this to higher values such as 2000 kbps (2
+ *   mbps).
  * </p>
  * <p>
  *   The REMB congestion control algorithm works by gradually increasing the 
@@ -6443,8 +6449,9 @@ BaseRtpEndpoint.prototype.getMaxVideoSendBandwidth = function(callback){
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 500.</li>
  *   <li>
- *     0 = unconstrained: the video bitrate will grow until all the available
- *     network bandwidth is used by the stream.<br />
+ *     0 = unlimited: the video bitrate will grow until all the available 
+ *     network
+ *     bandwidth is used by the stream.<br />
  *     Note that this might have a bad effect if more than one stream is running
  *     (as all of them would try to raise the video bitrate indefinitely, until 
  *     the
@@ -6519,7 +6526,7 @@ BaseRtpEndpoint.prototype.getMediaState = function(callback){
  */
 
 /**
- * Minimum bitrate requested on the received video stream.
+ * Minimum input bitrate, requested from WebRTC senders with REMB.
  * <p>
  *   This is used to set a minimum value of local REMB during bandwidth 
  *   estimation,
@@ -6571,7 +6578,7 @@ BaseRtpEndpoint.prototype.getMinVideoRecvBandwidth = function(callback){
  */
 
 /**
- * Minimum bitrate requested on the received video stream.
+ * Minimum input bitrate, requested from WebRTC senders with REMB.
  * <p>
  *   This is used to set a minimum value of local REMB during bandwidth 
  *   estimation,
@@ -6623,7 +6630,7 @@ BaseRtpEndpoint.prototype.setMinVideoRecvBandwidth = function(minVideoRecvBandwi
  */
 
 /**
- * Minimum video bitrate sent to remote peer.
+ * REMB override of minimum bitrate sent to WebRTC receivers.
  * <p>
  *   With this parameter you can control the minimum video quality that will be
  *   sent when reacting to bad network conditions. Setting this parameter to a 
@@ -6649,8 +6656,8 @@ BaseRtpEndpoint.prototype.setMinVideoRecvBandwidth = function(minVideoRecvBandwi
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 100.</li>
  *   <li>
- *     0 = unconstrained: the video bitrate will drop as needed, even to the
- *     lowest possible quality, which might make the video completely blurry and
+ *     0 = unlimited: the video bitrate will drop as needed, even to the lowest
+ *     possible quality, which might make the video completely blurry and
  *     pixelated.
  *   </li>
  * </ul>
@@ -6685,7 +6692,7 @@ BaseRtpEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
  */
 
 /**
- * Minimum video bitrate sent to remote peer.
+ * REMB override of minimum bitrate sent to WebRTC receivers.
  * <p>
  *   With this parameter you can control the minimum video quality that will be
  *   sent when reacting to bad network conditions. Setting this parameter to a 
@@ -6711,8 +6718,8 @@ BaseRtpEndpoint.prototype.getMinVideoSendBandwidth = function(callback){
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 100.</li>
  *   <li>
- *     0 = unconstrained: the video bitrate will drop as needed, even to the
- *     lowest possible quality, which might make the video completely blurry and
+ *     0 = unlimited: the video bitrate will drop as needed, even to the lowest
+ *     possible quality, which might make the video completely blurry and
  *     pixelated.
  *   </li>
  * </ul>
@@ -8773,6 +8780,7 @@ function MediaObject(){
     var count = EventEmitter.listenerCount(this, event);
     if(count) return;
 
+    if (!subscriptions.hasOwnProperty(event)) return;
     var token = subscriptions[event];
 
     var params =
@@ -9653,7 +9661,7 @@ inherits(SdpEndpoint, SessionEndpoint);
 //
 
 /**
- * Maximum bitrate expected for the received audio stream.
+ * Maximum input bitrate, signaled in SDP Offers to WebRTC and RTP senders.
  * <p>
  *   This is used to put a limit on the bitrate that the remote peer will send 
  *   to
@@ -9666,7 +9674,7 @@ inherits(SdpEndpoint, SessionEndpoint);
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 0.</li>
- *   <li>0 = unconstrained.</li>
+ *   <li>0 = unlimited.</li>
  * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint#getMaxAudioRecvBandwidth
@@ -9699,7 +9707,7 @@ SdpEndpoint.prototype.getMaxAudioRecvBandwidth = function(callback){
  */
 
 /**
- * Maximum bitrate expected for the received audio stream.
+ * Maximum input bitrate, signaled in SDP Offers to WebRTC and RTP senders.
  * <p>
  *   This is used to put a limit on the bitrate that the remote peer will send 
  *   to
@@ -9712,7 +9720,7 @@ SdpEndpoint.prototype.getMaxAudioRecvBandwidth = function(callback){
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 0.</li>
- *   <li>0 = unconstrained.</li>
+ *   <li>0 = unlimited.</li>
  * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint#setMaxAudioRecvBandwidth
@@ -9745,7 +9753,7 @@ SdpEndpoint.prototype.setMaxAudioRecvBandwidth = function(maxAudioRecvBandwidth,
  */
 
 /**
- * Maximum bitrate expected for the received video stream.
+ * Maximum input bitrate, signaled in SDP Offers to WebRTC and RTP senders.
  * <p>
  *   This is used to put a limit on the bitrate that the remote peer will send 
  *   to
@@ -9758,7 +9766,7 @@ SdpEndpoint.prototype.setMaxAudioRecvBandwidth = function(maxAudioRecvBandwidth,
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 0.</li>
- *   <li>0 = unconstrained.</li>
+ *   <li>0 = unlimited.</li>
  * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint#getMaxVideoRecvBandwidth
@@ -9791,7 +9799,7 @@ SdpEndpoint.prototype.getMaxVideoRecvBandwidth = function(callback){
  */
 
 /**
- * Maximum bitrate expected for the received video stream.
+ * Maximum input bitrate, signaled in SDP Offers to WebRTC and RTP senders.
  * <p>
  *   This is used to put a limit on the bitrate that the remote peer will send 
  *   to
@@ -9804,7 +9812,7 @@ SdpEndpoint.prototype.getMaxVideoRecvBandwidth = function(callback){
  * <ul>
  *   <li>Unit: kbps (kilobits per second).</li>
  *   <li>Default: 0.</li>
- *   <li>0 = unconstrained.</li>
+ *   <li>0 = unlimited.</li>
  * </ul>
  *
  * @alias module:core/abstracts.SdpEndpoint#setMaxVideoRecvBandwidth
@@ -17659,10 +17667,12 @@ function noop(error, result) {
  *    original stream.
  *  </p>
  *  <p>
- *    The default bandwidth range of the endpoint is
- *    <strong>[100 kbps, 500 kbps]</strong>, but it can be changed separately 
- *    for
- *    input/output directions and for audio/video streams.
+ *    Note that the default <strong>VideoSendBandwidth</strong> range of the
+ *    endpoint is a VERY conservative one, and leads to a low maximum video 
+ *    quality.
+ *    Most applications will probably want to increase this to higher values 
+ *    such as
+ *    2000 kbps (2 mbps).
  *  </p>
  *  <p>
  *    <strong>
@@ -17674,41 +17684,44 @@ function noop(error, result) {
  *  </p>
  *  <ul>
  *    <li>
- *      Input bandwidth: Configuration value used to inform remote peers about 
- *      the
- *      bitrate that can be pushed into this endpoint.
+ *      Input bandwidth: Values used to inform remote peers about the bitrate 
+ *      that
+ *      can be sent to this endpoint.
  *      <ul>
  *        <li>
- *          <strong>{get,set}MinVideoRecvBandwidth</strong>: Minimum bitrate
- *          requested on the received video stream.
+ *          <strong>MinVideoRecvBandwidth</strong>: Minimum input bitrate, 
+ *          requested
+ *          from WebRTC senders with REMB (Default: 30 Kbps).
  *        </li>
  *        <li>
- *          <strong>{get,set}Max{Audio,Video}RecvBandwidth</strong>: Maximum 
- *          bitrate
- *          expected for the received stream.
+ *          <strong>MaxAudioRecvBandwidth</strong> and
+ *          <strong>MaxVideoRecvBandwidth</strong>: Maximum input bitrate, 
+ *          signaled
+ *          in SDP Offers to WebRTC and RTP senders (Default: unlimited).
  *        </li>
  *      </ul>
  *    </li>
  *    <li>
- *      Output bandwidth: Configuration values used to control bitrate of the 
- *      output
- *      video stream sent to remote peers. It is important to keep in mind that
- *      pushed bitrate depends on network and remote peer capabilities. Remote 
- *      peers
- *      can also announce bandwidth limitation in their SDPs (through the
- *      <code>b={modifier}:{value}</code> tag). Kurento will always enforce 
- *      bitrate
- *      limitations specified by the remote peer over internal configurations.
+ *      Output bandwidth: Values used to control bitrate of the video streams 
+ *      sent
+ *      to remote peers. It is important to keep in mind that pushed bitrate 
+ *      depends
+ *      on network and remote peer capabilities. Remote peers can also announce
+ *      bandwidth limitation in their SDPs (through the
+ *      <code>b={modifier}:{value}</code> attribute). Kurento will always 
+ *      enforce
+ *      bitrate limitations specified by the remote peer over internal
+ *      configurations.
  *      <ul>
  *        <li>
- *          <strong>{get,set}MinVideoSendBandwidth</strong>: Minimum video 
+ *          <strong>MinVideoSendBandwidth</strong>: REMB override of minimum 
  *          bitrate
- *          sent to remote peer.
+ *          sent to WebRTC receivers (Default: 100 Kbps).
  *        </li>
  *        <li>
- *          <strong>{get,set}MaxVideoSendBandwidth</strong>: Maximum video 
+ *          <strong>MaxVideoSendBandwidth</strong>: REMB override of maximum 
  *          bitrate
- *          sent to remote peer.
+ *          sent to WebRTC receivers (Default: 500 Kbps).
  *        </li>
  *        <li>
  *          <strong>RembParams.rembOnConnect</strong>: Initial local REMB 
@@ -17735,12 +17748,8 @@ function noop(error, result) {
  *    WebRtcElement. DataChannels can be configured to provide the following:
  *  </p>
  *  <ul>
- *    <li>
- *      Reliable or partially reliable delivery of sent messages
- *    </li>
- *    <li>
- *      In-order or out-of-order delivery of sent messages
- *    </li>
+ *    <li>Reliable or partially reliable delivery of sent messages</li>
+ *    <li>In-order or out-of-order delivery of sent messages</li>
  *  </ul>
  *  <p>
  *    Unreliable, out-of-order delivery is equivalent to raw UDP semantics. The
@@ -18235,6 +18244,92 @@ WebRtcEndpoint.prototype.getIceConnectionState = function(callback){
  * @callback module:elements.WebRtcEndpoint~getIceConnectionStateCallback
  * @param {external:Error} error
  * @param {module:elements/complexTypes.IceConnection} result
+ */
+
+/**
+ * Enable ICE-TCP candidate gathering.
+ * <p>
+ *   This setting enables or disables using TCP for ICE candidate gathering in 
+ *   the
+ *   underlying libnice library:
+ *   https://libnice.freedesktop.org/libnice/NiceAgent.html#NiceAgent--ice-tcp
+ * </p>
+ * <p>
+ *   You might want to disable ICE-TCP to potentially speed up ICE gathering by
+ *   avoiding TCP candidates in scenarios where they are not needed.
+ * </p>
+ * <p><code>iceTcp</code> is either 1 (ON) or 0 (OFF). Default: 1 (ON).</p>
+ *
+ * @alias module:elements.WebRtcEndpoint#getIceTcp
+ *
+ * @param {module:elements.WebRtcEndpoint~getIceTcpCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.getIceTcp = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getIceTcp', callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~getIceTcpCallback
+ * @param {external:Error} error
+ * @param {external:Boolean} result
+ */
+
+/**
+ * Enable ICE-TCP candidate gathering.
+ * <p>
+ *   This setting enables or disables using TCP for ICE candidate gathering in 
+ *   the
+ *   underlying libnice library:
+ *   https://libnice.freedesktop.org/libnice/NiceAgent.html#NiceAgent--ice-tcp
+ * </p>
+ * <p>
+ *   You might want to disable ICE-TCP to potentially speed up ICE gathering by
+ *   avoiding TCP candidates in scenarios where they are not needed.
+ * </p>
+ * <p><code>iceTcp</code> is either 1 (ON) or 0 (OFF). Default: 1 (ON).</p>
+ *
+ * @alias module:elements.WebRtcEndpoint#setIceTcp
+ *
+ * @param {external:Boolean} iceTcp
+ * @param {module:elements.WebRtcEndpoint~setIceTcpCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+WebRtcEndpoint.prototype.setIceTcp = function(iceTcp, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('boolean', 'iceTcp', iceTcp, {required: true});
+  //  
+
+  var params = {
+    iceTcp: iceTcp
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setIceTcp', params, callback), this)
+};
+/**
+ * @callback module:elements.WebRtcEndpoint~setIceTcpCallback
+ * @param {external:Error} error
  */
 
 /**
@@ -19216,6 +19311,187 @@ module.exports = checkCryptoSuite;
  * limitations under the License.
  */
 
+var kurentoClient = require('kurento-client');
+
+
+
+/**
+ * How to fix gaps when they are found in the recorded stream.
+ * <p>
+ *   Gaps are typically caused by packet loss in the input streams, such as when
+ *   RTP or WebRTC media flow suffers from network congestion and some packets
+ *   don't arrive at the media server.
+ * </p>
+ * <p>Different ways of handling gaps have different tradeoffs:</p>
+ * <ul>
+ *   <li>
+ *     <strong>NONE</strong>: Do not fix gaps. This means that the
+ *     resulting files will contain gaps in the timestamps. Some players are 
+ *     clever
+ *     enough to adapt to this during playback, so that the gaps are reduced to 
+ *     a
+ *     minimum and no problems are perceived by the user; other players are not 
+ *     so
+ *     sophisticated, and will struggle trying to decode a file that contains 
+ *     gaps.
+ *     For example, trying to play such a file directly with Chrome will cause
+ *     lipsync issues (audio and video out of sync).
+ *     <p>
+ *       For example, assume a session length of 15 seconds: packets arrive
+ *       correctly during the first 5 seconds, then there is a gap, then data
+ *       arrives again for the last 5 seconds. Also, for simplicity, assume 1 
+ *       frame
+ *       per second. With no fix for gaps, the RecorderEndpoint will store each
+ *       frame as-is, with these timestamps:
+ *     </p>
+ *     <pre>
+ *       frame 1  - 00:01
+ *       frame 2  - 00:02
+ *       frame 3  - 00:03
+ *       frame 4  - 00:04
+ *       frame 5  - 00:05
+ *       frame 11 - 00:11
+ *       frame 12 - 00:12
+ *       frame 13 - 00:13
+ *       frame 14 - 00:14
+ *       frame 15 - 00:15
+ *     </pre>
+ *     <p>
+ *       Notice how the frames between 6 to 10 are missing, but the last 5 
+ *       frames
+ *       still conserve their original timestamp. The total length of the file 
+ *       is
+ *       detected as 15 seconds by most players, although playback could stutter
+ *       hang during the missing section.
+ *     </p>
+ *   </li>
+ *   <li>
+ *     <strong>GENPTS</strong>: Replace timestamps of all frames arriving
+ *     after a gap. With this method, the length of each gap will be taken into
+ *     account, to be subtracted from the timestamp of all following frames. 
+ *     This
+ *     provides for a continuous, gap-less recording, at the expense of reducing
+ *     the total apparent length of each file.
+ *     <p>
+ *       In our example, the RecorderEndpoint will change all timestamps that
+ *       follow a gap in the stream, and store each frame as follows:
+ *     </p>
+ *     <pre>
+ *       frame 1  - 00:01
+ *       frame 2  - 00:02
+ *       frame 3  - 00:03
+ *       frame 4  - 00:04
+ *       frame 5  - 00:05
+ *       frame 11 - 00:06
+ *       frame 12 - 00:07
+ *       frame 13 - 00:08
+ *       frame 14 - 00:09
+ *       frame 15 - 00:10
+ *     </pre>
+ *     <p>
+ *       Notice how the frames between 6 to 10 are missing, and the last 5 
+ *       frames
+ *       have their timestamps corrected to provide a smooth increment over the
+ *       previous ones. The total length of the file is detected as 10 seconds, 
+ *       and
+ *       playback should be correct throughout the whole file.
+ *     </p>
+ *   </li>
+ *   <li>
+ *     <strong>FILL_IF_TRANSCODING</strong>: NOT IMPLEMENTED.
+ *     <p>This is a proposal for future improvement of the RecorderEndpoint.</p>
+ *     <p>
+ *       It is possible to perform a dynamic adaptation of audio rate and add 
+ *       frame
+ *       duplication to the video, such that the missing parts are filled with
+ *       artificial data. This has the advantage of providing a smooth playback
+ *       result, and at the same time conserving all original timestamps.
+ *     </p>
+ *     <p>
+ *       However, the main issue with this method is that it requires accessing 
+ *       the
+ *       decoded media; i.e., transcoding must be active. For this reason, the
+ *       proposal is to offer this option to be enabled only when transcoding 
+ *       would
+ *       still happen anyways.
+ *     </p>
+ *     <p>
+ *       In our example, the RecorderEndpoint would change all missing frames 
+ *       like
+ *       this:
+ *     </p>
+ *     <pre>
+ *       frame 1  - 00:01
+ *       frame 2  - 00:02
+ *       frame 3  - 00:03
+ *       frame 4  - 00:04
+ *       frame 5  - 00:05
+ *       fake frame - 00:06
+ *       fake frame - 00:07
+ *       fake frame - 00:08
+ *       fake frame - 00:09
+ *       fake frame - 00:10
+ *       frame 11 - 00:11
+ *       frame 12 - 00:12
+ *       frame 13 - 00:13
+ *       frame 14 - 00:14
+ *       frame 15 - 00:15
+ *     </pre>
+ *     <p>
+ *       This joins the best of both worlds: on one hand, the playback should be
+ *       smooth and even the most basic players should be able to handle the
+ *       recording files without issue. On the other, the total length of the 
+ *       file
+ *       is left unmodified, so it matches with the expected duration of the
+ *       sessions that are being recorded.
+ *     </p>
+ *   </li>
+ * </ul>
+ *
+ * @typedef elements/complexTypes.GapsFixMethod
+ *
+ * @type {(NONE|GENPTS|FILL_IF_TRANSCODING)}
+ */
+
+/**
+ * Checker for {@link module:elements/complexTypes.GapsFixMethod}
+ *
+ * @memberof module:elements/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:elements/complexTypes.GapsFixMethod} value
+ */
+function checkGapsFixMethod(key, value)
+{
+  if(typeof value != 'string')
+    throw SyntaxError(key+' param should be a String, not '+typeof value);
+
+  if(!value.match('NONE|GENPTS|FILL_IF_TRANSCODING'))
+    throw SyntaxError(key+' param is not one of [NONE|GENPTS|FILL_IF_TRANSCODING] ('+value+')');
+};
+
+
+module.exports = checkGapsFixMethod;
+
+},{"kurento-client":"kurento-client"}],100:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 var inherits = require('inherits');
 
 var kurentoClient = require('kurento-client');
@@ -19312,7 +19588,7 @@ module.exports = IceCandidate;
 
 IceCandidate.check = checkIceCandidate;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],100:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],101:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19433,7 +19709,7 @@ module.exports = IceCandidatePair;
 
 IceCandidatePair.check = checkIceCandidatePair;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],101:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],102:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19484,7 +19760,7 @@ function checkIceComponentState(key, value)
 
 module.exports = checkIceComponentState;
 
-},{"kurento-client":"kurento-client"}],102:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],103:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19596,7 +19872,7 @@ module.exports = IceConnection;
 
 IceConnection.check = checkIceConnection;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],103:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],104:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19648,7 +19924,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"kurento-client":"kurento-client"}],104:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],105:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19786,7 +20062,7 @@ module.exports = SDES;
 
 SDES.check = checkSDES;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],105:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],106:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19906,7 +20182,7 @@ module.exports = VideoInfo;
 
 VideoInfo.check = checkVideoInfo;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],106:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],107:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19936,6 +20212,7 @@ VideoInfo.check = checkVideoInfo;
 
 var CertificateKeyType = require('./CertificateKeyType');
 var CryptoSuite = require('./CryptoSuite');
+var GapsFixMethod = require('./GapsFixMethod');
 var IceCandidate = require('./IceCandidate');
 var IceCandidatePair = require('./IceCandidatePair');
 var IceComponentState = require('./IceComponentState');
@@ -19947,6 +20224,7 @@ var VideoInfo = require('./VideoInfo');
 
 exports.CertificateKeyType = CertificateKeyType;
 exports.CryptoSuite = CryptoSuite;
+exports.GapsFixMethod = GapsFixMethod;
 exports.IceCandidate = IceCandidate;
 exports.IceCandidatePair = IceCandidatePair;
 exports.IceComponentState = IceComponentState;
@@ -19955,7 +20233,7 @@ exports.MediaProfileSpecType = MediaProfileSpecType;
 exports.SDES = SDES;
 exports.VideoInfo = VideoInfo;
 
-},{"./CertificateKeyType":97,"./CryptoSuite":98,"./IceCandidate":99,"./IceCandidatePair":100,"./IceComponentState":101,"./IceConnection":102,"./MediaProfileSpecType":103,"./SDES":104,"./VideoInfo":105}],107:[function(require,module,exports){
+},{"./CertificateKeyType":97,"./CryptoSuite":98,"./GapsFixMethod":99,"./IceCandidate":100,"./IceCandidatePair":101,"./IceComponentState":102,"./IceConnection":103,"./MediaProfileSpecType":104,"./SDES":105,"./VideoInfo":106}],108:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20175,7 +20453,7 @@ module.exports = FaceOverlayFilter;
 
 FaceOverlayFilter.check = checkFaceOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],108:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20375,7 +20653,7 @@ module.exports = GStreamerFilter;
 
 GStreamerFilter.check = checkGStreamerFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20593,7 +20871,7 @@ module.exports = ImageOverlayFilter;
 
 ImageOverlayFilter.check = checkImageOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20685,7 +20963,7 @@ module.exports = ZBarFilter;
 
 ZBarFilter.check = checkZBarFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],112:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20763,7 +21041,7 @@ module.exports = OpenCVFilter;
 
 OpenCVFilter.check = checkOpenCVFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],112:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],113:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20796,7 +21074,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":111}],113:[function(require,module,exports){
+},{"./OpenCVFilter":112}],114:[function(require,module,exports){
 function Mapper() {
   var sources = {};
 
@@ -20856,7 +21134,7 @@ Mapper.prototype.pop = function (id, source) {
 
 module.exports = Mapper;
 
-},{}],114:[function(require,module,exports){
+},{}],115:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -20878,7 +21156,7 @@ var JsonRpcClient = require('./jsonrpcclient');
 
 exports.JsonRpcClient = JsonRpcClient;
 
-},{"./jsonrpcclient":115}],115:[function(require,module,exports){
+},{"./jsonrpcclient":116}],116:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -21166,7 +21444,7 @@ function JsonRpcClient(configuration) {
 
 module.exports = JsonRpcClient;
 
-},{"../..":118,"./transports/webSocketWithReconnection":117}],116:[function(require,module,exports){
+},{"../..":119,"./transports/webSocketWithReconnection":118}],117:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -21188,7 +21466,7 @@ var WebSocketWithReconnection = require('./webSocketWithReconnection');
 
 exports.WebSocketWithReconnection = WebSocketWithReconnection;
 
-},{"./webSocketWithReconnection":117}],117:[function(require,module,exports){
+},{"./webSocketWithReconnection":118}],118:[function(require,module,exports){
 (function (global){(function (){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
@@ -21438,7 +21716,7 @@ function WebSocketWithReconnection(config) {
 module.exports = WebSocketWithReconnection;
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"ws":155}],118:[function(require,module,exports){
+},{"ws":156}],119:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -22177,7 +22455,7 @@ RpcBuilder.clients = clients;
 RpcBuilder.clients.transports = transports;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":113,"./clients":114,"./clients/transports":116,"./packers":121,"events":21,"inherits":"inherits"}],119:[function(require,module,exports){
+},{"./Mapper":114,"./clients":115,"./clients/transports":117,"./packers":122,"events":21,"inherits":"inherits"}],120:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -22274,7 +22552,7 @@ function unpack(message) {
 exports.pack = pack;
 exports.unpack = unpack;
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 function pack(message) {
   throw new TypeError("Not yet implemented");
 };
@@ -22286,14 +22564,14 @@ function unpack(message) {
 exports.pack = pack;
 exports.unpack = unpack;
 
-},{}],121:[function(require,module,exports){
+},{}],122:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC = require('./XmlRPC');
 
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC = XmlRPC;
 
-},{"./JsonRPC":119,"./XmlRPC":120}],122:[function(require,module,exports){
+},{"./JsonRPC":120,"./XmlRPC":121}],123:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -22342,7 +22620,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":123}],123:[function(require,module,exports){
+},{"_process":124}],124:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -22528,7 +22806,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],124:[function(require,module,exports){
+},{}],125:[function(require,module,exports){
 (function (global){(function (){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -23065,7 +23343,7 @@ process.umask = function() { return 0; };
 }(this));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],125:[function(require,module,exports){
+},{}],126:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23151,7 +23429,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],126:[function(require,module,exports){
+},{}],127:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23238,16 +23516,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],127:[function(require,module,exports){
+},{}],128:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":125,"./encode":126}],128:[function(require,module,exports){
+},{"./decode":126,"./encode":127}],129:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":129}],129:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":130}],130:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23379,7 +23657,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":131,"./_stream_writable":133,"core-util-is":19,"inherits":"inherits","process-nextick-args":122}],130:[function(require,module,exports){
+},{"./_stream_readable":132,"./_stream_writable":134,"core-util-is":19,"inherits":"inherits","process-nextick-args":123}],131:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23427,7 +23705,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":132,"core-util-is":19,"inherits":"inherits"}],131:[function(require,module,exports){
+},{"./_stream_transform":133,"core-util-is":19,"inherits":"inherits"}],132:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -24449,7 +24727,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":129,"./internal/streams/BufferList":134,"./internal/streams/destroy":135,"./internal/streams/stream":136,"_process":123,"core-util-is":19,"events":21,"inherits":"inherits","isarray":25,"process-nextick-args":122,"safe-buffer":137,"string_decoder/":138,"util":17}],132:[function(require,module,exports){
+},{"./_stream_duplex":130,"./internal/streams/BufferList":135,"./internal/streams/destroy":136,"./internal/streams/stream":137,"_process":124,"core-util-is":19,"events":21,"inherits":"inherits","isarray":25,"process-nextick-args":123,"safe-buffer":138,"string_decoder/":139,"util":17}],133:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -24664,7 +24942,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":129,"core-util-is":19,"inherits":"inherits"}],133:[function(require,module,exports){
+},{"./_stream_duplex":130,"core-util-is":19,"inherits":"inherits"}],134:[function(require,module,exports){
 (function (process,global,setImmediate){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -25354,7 +25632,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":129,"./internal/streams/destroy":135,"./internal/streams/stream":136,"_process":123,"core-util-is":19,"inherits":"inherits","process-nextick-args":122,"safe-buffer":137,"timers":147,"util-deprecate":150}],134:[function(require,module,exports){
+},{"./_stream_duplex":130,"./internal/streams/destroy":136,"./internal/streams/stream":137,"_process":124,"core-util-is":19,"inherits":"inherits","process-nextick-args":123,"safe-buffer":138,"timers":148,"util-deprecate":151}],135:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -25434,7 +25712,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":137,"util":17}],135:[function(require,module,exports){
+},{"safe-buffer":138,"util":17}],136:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -25509,10 +25787,10 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":122}],136:[function(require,module,exports){
+},{"process-nextick-args":123}],137:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":21}],137:[function(require,module,exports){
+},{"events":21}],138:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -25576,7 +25854,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":18}],138:[function(require,module,exports){
+},{"buffer":18}],139:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -25873,10 +26151,10 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":137}],139:[function(require,module,exports){
+},{"safe-buffer":138}],140:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":140}],140:[function(require,module,exports){
+},{"./readable":141}],141:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -25885,13 +26163,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":129,"./lib/_stream_passthrough.js":130,"./lib/_stream_readable.js":131,"./lib/_stream_transform.js":132,"./lib/_stream_writable.js":133}],141:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":130,"./lib/_stream_passthrough.js":131,"./lib/_stream_readable.js":132,"./lib/_stream_transform.js":133,"./lib/_stream_writable.js":134}],142:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":140}],142:[function(require,module,exports){
+},{"./readable":141}],143:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":133}],143:[function(require,module,exports){
+},{"./lib/_stream_writable.js":134}],144:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -26019,7 +26297,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":10,"events":21}],144:[function(require,module,exports){
+},{"backoff":10,"events":21}],145:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -26038,7 +26316,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":143,"websocket-stream":153}],145:[function(require,module,exports){
+},{"reconnect-core":144,"websocket-stream":154}],146:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -26167,7 +26445,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":21,"inherits":"inherits","readable-stream/duplex.js":128,"readable-stream/passthrough.js":139,"readable-stream/readable.js":140,"readable-stream/transform.js":141,"readable-stream/writable.js":142}],146:[function(require,module,exports){
+},{"events":21,"inherits":"inherits","readable-stream/duplex.js":129,"readable-stream/passthrough.js":140,"readable-stream/readable.js":141,"readable-stream/transform.js":142,"readable-stream/writable.js":143}],147:[function(require,module,exports){
 (function (process){(function (){
 var Stream = require('stream')
 
@@ -26279,7 +26557,7 @@ function through (write, end, opts) {
 
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":123,"stream":145}],147:[function(require,module,exports){
+},{"_process":124,"stream":146}],148:[function(require,module,exports){
 (function (setImmediate,clearImmediate){(function (){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -26358,7 +26636,7 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this)}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":123,"timers":147}],148:[function(require,module,exports){
+},{"process/browser.js":124,"timers":148}],149:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -27092,7 +27370,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":149,"punycode":124,"querystring":127}],149:[function(require,module,exports){
+},{"./util":150,"punycode":125,"querystring":128}],150:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -27110,7 +27388,7 @@ module.exports = {
   }
 };
 
-},{}],150:[function(require,module,exports){
+},{}],151:[function(require,module,exports){
 (function (global){(function (){
 
 /**
@@ -27181,14 +27459,14 @@ function config (name) {
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],151:[function(require,module,exports){
+},{}],152:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],152:[function(require,module,exports){
+},{}],153:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -27778,7 +28056,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":151,"_process":123,"inherits":"inherits"}],153:[function(require,module,exports){
+},{"./support/isBuffer":152,"_process":124,"inherits":"inherits"}],154:[function(require,module,exports){
 (function (process){(function (){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -27874,7 +28152,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":123,"isbuffer":26,"through":146,"ws":154}],154:[function(require,module,exports){
+},{"_process":124,"isbuffer":26,"through":147,"ws":155}],155:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -27919,7 +28197,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],155:[function(require,module,exports){
+},{}],156:[function(require,module,exports){
 'use strict';
 
 module.exports = function () {
@@ -33542,7 +33820,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 })));
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"_process":123,"timers":147}],"es6-promise":[function(require,module,exports){
+},{"_process":124,"timers":148}],"es6-promise":[function(require,module,exports){
 (function (process,global){(function (){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
@@ -34720,7 +34998,7 @@ return Promise$1;
 
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":123}],"inherits":[function(require,module,exports){
+},{"_process":124}],"inherits":[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -34778,7 +35056,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.15.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.16.0'});
 
 
 var HubPort = require('./HubPort');
@@ -34822,7 +35100,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.15.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.16.0'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -34851,7 +35129,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":85,"./Composite":86,"./Dispatcher":87,"./DispatcherOneToMany":88,"./HttpPostEndpoint":89,"./Mixer":90,"./PlayerEndpoint":91,"./RecorderEndpoint":92,"./RtpEndpoint":93,"./WebRtcEndpoint":94,"./abstracts":96,"./complexTypes":106}],"kurento-client-filters":[function(require,module,exports){
+},{"./AlphaBlending":85,"./Composite":86,"./Dispatcher":87,"./DispatcherOneToMany":88,"./HttpPostEndpoint":89,"./Mixer":90,"./PlayerEndpoint":91,"./RecorderEndpoint":92,"./RtpEndpoint":93,"./WebRtcEndpoint":94,"./abstracts":96,"./complexTypes":107}],"kurento-client-filters":[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -34880,7 +35158,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.15.1-dev'});
+Object.defineProperty(exports, 'version', {value: '6.16.0'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
@@ -34896,7 +35174,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":107,"./GStreamerFilter":108,"./ImageOverlayFilter":109,"./ZBarFilter":110,"./abstracts":112}],"kurento-client":[function(require,module,exports){
+},{"./FaceOverlayFilter":108,"./GStreamerFilter":109,"./ImageOverlayFilter":110,"./ZBarFilter":111,"./abstracts":113}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
