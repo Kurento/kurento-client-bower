@@ -16756,37 +16756,66 @@ PlayerEndpoint.prototype.play = function(callback){
  *                </ul>
  *
  * @property {external:Boolean} [useEncodedMedia]
- *  Feed the input media as-is to the Media Pipeline, instead of first decoding 
- *  it.
+ *  Feed an encoded media as-is to the Media Pipeline, instead of first decoding
  *                <p>
- *                When this property is not enabled, the input media gets always
+ *                  This property is disabled by default. The input media gets 
+ *                  always decoded into
+ *                  a raw format upon receiving it, before being processed by 
+ *                  the rest of the
+ *                  Media Pipeline. This is done to ensure that Kurento is able 
+ *                  to keep track of
+ *                  lost keyframes among other quality-control measurements. Of 
+ *                  course, having to
+ *                  decode the media has a cost in terms of CPU usage, but 
+ *                  ensures that the output
+ *                  streaming will be more robust and reliable.
  *                </p>
  *                <p>
- *                When this property is enabled, the explained behavior gets 
- *                disabled. Instead, The endpoint will provide any input media 
- *                directly to the Media Pipeline, without prior decoding. 
- *                Enabling this mode of operation could have a severe effect on 
- *                stability, because lost video keyframes will not be 
- *                regenerated; however, avoiding a full cycle of decoding and 
- *                encoding can be very useful for certain applications, because 
- *                it improves performance by greatly reducing the CPU processing
+ *                  When this property is enabled, Kurento simply passes the 
+ *                  encoded media as-is
+ *                  to the rest of the Media Pipeline, without decoding. 
+ *                  Enabling this mode of
+ *                  operation could have a severe effect on stability, because 
+ *                  lost video
+ *                  keyframes will not be regenerated; however, not having to 
+ *                  encode the video
+ *                  greatly reduces the CPU load.
  *                </p>
  *                <p>
- *                Keep in mind that if this property is enabled, the original 
- *                source media MUST already have an encoding format which is 
- *                compatible with the destination target. For example: given a 
- *                pipeline which uses this endpoint to read a file and then 
- *                streams it to a WebRTC browser such as Chrome, then the file 
- *                must already be encoded with a VP8 or H.264 codec profile 
- *                which Chrome is able to decode. Note that for this example, 
- *                most browsers don't support ANY combination of H.264 encoding 
- *                options; instead, they tend to support only a very specific 
- *                subset of the codec features (also known as 'profiles').
+ *                  Keep in mind that if this property is enabled, the original 
+ *                  source media MUST
+ *                  already be in a format that is compatible with the 
+ *                  destination target. For
+ *                  example: Given a Pipeline that reads a file and then streams
+ *                  browser such as Chrome, the file must already be encoded 
+ *                  with a VP8 or H.264
+ *                  codec profile, which Chrome is able to decode.
  *                </p>
  *                <p>
- *                We strongly recommend to avoid using this option, because 
- *                correct behavior cannot be guaranteed.
+ *                  Of special note is that you cannot feed any random 
+ *                  combination of H.264
+ *                  encoding options to a web browser; instead, they tend to 
+ *                  support only a very
+ *                  specific subset of the codec features (also known as 
+ *                  'profiles'). The most
+ *                  compatible config for H.264 is
+ *                  <strong>Constrained Baseline profile, level 3.1.</strong>
  *                </p>
+ *                <p>Code examples:</p>
+ *                <pre><code>
+ *                  # Java
+ *                  PlayerEndpoint player = new PlayerEndpoint
+ *                    .Builder(pipeline, 'rtsp://localhost:5000/video')
+ *                    .useEncodedMedia()
+ *                    .build();
+ *                </code></pre>
+ *                <pre><code>
+ *                  # JavaScript
+ *                  let player = await pipeline.create('PlayerEndpoint', {
+ *                    uri: 'rtsp://localhost:5000/video',
+ *                    useEncodedMedia: true,
+ *                  });
+ *                </code></pre>
  */
 PlayerEndpoint.constructorParams = {
   mediaPipeline: {
@@ -16944,8 +16973,9 @@ function noop(error, result) {
  *            url-encoded.
  *          </strong>
  *          This means that colons (<code>:</code>) should be replaced with
- *          <code>%3A</code>, and 'at' signs (<code>@</code>) should be replaced
- *          with <code>%40</code>.
+ *          '<code>%3A</code>', and 'at' signs (<code>@</code>) should be 
+ *          replaced
+ *          with '<code>%40</code>'.
  *        </li>
  *      </ul>
  *    </li>
@@ -19318,24 +19348,35 @@ var kurentoClient = require('kurento-client');
 /**
  * How to fix gaps when they are found in the recorded stream.
  * <p>
- *   Gaps are typically caused by packet loss in the input streams, such as when
- *   RTP or WebRTC media flow suffers from network congestion and some packets
- *   don't arrive at the media server.
+ * Gaps are typically caused by packet loss in the input streams, such as when 
+ * an
+ * RTP or WebRTC media flow suffers from network congestion and some packets 
+ * don't
+ * arrive at the media server.
  * </p>
  * <p>Different ways of handling gaps have different tradeoffs:</p>
  * <ul>
  *   <li>
- *     <strong>NONE</strong>: Do not fix gaps. This means that the
- *     resulting files will contain gaps in the timestamps. Some players are 
- *     clever
- *     enough to adapt to this during playback, so that the gaps are reduced to 
- *     a
- *     minimum and no problems are perceived by the user; other players are not 
- *     so
- *     sophisticated, and will struggle trying to decode a file that contains 
- *     gaps.
- *     For example, trying to play such a file directly with Chrome will cause
- *     lipsync issues (audio and video out of sync).
+ *     <strong>NONE</strong>: Do not fix gaps.
+ *     <p>
+ *       Leave the stream as-is, and store it with any gaps that the stream 
+ *       might
+ *       have. Some players are clever enough to adapt to this during playback, 
+ *       so
+ *       that the gaps are reduced to a minimum and no problems are perceived by
+ *       the user; other players are not so sophisticated, and will struggle 
+ *       trying
+ *       to decode a file that contains gaps. For example, trying to play such a
+ *       file directly with Chrome will cause lipsync issues (audio and video 
+ *       will
+ *       fall out of sync).
+ *     </p>
+ *     <p>
+ *       This is the best choice if you need consistent durations across 
+ *       multiple
+ *       simultaneous recordings, or if you are anyway going to post-process the
+ *       recordings (e.g. with an extra FFmpeg step).
+ *     </p>
  *     <p>
  *       For example, assume a session length of 15 seconds: packets arrive
  *       correctly during the first 5 seconds, then there is a gap, then data
@@ -19366,12 +19407,18 @@ var kurentoClient = require('kurento-client');
  *     </p>
  *   </li>
  *   <li>
- *     <strong>GENPTS</strong>: Replace timestamps of all frames arriving
- *     after a gap. With this method, the length of each gap will be taken into
- *     account, to be subtracted from the timestamp of all following frames. 
- *     This
- *     provides for a continuous, gap-less recording, at the expense of reducing
- *     the total apparent length of each file.
+ *     <strong>GENPTS</strong>: Adjust timestamps to generate a smooth 
+ *     progression
+ *     over all frames.
+ *     <p>
+ *       This technique rewrites the timestamp of all frames, so that gaps are
+ *       suppressed. It provides the best playback experience for recordings 
+ *       that
+ *       need to be played as-is (i.e. they won't be post-processed). However,
+ *       fixing timestamps might cause a change in the total duration of a file.
+ *       different recordings from the same session might end up with slightly
+ *       different durations.
+ *     </p>
  *     <p>
  *       In our example, the RecorderEndpoint will change all timestamps that
  *       follow a gap in the stream, and store each frame as follows:
@@ -19398,7 +19445,7 @@ var kurentoClient = require('kurento-client');
  *     </p>
  *   </li>
  *   <li>
- *     <strong>FILL_IF_TRANSCODING</strong>: NOT IMPLEMENTED.
+ *     <strong>FILL_IF_TRANSCODING</strong>: (NOT IMPLEMENTED YET).
  *     <p>This is a proposal for future improvement of the RecorderEndpoint.</p>
  *     <p>
  *       It is possible to perform a dynamic adaptation of audio rate and add 
@@ -35056,7 +35103,7 @@ if (typeof Object.create === 'function') {
  */
 
 Object.defineProperty(exports, 'name',    {value: 'core'});
-Object.defineProperty(exports, 'version', {value: '6.16.0'});
+Object.defineProperty(exports, 'version', {value: '6.16.1-dev'});
 
 
 var HubPort = require('./HubPort');
@@ -35100,7 +35147,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'elements'});
-Object.defineProperty(exports, 'version', {value: '6.16.0'});
+Object.defineProperty(exports, 'version', {value: '6.16.1-dev'});
 
 
 var AlphaBlending = require('./AlphaBlending');
@@ -35158,7 +35205,7 @@ exports.complexTypes = require('./complexTypes');
  */
 
 Object.defineProperty(exports, 'name',    {value: 'filters'});
-Object.defineProperty(exports, 'version', {value: '6.16.0'});
+Object.defineProperty(exports, 'version', {value: '6.16.1-dev'});
 
 
 var FaceOverlayFilter = require('./FaceOverlayFilter');
