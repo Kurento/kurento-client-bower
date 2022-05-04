@@ -6170,9 +6170,10 @@ function noop(error, result) {
  *        The <code>ConnectionStateChangedEvent</code> comes in contrast with 
  *        more
  *        instantaneous events such as MediaElement's
- *        {@link module:core/abstracts.BaseRtpEndpoint#MediaFlowInStateChange} 
+ *        {@link module:core/abstracts.BaseRtpEndpoint#MediaFlowInStateChanged} 
  *        and
- *        {@link module:core/abstracts.BaseRtpEndpoint#MediaFlowOutStateChange},
+ *        {@link 
+ *        module:core/abstracts.BaseRtpEndpoint#MediaFlowOutStateChanged}, which
  *        immediately after the RTP data packets stop flowing between RTP 
  *        session
  *        participants. This makes the <em>MediaFlow</em> events a good way to
@@ -7430,7 +7431,7 @@ function noop(error, result) {
  *    higher CPU load, so connecting MediaElements that need media encoded in
  *    different formats is something to consider as a high load operation. The 
  *    event
- *    `MediaTranscodingStateChange` allows to inform the client application of
+ *    `MediaTranscodingStateChanged` allows to inform the client application of
  *    whether media transcoding is being enabled or not inside any MediaElement
  *    object.
  *  </p>
@@ -7443,8 +7444,11 @@ function noop(error, result) {
  * @fires {@link module:core#event:ElementConnected ElementConnected}
  * @fires {@link module:core#event:ElementDisconnected ElementDisconnected}
  * @fires {@link module:core#event:MediaFlowInStateChange MediaFlowInStateChange}
+ * @fires {@link module:core#event:MediaFlowInStateChanged MediaFlowInStateChanged}
  * @fires {@link module:core#event:MediaFlowOutStateChange MediaFlowOutStateChange}
+ * @fires {@link module:core#event:MediaFlowOutStateChanged MediaFlowOutStateChanged}
  * @fires {@link module:core#event:MediaTranscodingStateChange MediaTranscodingStateChange}
+ * @fires {@link module:core#event:MediaTranscodingStateChanged MediaTranscodingStateChanged}
  */
 function MediaElement(){
   MediaElement.super_.call(this);
@@ -8391,7 +8395,7 @@ MediaElement.prototype.isMediaFlowingOut = function(mediaType, sourceMediaDescri
  *
  * @param {external:String} [binName]
  *  Internal name of the processing bin, as previously given by 
- *  <code>MediaTranscodingStateChange</code>.
+ *  <code>MediaTranscodingStateChanged</code>.
  *
  * @param {module:core/abstracts.MediaElement~isMediaTranscodingCallback} [callback]
  *
@@ -8576,7 +8580,7 @@ MediaElement.constructorParams = {
  *
  * @extends module:core/abstracts.MediaObject.events
  */
-MediaElement.events = MediaObject.events.concat(['ElementConnected', 'ElementDisconnected', 'MediaFlowInStateChange', 'MediaFlowOutStateChange', 'MediaTranscodingStateChange']);
+MediaElement.events = MediaObject.events.concat(['ElementConnected', 'ElementDisconnected', 'MediaFlowInStateChange', 'MediaFlowInStateChanged', 'MediaFlowOutStateChange', 'MediaFlowOutStateChanged', 'MediaTranscodingStateChange', 'MediaTranscodingStateChanged']);
 
 
 /**
@@ -17074,8 +17078,8 @@ function noop(error, result) {
  *    <strong>
  *      It is recommended to start recording only after media arrives.
  *    </strong>
- *    For this, you may use the <code>MediaFlowInStateChange</code> and
- *    <code>MediaFlowOutStateChange</code>
+ *    For this, you may use the <code>MediaFlowInStateChanged</code> and
+ *    <code>MediaFlowOutStateChanged</code>
  *    events of your endpoints, and synchronize the recording with the moment 
  *    media
  *    comes into the Recorder. For example:
@@ -17084,20 +17088,20 @@ function noop(error, result) {
  *    <li>
  *      When the remote video arrives to KMS, your WebRtcEndpoint will start
  *      generating packets into the Kurento Pipeline, and it will trigger a
- *      <code>MediaFlowOutStateChange</code> event.
+ *      <code>MediaFlowOutStateChanged</code> event.
  *    </li>
  *    <li>
  *      When video packets arrive from the WebRtcEndpoint to the 
  *      RecorderEndpoint,
- *      the RecorderEndpoint will raise a <code>MediaFlowInStateChange</code> 
+ *      the RecorderEndpoint will raise a <code>MediaFlowInStateChanged</code> 
  *      event.
  *    </li>
  *    <li>
  *      You should only start recording when RecorderEndpoint has notified a
- *      <code>MediaFlowInStateChange</code> for ALL streams (so, if you record
+ *      <code>MediaFlowInStateChanged</code> for ALL streams (so, if you record
  *      AUDIO+VIDEO, your application must receive a
- *      <code>MediaFlowInStateChange</code> event for audio, and another
- *      <code>MediaFlowInStateChange</code> event for video).
+ *      <code>MediaFlowInStateChanged</code> event for audio, and another
+ *      <code>MediaFlowInStateChanged</code> event for video).
  *    </li>
  *  </ol>
  *
