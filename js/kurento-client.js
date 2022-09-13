@@ -724,6 +724,13 @@ function KurentoClient(ws_uri, options, callback) {
      */
     mediaObject.once('release', function () {
       delete objects[id];
+      if (id.endsWith('_kurento.MediaPipeline')) {
+        Object.keys(objects).forEach(function (objectId) {
+          // If deleting a pipeline from cache, delete all children of pipeline, if any remains, as server should have removed them also
+          if (objectId.startsWith(id)) objects[objectId].emit(
+            'release');
+        })
+      }
     });
 
     return mediaObject;
@@ -1163,7 +1170,7 @@ KurentoClient.getComplexType = function (complexType) {
 
 module.exports = KurentoClient;
 
-},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","events":21,"extend":22,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":118,"promisecallback":"promisecallback","reconnect-ws":144,"url":148}],2:[function(require,module,exports){
+},{"./MediaObjectCreator":2,"./TransactionsManager":3,"./checkType":5,"./createPromise":6,"./disguise":7,"async":"async","events":21,"extend":22,"inherits":"inherits","kurento-client-core":"kurento-client-core","kurento-jsonrpc":119,"promisecallback":"promisecallback","reconnect-ws":145,"url":149}],2:[function(require,module,exports){
 /*
  * (C) Copyright 2014-2015 Kurento (http://kurento.org/)
  *
@@ -2271,7 +2278,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":21,"util":152}],12:[function(require,module,exports){
+},{"events":21,"util":153}],12:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2500,7 +2507,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":11,"./strategy/fibonacci":14,"events":21,"util":152}],13:[function(require,module,exports){
+},{"./backoff":11,"./strategy/fibonacci":14,"events":21,"util":153}],13:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2536,7 +2543,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":15,"util":152}],14:[function(require,module,exports){
+},{"./strategy":15,"util":153}],14:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2573,7 +2580,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":15,"util":152}],15:[function(require,module,exports){
+},{"./strategy":15,"util":153}],15:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -2673,7 +2680,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":21,"util":152}],16:[function(require,module,exports){
+},{"events":21,"util":153}],16:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -5568,12 +5575,10 @@ var MediaElement = require('./abstracts/MediaElement');
 
 
 /**
- * Creates a {@link module:core.HubPort HubPort} for the given {@link 
- * module:core/abstracts.Hub Hub}
+ * Creates a {@link HubPort} for the given {@link Hub}
  *
  * @classdesc
- *  This {@link module:core/abstracts.MediaElement MediaElement} specifies a 
- *  connection with a {@link module:core/abstracts.Hub Hub}
+ *  This {@link MediaElement} specifies a connection with a {@link Hub}
  *
  * @extends module:core/abstracts.MediaElement
  *
@@ -5589,7 +5594,7 @@ inherits(HubPort, MediaElement);
  * @alias module:core.HubPort.constructorParams
  *
  * @property {module:core/abstracts.Hub} hub
- *  {@link module:core/abstracts.Hub Hub} to which this port belongs
+ *  {@link Hub} to which this port belongs
  */
 HubPort.constructorParams = {
   hub: {
@@ -5672,12 +5677,11 @@ function noop(error, result) {
 
 
 /**
- * Create a {@link module:core.MediaPipeline MediaPipeline}
+ * Create a {@link MediaPipeline}
  *
  * @classdesc
- *  A pipeline is a container for a collection of {@link 
- *  module:core/abstracts.MediaElement MediaElements} and 
- *  :rom:cls:`MediaMixers<MediaMixer>`.
+ *  A pipeline is a container for a collection of {@link MediaElement 
+ *  MediaElements} and :rom:cls:`MediaMixers<MediaMixer>`.
  *  It offers the methods needed to control the creation and connection of 
  *  elements inside a certain pipeline.
  *
@@ -5997,11 +6001,10 @@ var MediaElement = require('./abstracts/MediaElement');
 
 
 /**
- * Builder for the {@link module:core.PassThrough PassThrough}
+ * Builder for the {@link PassThrough}
  *
  * @classdesc
- *  This {@link module:core/abstracts.MediaElement MediaElement} that just 
- *  passes media through
+ *  This {@link MediaElement} that just passes media through
  *
  * @extends module:core/abstracts.MediaElement
  *
@@ -6017,8 +6020,7 @@ inherits(PassThrough, MediaElement);
  * @alias module:core.PassThrough.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the element 
- *  belongs
+ *  the {@link MediaPipeline} to which the element belongs
  */
 PassThrough.constructorParams = {
   mediaPipeline: {
@@ -6102,26 +6104,39 @@ function noop(error, result) {
  *    All endpoints that rely on the RTP protocol, like the
  *    <strong>RtpEndpoint</strong> or the <strong>WebRtcEndpoint</strong>, 
  *    inherit
- *    from this class. The endpoint provides information about the connection 
+ *    from this class. The endpoint provides information about the Connection 
  *    state
- *    and the media state, which can be consulted at any time through the
- *    {@link module:core/abstracts.BaseRtpEndpoint#mediaState} and the {@link 
- *    module:core/abstracts.BaseRtpEndpoint#connectionState} properties. It is
- *    also possible subscribe to events fired when these properties change.
+ *    and the Media state, which can be consulted at any time through the
+ *    {@link core/abstracts.BaseRtpEndpoint#getMediaState} and the {@link 
+ *    core/abstracts.BaseRtpEndpoint#getConnectionState} methods.
+ *    It is also possible subscribe to events fired when these properties 
+ *    change:
  *  </p>
  *  <ul>
  *    <li>
- *      <strong>ConnectionStateChangedEvent</strong>: This event is raised when 
- *      the
- *      connection between two peers changes. It can have two values:
+ *      <strong>{@link ConnectionStateChangedEvent}</strong>: This event is 
+ *      raised
+ *      when the connection between two peers changes. It can have two values:
  *      <ul>
  *        <li>CONNECTED</li>
  *        <li>DISCONNECTED</li>
  *      </ul>
  *    </li>
  *    <li>
- *      <strong>MediaStateChangedEvent</strong>: This event provides information
- *      about the state of the underlying RTP session.
+ *      <strong>{@link MediaStateChangedEvent}</strong>: This event provides
+ *      information about the state of the underlying RTP session. Possible 
+ *      values
+ *      are:
+ *      <ul>
+ *        <li>CONNECTED: There is an RTCP packet flow between peers.</li>
+ *        <li>
+ *          DISCONNECTED: Either no RTCP packets have been received yet, or the
+ *          remote peer has ended the RTP session with a <code>BYE</code> 
+ *          message,
+ *          or at least 5 seconds have elapsed since the last RTCP packet was
+ *          received.
+ *        </li>
+ *      </ul>
  *      <p>
  *        The standard definition of RTP (<a
  *          href='https://tools.ietf.org/html/rfc3550'
@@ -6167,13 +6182,10 @@ function noop(error, result) {
  *        state of RTP media exchange.
  *      </p>
  *      <p>
- *        The <code>ConnectionStateChangedEvent</code> comes in contrast with 
- *        more
+ *        The {@link ConnectionStateChangedEvent} comes in contrast with more
  *        instantaneous events such as MediaElement's
- *        {@link module:core/abstracts.BaseRtpEndpoint#MediaFlowInStateChanged} 
- *        and
- *        {@link 
- *        module:core/abstracts.BaseRtpEndpoint#MediaFlowOutStateChanged}, which
+ *        {@link MediaFlowInStateChangedEvent} and
+ *        {@link MediaFlowOutStateChangedEvent}, which are triggered almost
  *        immediately after the RTP data packets stop flowing between RTP 
  *        session
  *        participants. This makes the <em>MediaFlow</em> events a good way to
@@ -6184,19 +6196,6 @@ function noop(error, result) {
  *        long-term
  *        disconnection problem.
  *      </p>
- *      <p>
- *        Possible values are:
- *      </p>
- *      <ul>
- *        <li>CONNECTED: There is an RTCP packet flow between peers.</li>
- *        <li>
- *          DISCONNECTED: Either no RTCP packets have been received yet, or the
- *          remote peer has ended the RTP session with a <code>BYE</code> 
- *          message,
- *          or at least 5 seconds have elapsed since the last RTCP packet was
- *          received.
- *        </li>
- *      </ul>
  *    </li>
  *  </ul>
  *  <p>
@@ -6748,7 +6747,7 @@ BaseRtpEndpoint.prototype.setMinVideoSendBandwidth = function(minVideoSendBandwi
  *   >
  *   or
  *   <a
- *     href='https://codesearch.chromium.org/chromium/src/third_party/webrtc/media/engine/constants.cc?l=15&rcl=6dd488b2e55125644263e4837f1abd950d5e410d'
+ *     href='https://source.chromium.org/chromium/external/webrtc/src/+/6dd488b2e55125644263e4837f1abd950d5e410d:media/engine/constants.cc;l=15'
  *     >Chrome</a
  *   >
  *   . You can read more about this value in
@@ -6819,7 +6818,7 @@ BaseRtpEndpoint.prototype.getMtu = function(callback){
  *   >
  *   or
  *   <a
- *     href='https://codesearch.chromium.org/chromium/src/third_party/webrtc/media/engine/constants.cc?l=15&rcl=6dd488b2e55125644263e4837f1abd950d5e410d'
+ *     href='https://source.chromium.org/chromium/external/webrtc/src/+/6dd488b2e55125644263e4837f1abd950d5e410d:media/engine/constants.cc;l=15'
  *     >Chrome</a
  *   >
  *   . You can read more about this value in
@@ -7003,15 +7002,11 @@ var MediaElement = require('./MediaElement');
  * @classdesc
  *  Base interface for all end points.
  *  <p>
- *    An Endpoint is a {@link module:core/abstracts.MediaElement MediaElement} 
- *    that allow <a 
- *    href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a> 
- *    to interchange
- *    media contents with external systems, su<a href="http<a href="http://<a 
- *    href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a>org/docs/current/glossary.html#term-webrtc">WebRTC</a>.org/docs/current/glossary.html#term-rtp">RTP</a>fferent
- *    and mechanisms, such as :term:`RTP`, :term:`WebRTC`, :term:`HTTP`, 
- *    <code>file://</code>
- *    URLs, etc.
+ *    An Endpoint is a {@link MediaElement} that allows Kurento to exchange
+ *    media contents with external systems, supporting different transport 
+ *    protocols
+ *    and mechanisms, such as RTP, WebRTC, HTTP(s), <code>file://</code> URLs, 
+ *    etc.
  *  </p>
  *  <p>
  *    An <code>Endpoint</code> may contain both sources and sinks for different 
@@ -7097,8 +7092,7 @@ var MediaElement = require('./MediaElement');
  * @classdesc
  *  Base interface for all filters.
  *  <p>
- *    This is a certain type of {@link module:core/abstracts.MediaElement 
- *    MediaElement}, that processes media
+ *    This is a certain type of {@link MediaElement}, that processes media
  *    injected through its sinks, and delivers the outcome through its sources.
  *  </p>
  *
@@ -7191,9 +7185,8 @@ function noop(error, result) {
 
 /**
  * @classdesc
- *  A Hub is a routing {@link module:core/abstracts.MediaObject MediaObject}.
- *  It connects several {@link module:core/abstracts.Endpoint endpoints } 
- *  together
+ *  A Hub is a routing {@link MediaObject}.
+ *  It connects several {@link Endpoint endpoints } together
  *
  * @abstract
  * @extends module:core/abstracts.MediaObject
@@ -7397,7 +7390,7 @@ function noop(error, result) {
  *  The basic building block of the media server, that can be interconnected 
  *  inside a pipeline.
  *  <p>
- *    A {@link module:core/abstracts.MediaElement MediaElement} is a module that
+ *    A {@link MediaElement} is a module that encapsulates a specific media
  *    capability, and that is able to exchange media with other MediaElements
  *    through an internal element called <b>pad</b>.
  *  </p>
@@ -7462,9 +7455,8 @@ inherits(MediaElement, MediaObject);
 
 /**
  * Maximum video bandwidth for transcoding.
- * @deprecated Deprecated due to a typo. Use {@link 
- * module:core/abstracts.MediaElement#maxOutputBitrate} instead of this 
- * function.
+ * @deprecated Deprecated due to a typo. Use :rom:meth:`maxOutputBitrate` 
+ * instead of this function.
  *
  * @alias module:core/abstracts.MediaElement#getMaxOuputBitrate
  *
@@ -7497,9 +7489,8 @@ MediaElement.prototype.getMaxOuputBitrate = function(callback){
 
 /**
  * Maximum video bandwidth for transcoding.
- * @deprecated Deprecated due to a typo. Use {@link 
- * module:core/abstracts.MediaElement#maxOutputBitrate} instead of this 
- * function.
+ * @deprecated Deprecated due to a typo. Use :rom:meth:`maxOutputBitrate` 
+ * instead of this function.
  *
  * @alias module:core/abstracts.MediaElement#setMaxOuputBitrate
  *
@@ -7606,9 +7597,8 @@ MediaElement.prototype.setMaxOutputBitrate = function(maxOutputBitrate, callback
 
 /**
  * Minimum video bandwidth for transcoding.
- * @deprecated Deprecated due to a typo. Use {@link 
- * module:core/abstracts.MediaElement#minOutputBitrate} instead of this 
- * function.
+ * @deprecated Deprecated due to a typo. Use :rom:meth:`minOutputBitrate` 
+ * instead of this function.
  *
  * @alias module:core/abstracts.MediaElement#getMinOuputBitrate
  *
@@ -7641,9 +7631,8 @@ MediaElement.prototype.getMinOuputBitrate = function(callback){
 
 /**
  * Minimum video bandwidth for transcoding.
- * @deprecated Deprecated due to a typo. Use {@link 
- * module:core/abstracts.MediaElement#minOutputBitrate} instead of this 
- * function.
+ * @deprecated Deprecated due to a typo. Use :rom:meth:`minOutputBitrate` 
+ * instead of this function.
  *
  * @alias module:core/abstracts.MediaElement#setMinOuputBitrate
  *
@@ -7789,18 +7778,18 @@ MediaElement.prototype.setMinOutputBitrate = function(minOutputBitrate, callback
  * @alias module:core/abstracts.MediaElement.connect
  *
  * @param {module:core/abstracts.MediaElement} sink
- *  the target {@link module:core/abstracts.MediaElement MediaElement} that will
+ *  the target {@link MediaElement} that will receive media
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
  *  the {@link MediaType} of the pads that will be connected
  *
  * @param {external:String} [sourceMediaDescription]
  *  A textual description of the media source. Currently not used, aimed mainly 
- *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  for {@link core/abstracts.MediaElementMediaType#DATA} sources
  *
  * @param {external:String} [sinkMediaDescription]
  *  A textual description of the media source. Currently not used, aimed mainly 
- *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  for {@link core/abstracts.MediaElementMediaType#DATA} sources
  *
  * @param {module:core/abstracts.MediaElement~connectCallback} [callback]
  *
@@ -7911,18 +7900,18 @@ MediaElement.prototype.connect = function(sink, mediaType, sourceMediaDescriptio
  * @alias module:core/abstracts.MediaElement.disconnect
  *
  * @param {module:core/abstracts.MediaElement} sink
- *  the target {@link module:core/abstracts.MediaElement MediaElement} that will
+ *  the target {@link MediaElement} that will stop receiving media
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
  *  the {@link MediaType} of the pads that will be connected
  *
  * @param {external:String} [sourceMediaDescription]
  *  A textual description of the media source. Currently not used, aimed mainly 
- *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  for {@link core/abstracts.MediaElementMediaType#DATA} sources
  *
  * @param {external:String} [sinkMediaDescription]
  *  A textual description of the media source. Currently not used, aimed mainly 
- *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  for {@link core/abstracts.MediaElementMediaType#DATA} sources
  *
  * @param {module:core/abstracts.MediaElement~disconnectCallback} [callback]
  *
@@ -8059,13 +8048,13 @@ MediaElement.prototype.getGstreamerDot = function(details, callback){
  * @alias module:core/abstracts.MediaElement.getSinkConnections
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
- *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link 
- *  module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link 
- *  module:core/abstracts.MediaElement#MediaType.DATA}
+ *  One of {@link core/abstracts.MediaElementMediaType#AUDIO}, {@link 
+ *  core/abstracts.MediaElementMediaType#VIDEO} or {@link 
+ *  core/abstracts.MediaElementMediaType#DATA}
  *
  * @param {external:String} [description]
  *  A textual description of the media source. Currently not used, aimed mainly 
- *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  for {@link core/abstracts.MediaElementMediaType#DATA} sources
  *
  * @param {module:core/abstracts.MediaElement~getSinkConnectionsCallback} [callback]
  *
@@ -8133,13 +8122,13 @@ MediaElement.prototype.getSinkConnections = function(mediaType, description, cal
  * @alias module:core/abstracts.MediaElement.getSourceConnections
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
- *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO}, {@link 
- *  module:core/abstracts.MediaElement#MediaType.VIDEO} or {@link 
- *  module:core/abstracts.MediaElement#MediaType.DATA}
+ *  One of {@link core/abstracts.MediaElementMediaType#AUDIO}, {@link 
+ *  core/abstracts.MediaElementMediaType#VIDEO} or {@link 
+ *  core/abstracts.MediaElementMediaType#DATA}
  *
  * @param {external:String} [description]
  *  A textual description of the media source. Currently not used, aimed mainly 
- *  for {@link module:core/abstracts.MediaElement#MediaType.DATA} sources
+ *  for {@link core/abstracts.MediaElementMediaType#DATA} sources
  *
  * @param {module:core/abstracts.MediaElement~getSourceConnectionsCallback} [callback]
  *
@@ -8199,8 +8188,8 @@ MediaElement.prototype.getSourceConnections = function(mediaType, description, c
  * @alias module:core/abstracts.MediaElement.getStats
  *
  * @param {module:core/complexTypes.MediaType} [mediaType]
- *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO} or {@link 
- *  module:core/abstracts.MediaElement#MediaType.VIDEO}
+ *  One of {@link core/abstracts.MediaElementMediaType#AUDIO} or {@link 
+ *  core/abstracts.MediaElementMediaType#VIDEO}
  *
  * @param {module:core/abstracts.MediaElement~getStatsCallback} [callback]
  *
@@ -8261,8 +8250,8 @@ MediaElement.prototype.getStats = function(mediaType, callback){
  * @alias module:core/abstracts.MediaElement.isMediaFlowingIn
  *
  * @param {module:core/complexTypes.MediaType} mediaType
- *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO} or {@link 
- *  module:core/abstracts.MediaElement#MediaType.VIDEO}
+ *  One of {@link core/abstracts.MediaElementMediaType#AUDIO} or {@link 
+ *  core/abstracts.MediaElementMediaType#VIDEO}
  *
  * @param {external:String} [sinkMediaDescription]
  *  Description of the sink
@@ -8324,8 +8313,8 @@ MediaElement.prototype.isMediaFlowingIn = function(mediaType, sinkMediaDescripti
  * @alias module:core/abstracts.MediaElement.isMediaFlowingOut
  *
  * @param {module:core/complexTypes.MediaType} mediaType
- *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO} or {@link 
- *  module:core/abstracts.MediaElement#MediaType.VIDEO}
+ *  One of {@link core/abstracts.MediaElementMediaType#AUDIO} or {@link 
+ *  core/abstracts.MediaElementMediaType#VIDEO}
  *
  * @param {external:String} [sourceMediaDescription]
  *  Description of the source
@@ -8390,8 +8379,8 @@ MediaElement.prototype.isMediaFlowingOut = function(mediaType, sourceMediaDescri
  * @alias module:core/abstracts.MediaElement.isMediaTranscoding
  *
  * @param {module:core/complexTypes.MediaType} mediaType
- *  One of {@link module:core/abstracts.MediaElement#MediaType.AUDIO} or {@link 
- *  module:core/abstracts.MediaElement#MediaType.VIDEO}
+ *  One of {@link core/abstracts.MediaElementMediaType#AUDIO} or {@link 
+ *  core/abstracts.MediaElementMediaType#VIDEO}
  *
  * @param {external:String} [binName]
  *  Internal name of the processing bin, as previously given by 
@@ -8653,11 +8642,9 @@ function noop(error, result) {
  *    <li>
  *      <b>id</b>: unique identifier assigned to this <code>MediaObject</code> 
  *      at
- *      instantiation time. {@link module:core.MediaPipeline MediaPipeline} IDs 
- *      are generated with a GUID
+ *      instantiation time. {@link MediaPipeline} IDs are generated with a GUID
  *      followed by suffix <code>_kurento.MediaPipeline</code>.
- *      {@link module:core/abstracts.MediaElement MediaElement} IDs are also a 
- *      GUID with suffix
+ *      {@link MediaElement} IDs are also a GUID with suffix
  *      <code>_kurento.{ElementType}</code> and prefixed by parent's ID.
  *      <blockquote>
  *        <dl>
@@ -8690,8 +8677,8 @@ function noop(error, result) {
  *  <h4>Events</h4>
  *  <ul>
  *    <li>
- *      <b>ErrorEvent</b>: reports asynchronous error events. It is recommended 
- *      to
+ *      <strong>{@link ErrorEvent}<strong>: reports asynchronous error events. 
+ *      It is recommended to
  *      always subscribe a listener to this event, as regular error from the
  *      pipeline will be notified through it, instead of through an exception 
  *      when
@@ -8955,9 +8942,8 @@ MediaObject.prototype.getCreationTime = function(callback){
  */
 
 /**
- * {@link module:core.MediaPipeline MediaPipeline} to which this 
- * <code>MediaObject</code> belongs. It returns itself when invoked for a 
- * pipeline object.
+ * {@link MediaPipeline} to which this <code>MediaObject</code> belongs. It 
+ * returns itself when invoked for a pipeline object.
  *
  * @alias module:core/abstracts.MediaObject#getMediaPipeline
  *
@@ -9087,10 +9073,8 @@ MediaObject.prototype.setName = function(name, callback){
 /**
  * Parent of this <code>MediaObject</code>.
  * <p>
- *   The parent of a {@link module:core/abstracts.Hub Hub} or a {@link 
- *   module:core/abstracts.MediaElement MediaElement} is its
- *   {@link module:core.MediaPipeline MediaPipeline}. A {@link 
- *   module:core.MediaPipeline MediaPipeline} has no parent, so this
+ *   The parent of a {@link Hub} or a {@link MediaElement} is its
+ *   {@link MediaPipeline}. A {@link MediaPipeline} has no parent, so this
  *   property will be null.
  * </p>
  *
@@ -9482,7 +9466,8 @@ MediaObject.prototype.release = function(callback){
         {
           if(event[0] == '_'
           || event == 'newListener'
-          || event == 'removeListener')
+          || event == 'removeListener'
+          || event == 'release')
             return;
 
           self.removeAllListeners(event);
@@ -15444,11 +15429,9 @@ function noop(error, result) {
  * Create for the given pipeline
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that mixes the {@link 
- *  module:elements.AlphaBlending#MediaType.AUDIO} stream of its connected 
- *  sources and constructs one output with {@link 
- *  module:elements.AlphaBlending#MediaType.VIDEO} streams of its connected 
- *  sources into its sink
+ *  A {@link Hub} that mixes the {@link elements.AlphaBlendingMediaType#AUDIO} 
+ *  stream of its connected sources and constructs one output with {@link 
+ *  elements.AlphaBlendingMediaType#VIDEO} streams of its connected sources into
  *
  * @extends module:core/abstracts.Hub
  *
@@ -15575,8 +15558,7 @@ AlphaBlending.prototype.setPortProperties = function(relativeX, relativeY, zOrde
  * @alias module:elements.AlphaBlending.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
- *  belongs
+ *  the {@link MediaPipeline} to which the dispatcher belongs
  */
 AlphaBlending.constructorParams = {
   mediaPipeline: {
@@ -15646,11 +15628,9 @@ var Hub = require('kurento-client-core').abstracts.Hub;
  * Create for the given pipeline
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that mixes the {@link 
- *  module:elements.Composite#MediaType.AUDIO} stream of its connected sources 
- *  and constructs a grid with the {@link 
- *  module:elements.Composite#MediaType.VIDEO} streams of its connected sources 
- *  into its sink
+ *  A {@link Hub} that mixes the {@link elements.CompositeMediaType#AUDIO} 
+ *  stream of its connected sources and constructs a grid with the {@link 
+ *  elements.CompositeMediaType#VIDEO} streams of its connected sources into its
  *
  * @extends module:core/abstracts.Hub
  *
@@ -15666,8 +15646,7 @@ inherits(Composite, Hub);
  * @alias module:elements.Composite.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
- *  belongs
+ *  the {@link MediaPipeline} to which the dispatcher belongs
  */
 Composite.constructorParams = {
   mediaPipeline: {
@@ -15745,11 +15724,10 @@ function noop(error, result) {
 
 
 /**
- * Create a {@link module:elements.Dispatcher Dispatcher} belonging to the given
+ * Create a {@link Dispatcher} belonging to the given pipeline.
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that allows routing between 
- *  arbitrary port pairs
+ *  A {@link Hub} that allows routing between arbitrary port pairs
  *
  * @extends module:core/abstracts.Hub
  *
@@ -15811,8 +15789,7 @@ Dispatcher.prototype.connect = function(source, sink, callback){
  * @alias module:elements.Dispatcher.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
- *  belongs
+ *  the {@link MediaPipeline} to which the dispatcher belongs
  */
 Dispatcher.constructorParams = {
   mediaPipeline: {
@@ -15890,11 +15867,10 @@ function noop(error, result) {
 
 
 /**
- * Create a {@link module:elements.DispatcherOneToMany DispatcherOneToMany} 
- * belonging to the given pipeline.
+ * Create a {@link DispatcherOneToMany} belonging to the given pipeline.
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that sends a given source to all the
+ *  A {@link Hub} that sends a given source to all the connected sinks
  *
  * @extends module:core/abstracts.Hub
  *
@@ -15943,7 +15919,7 @@ DispatcherOneToMany.prototype.removeSource = function(callback){
 
 /**
  * Sets the source port that will be connected to the sinks of every {@link 
- * module:core.HubPort HubPort} of the dispatcher
+ * HubPort} of the dispatcher
  *
  * @alias module:elements.DispatcherOneToMany.setSource
  *
@@ -15981,8 +15957,7 @@ DispatcherOneToMany.prototype.setSource = function(source, callback){
  * @alias module:elements.DispatcherOneToMany.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the dispatcher 
- *  belongs
+ *  the {@link MediaPipeline} to which the dispatcher belongs
  */
 DispatcherOneToMany.constructorParams = {
   mediaPipeline: {
@@ -16049,15 +16024,14 @@ var HttpEndpoint = require('./abstracts/HttpEndpoint');
 
 
 /**
- * Builder for the {@link module:elements.HttpPostEndpoint HttpPostEndpoint}.
+ * Builder for the {@link HttpPostEndpoint}.
  *
  * @classdesc
- *  An {@link module:elements.HttpPostEndpoint HttpPostEndpoint} contains SINK 
- *  pads for AUDIO and VIDEO, which provide access to an HTTP file upload 
- *  function
+ *  An {@link HttpPostEndpoint} contains SINK pads for AUDIO and VIDEO, which 
+ *  provide access to an HTTP file upload function
  *     This type of endpoint provide unidirectional communications. Its 
- *     :rom:cls:`MediaSources <MediaSource>` are accessed through the <a 
- *     href="http://www.kurento.org/docs/current/glossary.html#term-http">HTTP</a>
+ *     :rom:cls:`MediaSources <MediaSource>` are accessed through the HTTP POST 
+ *     method.
  *
  * @extends module:elements/abstracts.HttpEndpoint
  *
@@ -16078,8 +16052,7 @@ inherits(HttpPostEndpoint, HttpEndpoint);
  *  This is the time that an http endpoint will wait for a reconnection, in case
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
- *  belongs
+ *  the {@link MediaPipeline} to which the endpoint belongs
  *
  * @property {external:Boolean} [useEncodedMedia]
  *  Feed the input media as-is to the Media Pipeline, instead of first decoding 
@@ -16194,10 +16167,11 @@ function noop(error, result) {
 
 
 /**
- * Create a {@link module:elements.Mixer Mixer} belonging to the given pipeline.
+ * Create a {@link Mixer} belonging to the given pipeline.
  *
  * @classdesc
- *  A {@link module:core/abstracts.Hub Hub} that allows routing of video between
+ *  A {@link Hub} that allows routing of video between arbitrary port pairs and 
+ *  mixing of audio among several ports
  *
  * @extends module:core/abstracts.Hub
  *
@@ -16311,8 +16285,7 @@ Mixer.prototype.disconnect = function(media, source, sink, callback){
  * @alias module:elements.Mixer.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the Mixer 
- *  belongs
+ *  the {@link MediaPipeline} to which the Mixer belongs
  */
 Mixer.constructorParams = {
   mediaPipeline: {
@@ -16397,8 +16370,7 @@ function noop(error, result) {
  *  <p>
  *    PlayerEndpoint will access the given resource, read all available data, 
  *    and
- *    inject it into <a 
- *    href="http://www.kurento.org/docs/current/glossary.html#term-kms">KMS</a>.
+ *    inject it into Kurento. Once this is is done, the injected video or audio
  *    will be available for passing through any other Filter or Endpoint to 
  *    which
  *    the PlayerEndpoint gets connected.
@@ -16699,8 +16671,7 @@ PlayerEndpoint.prototype.play = function(callback){
  * @alias module:elements.PlayerEndpoint.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  The {@link module:core.MediaPipeline MediaPipeline} this PlayerEndpoint 
- *  belongs to.
+ *  The {@link MediaPipeline} this PlayerEndpoint belongs to.
  *
  * @property {external:Integer} [networkCache]
  *  RTSP buffer length.
@@ -16880,16 +16851,14 @@ function noop(error, result) {
 
 
 /**
- * Builder for the {@link module:elements.RecorderEndpoint RecorderEndpoint}
+ * Builder for the {@link RecorderEndpoint}
  *
  * @classdesc
  *  Provides functionality to store media contents.
  *  <p>
  *    RecorderEndpoint can store media into local files or send it to a remote
- *    network storage. When another {@link module:core/abstracts.MediaElement 
- *    MediaElement} is connected to a
- *    RecorderEndpoint, the media coming from the former will be encapsulated 
- *    into
+ *    network storage. When another {@link MediaElement} is connected to a
+ *    RecorderEndpoint, the media coming from the former will be muxed into
  *    the selected recording format and stored in the designated location.
  *  </p>
  *  <p>
@@ -16959,10 +16928,8 @@ function noop(error, result) {
  *      </ul>
  *    </li>
  *    <li>
- *      <strong>Media Profile</strong> ({@link 
- *      module:elements.RecorderEndpoint#MediaProfileSpecType}), used for
- *      storage. This will determine the video and audio encoding. See below for
- *      more details about Media Profile.
+ *      <strong>Media Profile</strong> ({@link MediaProfileSpecType}), which
+ *      determines the video and audio encoding. See below for more details.
  *    </li>
  *    <li>
  *      <strong>EndOfStream</strong> (optional), a parameter that dictates if 
@@ -16995,46 +16962,9 @@ function noop(error, result) {
  *    </li>
  *  </ul>
  *  <p>
- *    The <strong>Media Profile</strong> is quite an important parameter, as it 
- *    will
- *    determine whether the server needs to perform on-the-fly transcoding of 
- *    the
- *    media. If the input stream codec if not compatible with the selected media
- *    profile, the media will be transcoded into a suitable format. This will 
- *    result
- *    in a higher CPU load and will impact overall performance of the media 
- *    server.
- *  </p>
- *  <p>
- *    For example: If your pipeline receives <b>VP8</b>-encoded video from 
- *    WebRTC,
- *    and sends it to a RecorderEndpoint; depending on the format selected...
- *  </p>
- *  <ul>
- *    <li>
- *      WEBM: The input codec is the same as the recording format, so no 
- *      transcoding
- *      will take place.
- *    </li>
- *    <li>
- *      MP4: The media server will have to transcode from <b>VP8</b> to 
- *      <b>H264</b>.
- *      This will raise the CPU load in the system.
- *    </li>
- *    <li>
- *      MKV: Again, video must be transcoded from <b>VP8</b> to <b>H264</b>, 
- *      which
- *      means more CPU load.
- *    </li>
- *  </ul>
- *  <p>
- *    From this you can see how selecting the correct format for your 
- *    application is
- *    a very important decision.
- *  </p>
- *  <p>
  *    Recording will start as soon as the user invokes the
- *    <code>record</code> method. The recorder will then store, in the location
+ *    <code>record()</code> method. The recorder will then store, in the 
+ *    location
  *    indicated, the media that the source is sending to the endpoint. If no 
  *    media
  *    is being received, or no endpoint has been connected, then the destination
@@ -17045,25 +16975,8 @@ function noop(error, result) {
  *  <p>
  *    <strong>Recording must be stopped</strong> when no more data should be 
  *    stored.
- *    This is done with the <code>stopAndWait</code> method, which blocks and
+ *    This is done with the <code>stopAndWait()</code> method, which blocks and
  *    returns only after all the information was stored correctly.
- *  </p>
- *  <p>
- *    <strong>
- *      If your output file is empty, this means that the recorder is waiting 
- *      for
- *      input media.
- *    </strong>
- *    When another endpoint is connected to the recorder, by default both AUDIO 
- *    and
- *    VIDEO media types are expected, unless specified otherwise when invoking 
- *    the
- *    <code>connect</code> method. Failing to provide both types, will result in
- *    RecorderEndpoint buffering the received media: it won't be written to the 
- *    file
- *    until the recording is stopped. The recorder waits until all types of 
- *    media
- *    start arriving, in order to synchronize them appropriately.
  *  </p>
  *  <p>
  *    The source endpoint can be hot-swapped while the recording is taking 
@@ -17076,32 +16989,48 @@ function noop(error, result) {
  *  </p>
  *  <p>
  *    <strong>
- *      It is recommended to start recording only after media arrives.
+ *      NOTE: It is recommended to start recording only after media arrives.
  *    </strong>
  *    For this, you may use the <code>MediaFlowInStateChanged</code> and
  *    <code>MediaFlowOutStateChanged</code>
  *    events of your endpoints, and synchronize the recording with the moment 
  *    media
- *    comes into the Recorder. For example:
+ *    comes into the Recorder.
+ *  </p>
+ *  <p>
+ *    <strong>
+ *      WARNING: All connected media types must be flowing to the 
+ *      RecorderEndpoint.
+ *    </strong>
+ *    If you used the default <code>connect()</code> method, it will assume both
+ *    AUDIO and VIDEO. Failing to provide both kinds of media will result in the
+ *    RecorderEndpoint creating an empty file and buffering indefinitely; the
+ *    recorder waits until all kinds of media start arriving, in order to
+ *    synchronize them appropriately.<br>
+ *    For audio-only or video-only recordings, make sure to use the correct,
+ *    media-specific variant of the <code>connect()</code> method.
+ *  </p>
+ *  <p>
+ *    For example:
  *  </p>
  *  <ol>
  *    <li>
- *      When the remote video arrives to KMS, your WebRtcEndpoint will start
- *      generating packets into the Kurento Pipeline, and it will trigger a
- *      <code>MediaFlowOutStateChanged</code> event.
+ *      When a web browser's video arrives to Kurento via WebRTC, your
+ *      WebRtcEndpoint will emit a <code>MediaFlowOutStateChanged</code> event.
  *    </li>
  *    <li>
- *      When video packets arrive from the WebRtcEndpoint to the 
+ *      When video starts flowing from the WebRtcEndpoint to the 
  *      RecorderEndpoint,
- *      the RecorderEndpoint will raise a <code>MediaFlowInStateChanged</code> 
+ *      the RecorderEndpoint will emit a <code>MediaFlowInStateChanged</code> 
  *      event.
+ *      You should start recording at this point.
  *    </li>
  *    <li>
  *      You should only start recording when RecorderEndpoint has notified a
- *      <code>MediaFlowInStateChanged</code> for ALL streams (so, if you record
+ *      <code>MediaFlowInStateChanged</code> for ALL streams. So, if you record
  *      AUDIO+VIDEO, your application must receive a
  *      <code>MediaFlowInStateChanged</code> event for audio, and another
- *      <code>MediaFlowInStateChanged</code> event for video).
+ *      <code>MediaFlowInStateChanged</code> event for video.
  *    </li>
  *  </ol>
  *
@@ -17190,18 +17119,45 @@ RecorderEndpoint.prototype.stopAndWait = function(callback){
  * @alias module:elements.RecorderEndpoint.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
- *  belongs
+ *  the {@link MediaPipeline} to which the endpoint belongs
  *
  * @property {module:elements/complexTypes.MediaProfileSpecType} [mediaProfile]
- *  Sets the media profile used for recording. If the profile is different than 
- *  the one being received at the sink pad, media will be transcoded, resulting 
- *  in a higher CPU load. For instance, when recording a VP8 encoded video from 
- *  a WebRTC endpoint in MP4, the load is higher that when recording to WEBM.
+ *  Selects the media format used for recording.
+ *  <p>
+ *    The media profile allows you to specify which codecs and media container 
+ *    will
+ *    be used for the recordings. This is currently the only way available to 
+ *    tell
+ *    Kurento about which codecs should be used.
+ *  </p>
+ *  <p>
+ *    Watch out for these important remarks:
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      If the format of incoming media differs from the recording profile, 
+ *      media
+ *      will need to be transcoded. Transcoding always incurs in noticeable CPU
+ *      load, so it is always good trying to avoid it. For instance, if a
+ *      VP8-encoded video (from WebRTC) is recorded with an MP4 recording 
+ *      profile
+ *      (which means H.264 encoding), the video needs to be transcoded from VP8 
+ *      to
+ *      H.264. On the other hand, recording with the WEBM profile would allow to
+ *      store the video as-is with its VP8 encoding.
+ *    </li>
+ *    <li>
+ *      If you intend to record audio-only or video-only media, select the
+ *      appropriate <code>_AUDIO_ONLY</code> or <code>_VIDEO_ONLY</code> 
+ *      profile.
+ *      For example, to record a WebRTC screen capture (as obtained from a web
+ *      browser's call to <code>MediaDevices.getDisplayMedia()</code>), choose
+ *      <code>WEBM_VIDEO_ONLY</code> instead of just <code>WEBM</code>.
+ *    </li>
+ *  </ul>
  *
  * @property {external:Boolean} [stopOnEndOfStream]
- *  Forces the recorder endpoint to finish processing data when an <a 
- *  href="http://www.kurento.org/docs/current/glossary.html#term-eos">EOS</a> is
+ *  Forces the recorder endpoint to finish processing data when an End Of Stream
  *
  * @property {external:String} uri
  *  URI where the recording will be stored. It must be accessible from the media
@@ -17285,14 +17241,13 @@ var BaseRtpEndpoint = require('kurento-client-core').abstracts.BaseRtpEndpoint;
 
 
 /**
- * Builder for the {@link module:elements.RtpEndpoint RtpEndpoint}
+ * Builder for the {@link RtpEndpoint}
  *
  * @classdesc
  *  Endpoint that provides bidirectional content delivery capabilities with 
- *  remote networked peers through RTP or SRTP protocol. An {@link 
- *  module:elements.RtpEndpoint RtpEndpoint} contains paired sink and source 
- *  :rom:cls:`MediaPad` for audio and video. This endpoint inherits from {@link 
- *  module:core/abstracts.BaseRtpEndpoint BaseRtpEndpoint}.
+ *  remote networked peers through RTP or SRTP protocol. An {@link RtpEndpoint} 
+ *  contains paired sink and source :rom:cls:`MediaPad` for audio and video. 
+ *  This endpoint inherits from {@link BaseRtpEndpoint}.
  *        </p>
  *        <p>
  *        In order to establish an RTP/SRTP communication, peers engage in an 
@@ -17394,8 +17349,7 @@ inherits(RtpEndpoint, BaseRtpEndpoint);
  *  SDES-type param. If present, this parameter indicates that the communication
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
- *  belongs
+ *  the {@link MediaPipeline} to which the endpoint belongs
  *
  * @property {external:Boolean} [useIpv6]
  *  This configures the endpoint to use IPv6 instead of IPv4.
@@ -17480,7 +17434,7 @@ function noop(error, result) {
 
 
 /**
- * Builder for the {@link module:elements.WebRtcEndpoint WebRtcEndpoint}
+ * Builder for the {@link WebRtcEndpoint}
  *
  * @classdesc
  *  Control interface for Kurento WebRTC endpoint.
@@ -17685,9 +17639,8 @@ function noop(error, result) {
  *  <p>
  *    <strong>
  *      Check the extended documentation of these parameters in
- *      {@link module:core/abstracts.SdpEndpoint SdpEndpoint}, {@link 
- *      module:core/abstracts.BaseRtpEndpoint BaseRtpEndpoint}, and
- *      {@link module:core/complexTypes.RembParams RembParams}.
+ *      {@link SdpEndpoint}, {@link BaseRtpEndpoint}, and
+ *      :rom:cls:`RembParams`.
  *    </strong>
  *  </p>
  *  <ul>
@@ -19008,8 +18961,32 @@ WebRtcEndpoint.prototype.gatherCandidates = function(callback){
  *  Define the type of the certificate used in dtls
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the endpoint 
- *  belongs
+ *  the {@link MediaPipeline} to which the endpoint belongs
+ *
+ * @property {module:elements/complexTypes.DSCPValue} [qosDscp]
+ *  DSCP value to be used in network traffic sent from this endpoint
+ *                <p>
+ *                If this parameter is present with a value different to 
+ *                NO_VALUE, all traffic sent from this WebRTCEndpoint will be 
+ *                marked with the correspondent
+ *                DSCP value according to the DiffServ architecture. This may 
+ *                provide better handling of network traffic according to its 
+ *                characteristics associated to 
+ *                its DSCP value. This better handling includes priority in 
+ *                forwarding traffic and probablity of packet drop in case of 
+ *                network congestion.
+ *                <p>
+ *                It must be taken into account that on Internet not all 
+ *                intermediate routers are guaranteed to enforce those DSCP 
+ *                values, even it is possible that 
+ *                certain routers just block traffic marked with specific DSCP 
+ *                values, as discussed here 
+ *                https://datatracker.ietf.org/doc/html/rfc8835#section-4.2.
+ *                <p> 
+ *                So, this feature must be managed with care and is mostly 
+ *                intended for private networks, where the network proprietor 
+ *                can configure and guarantee 
+ *                DSCP management in all routers.
  *
  * @property {external:Boolean} [recvonly]
  *  Single direction, receive-only endpoint
@@ -19027,6 +19004,8 @@ WebRtcEndpoint.constructorParams = {
     type: 'kurento.MediaPipeline',
     required: true
   },
+  qosDscp: {
+    type: 'kurento.DSCPValue'  },
   recvonly: {
     type: 'boolean'  },
   sendonly: {
@@ -19349,6 +19328,109 @@ var kurentoClient = require('kurento-client');
 
 
 /**
+ * Possible DSCP values 
+ *       <p>
+ *       WebRTC recommended values are taken from RFC 8837 
+ *       https://datatracker.ietf.org/doc/html/rfc8837#section-5 , These are the
+ *       name indicates kind of traffic that it should apply to, the second 
+ *       indicates relative priority. For video, a third field would indicate if
+ *       As indicated on RFC 8837 section 5 diagram:
+ *           +=======================+==========+=====+============+============+
+ *           |       Flow Type       | Very Low | Low |   Medium   |    High    
+ *           |
+ *           +=======================+==========+=====+============+============+
+ *           |         Audio         |  LE (1)  |  DF |  EF (46)   |  EF (46)   
+ *           |
+ *           |                       |          | (0) |            |            
+ *           |
+ *           +-----------------------+----------+-----+------------+------------+
+ *           +-----------------------+----------+-----+------------+------------+
+ *           |   Interactive Video   |  LE (1)  |  DF | AF42, AF43 | AF41, AF42 
+ *           |
+ *           | with or without Audio |          | (0) |  (36, 38)  |  (34, 36)  
+ *           |
+ *           +-----------------------+----------+-----+------------+------------+
+ *           +-----------------------+----------+-----+------------+------------+
+ *           | Non-Interactive Video |  LE (1)  |  DF | AF32, AF33 | AF31, AF32 
+ *           |
+ *           | with or without Audio |          | (0) |  (28, 30)  |  (26, 28)  
+ *           |
+ *           +-----------------------+----------+-----+------------+------------+
+ *           +-----------------------+----------+-----+------------+------------+
+ *           |          Data         |  LE (1)  |  DF |    AF11    |    AF21    
+ *           |
+ *           |                       |          | (0) |            |            
+ *           |
+ *           +-----------------------+----------+-----+------------+------------+
+ *       As indicated also in RFC, non interactive video is not considered
+ *       <p>
+ *       Apart from the WebRTC recommended values, we also include all possible 
+ *       values are referenced in 
+ *       http://www.iana.org/assignments/dscp-registry/dscp-registry.xml of 
+ *       course some of 
+ *       those values are synonyms for the WebRTC recommended ones, they are 
+ *       included mainly for completeness
+ *       <p>
+ *       And as a last point, we include a shorthand for Chrome supported 
+ *       markings for low  (CS0), very low (CS1), medium (CS7) and high (CS7) 
+ *       priorities in priority property for RTCRtpSender parameters. See 
+ *       https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpSender/setParameters
+ *       <p>
+ *       This only covers outgoing network packets from KMS, to complete the 
+ *       solution, DSCP must be also requested on client, unfortunately for 
+ *       traffic on the other direction, this must be requested to the 
+ *       browser or client. On browser, the client application needs to use the 
+ *       following API https://www.w3.org/TR/webrtc-priority/
+ *
+ * @typedef elements/complexTypes.DSCPValue
+ *
+ * @type {(NO_DSCP|NO_VALUE|AUDIO_VERYLOW|AUDIO_LOW|AUDIO_MEDIUM|AUDIO_HIGH|VIDEO_VERYLOW|VIDEO_LOW|VIDEO_MEDIUM|VIDEO_MEDIUM_THROUGHPUT|VIDEO_HIGH|VIDEO_HIGH_THROUGHPUT|DATA_VERYLOW|DATA_LOW|DATA_MEDIUM|DATA_HIGH|CHROME_HIGH|CHROME_MEDIUM|CHROME_LOW|CHROME_VERYLOW|CS0|CS1|CS2|CS3|CS4|CS5|CS6|CS7|AF11|AF12|AF13|AF21|AF22|AF23|AF31|AF32|AF33|AF41|AF42|AF43|EF|VOICEADMIT|LE)}
+ */
+
+/**
+ * Checker for {@link module:elements/complexTypes.DSCPValue}
+ *
+ * @memberof module:elements/complexTypes
+ *
+ * @param {external:String} key
+ * @param {module:elements/complexTypes.DSCPValue} value
+ */
+function checkDSCPValue(key, value)
+{
+  if(typeof value != 'string')
+    throw SyntaxError(key+' param should be a String, not '+typeof value);
+
+  if(!value.match('NO_DSCP|NO_VALUE|AUDIO_VERYLOW|AUDIO_LOW|AUDIO_MEDIUM|AUDIO_HIGH|VIDEO_VERYLOW|VIDEO_LOW|VIDEO_MEDIUM|VIDEO_MEDIUM_THROUGHPUT|VIDEO_HIGH|VIDEO_HIGH_THROUGHPUT|DATA_VERYLOW|DATA_LOW|DATA_MEDIUM|DATA_HIGH|CHROME_HIGH|CHROME_MEDIUM|CHROME_LOW|CHROME_VERYLOW|CS0|CS1|CS2|CS3|CS4|CS5|CS6|CS7|AF11|AF12|AF13|AF21|AF22|AF23|AF31|AF32|AF33|AF41|AF42|AF43|EF|VOICEADMIT|LE'))
+    throw SyntaxError(key+' param is not one of [NO_DSCP|NO_VALUE|AUDIO_VERYLOW|AUDIO_LOW|AUDIO_MEDIUM|AUDIO_HIGH|VIDEO_VERYLOW|VIDEO_LOW|VIDEO_MEDIUM|VIDEO_MEDIUM_THROUGHPUT|VIDEO_HIGH|VIDEO_HIGH_THROUGHPUT|DATA_VERYLOW|DATA_LOW|DATA_MEDIUM|DATA_HIGH|CHROME_HIGH|CHROME_MEDIUM|CHROME_LOW|CHROME_VERYLOW|CS0|CS1|CS2|CS3|CS4|CS5|CS6|CS7|AF11|AF12|AF13|AF21|AF22|AF23|AF31|AF32|AF33|AF41|AF42|AF43|EF|VOICEADMIT|LE] ('+value+')');
+};
+
+
+module.exports = checkDSCPValue;
+
+},{"kurento-client":"kurento-client"}],99:[function(require,module,exports){
+/* Autogenerated with Kurento Idl */
+
+/*
+ * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+var kurentoClient = require('kurento-client');
+
+
+
+/**
  * How to fix gaps when they are found in the recorded stream.
  * <p>
  * Gaps are typically caused by packet loss in the input streams, such as when 
@@ -19523,7 +19605,7 @@ function checkGapsFixMethod(key, value)
 
 module.exports = checkGapsFixMethod;
 
-},{"kurento-client":"kurento-client"}],99:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],100:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19638,7 +19720,7 @@ module.exports = IceCandidate;
 
 IceCandidate.check = checkIceCandidate;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],100:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],101:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19779,7 +19861,7 @@ module.exports = IceCandidatePair;
 
 IceCandidatePair.check = checkIceCandidatePair;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],101:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],102:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19830,7 +19912,7 @@ function checkIceComponentState(key, value)
 
 module.exports = checkIceComponentState;
 
-},{"kurento-client":"kurento-client"}],102:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],103:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19942,7 +20024,7 @@ module.exports = IceConnection;
 
 IceConnection.check = checkIceConnection;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],103:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],104:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -19966,8 +20048,7 @@ var kurentoClient = require('kurento-client');
 
 
 /**
- * Media Profile.
- * Currently WEBM, MKV, MP4, FLV and JPEG are supported.
+ * Media profile, used by the RecorderEndpoint builder to specify the codecs and
  *
  * @typedef elements/complexTypes.MediaProfileSpecType
  *
@@ -19994,7 +20075,7 @@ function checkMediaProfileSpecType(key, value)
 
 module.exports = checkMediaProfileSpecType;
 
-},{"kurento-client":"kurento-client"}],104:[function(require,module,exports){
+},{"kurento-client":"kurento-client"}],105:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20132,7 +20213,7 @@ module.exports = SDES;
 
 SDES.check = checkSDES;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],105:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],106:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20252,7 +20333,7 @@ module.exports = VideoInfo;
 
 VideoInfo.check = checkVideoInfo;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],106:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],107:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20282,6 +20363,7 @@ VideoInfo.check = checkVideoInfo;
 
 var CertificateKeyType = require('./CertificateKeyType');
 var CryptoSuite = require('./CryptoSuite');
+var DSCPValue = require('./DSCPValue');
 var GapsFixMethod = require('./GapsFixMethod');
 var IceCandidate = require('./IceCandidate');
 var IceCandidatePair = require('./IceCandidatePair');
@@ -20294,6 +20376,7 @@ var VideoInfo = require('./VideoInfo');
 
 exports.CertificateKeyType = CertificateKeyType;
 exports.CryptoSuite = CryptoSuite;
+exports.DSCPValue = DSCPValue;
 exports.GapsFixMethod = GapsFixMethod;
 exports.IceCandidate = IceCandidate;
 exports.IceCandidatePair = IceCandidatePair;
@@ -20303,7 +20386,7 @@ exports.MediaProfileSpecType = MediaProfileSpecType;
 exports.SDES = SDES;
 exports.VideoInfo = VideoInfo;
 
-},{"./CertificateKeyType":96,"./CryptoSuite":97,"./GapsFixMethod":98,"./IceCandidate":99,"./IceCandidatePair":100,"./IceComponentState":101,"./IceConnection":102,"./MediaProfileSpecType":103,"./SDES":104,"./VideoInfo":105}],107:[function(require,module,exports){
+},{"./CertificateKeyType":96,"./CryptoSuite":97,"./DSCPValue":98,"./GapsFixMethod":99,"./IceCandidate":100,"./IceCandidatePair":101,"./IceComponentState":102,"./IceConnection":103,"./MediaProfileSpecType":104,"./SDES":105,"./VideoInfo":106}],108:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20345,11 +20428,12 @@ function noop(error, result) {
 
 
 /**
- * FaceOverlayFilter interface. This type of {@link module:core/abstracts.Filter
+ * FaceOverlayFilter interface. This type of {@link Filter} detects faces in a 
+ * video feed. The face is then overlaid with an image.
  *
  * @classdesc
- *  FaceOverlayFilter interface. This type of {@link 
- *  module:core/abstracts.Filter Filter} detects faces in a video feed. The face
+ *  FaceOverlayFilter interface. This type of {@link Filter} detects faces in a 
+ *  video feed. The face is then overlaid with an image.
  *
  * @extends module:core/abstracts.Filter
  *
@@ -20487,7 +20571,7 @@ FaceOverlayFilter.prototype.unsetOverlayedImage = function(callback){
  * @alias module:filters.FaceOverlayFilter.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  pipeline to which this {@link module:core/abstracts.Filter Filter} belons
+ *  pipeline to which this {@link Filter} belons
  */
 FaceOverlayFilter.constructorParams = {
   mediaPipeline: {
@@ -20523,7 +20607,7 @@ module.exports = FaceOverlayFilter;
 
 FaceOverlayFilter.check = checkFaceOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],108:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20565,7 +20649,7 @@ function noop(error, result) {
 
 
 /**
- * Create a {@link module:filters.GStreamerFilter GStreamerFilter}.
+ * Create a {@link GStreamerFilter}.
  *
  * @classdesc
  *  A generic filter that allows injecting a single GStreamer element.
@@ -20601,8 +20685,8 @@ inherits(GStreamerFilter, Filter);
 //
 
 /**
- * String used to instantiate the GStreamer element, as in `gst-launch 
- * <https://gstreamer.freedesktop.org/documentation/tools/gst-launch.html>`__.
+ * String used to instantiate the GStreamer element, as in gst-launch 
+ * (https://gstreamer.freedesktop.org/documentation/tools/gst-launch.html).
  *
  * @alias module:filters.GStreamerFilter#getCommand
  *
@@ -20683,15 +20767,14 @@ GStreamerFilter.prototype.setElementProperty = function(propertyName, propertyVa
  * @alias module:filters.GStreamerFilter.constructorParams
  *
  * @property {external:String} command
- *  String used to instantiate the GStreamer element, as in `gst-launch 
- *  <https://gstreamer.freedesktop.org/documentation/tools/gst-launch.html>`__.
+ *  String used to instantiate the GStreamer element, as in gst-launch 
+ *  (https://gstreamer.freedesktop.org/documentation/tools/gst-launch.html).
  *
  * @property {external:FilterType} [filterType]
  *  Sets the filter as Audio, Video, or Autodetect.
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter 
- *  belongs
+ *  the {@link MediaPipeline} to which the filter belongs
  */
 GStreamerFilter.constructorParams = {
   command: {
@@ -20733,7 +20816,7 @@ module.exports = GStreamerFilter;
 
 GStreamerFilter.check = checkGStreamerFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],109:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20775,13 +20858,11 @@ function noop(error, result) {
 
 
 /**
- * ImageOverlayFilter interface. This type of {@link 
- * module:core/abstracts.Filter Filter} draws an image in a configured position 
- * over a video feed.
+ * ImageOverlayFilter interface. This type of {@link Filter} draws an image in a
  *
  * @classdesc
- *  ImageOverlayFilter interface. This type of {@link 
- *  module:core/abstracts.Filter Filter} draws an image in a configured position
+ *  ImageOverlayFilter interface. This type of {@link Filter} draws an image in 
+ *  a configured position over a video feed.
  *
  * @extends module:core/abstracts.Filter
  *
@@ -20915,7 +20996,7 @@ ImageOverlayFilter.prototype.removeImage = function(id, callback){
  * @alias module:filters.ImageOverlayFilter.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  pipeline to which this {@link module:core/abstracts.Filter Filter} belongs
+ *  pipeline to which this {@link Filter} belongs
  */
 ImageOverlayFilter.constructorParams = {
   mediaPipeline: {
@@ -20951,7 +21032,7 @@ module.exports = ImageOverlayFilter;
 
 ImageOverlayFilter.check = checkImageOverlayFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],110:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -20982,13 +21063,11 @@ var Filter = require('kurento-client-core').abstracts.Filter;
 
 
 /**
- * Builder for the {@link module:filters.ZBarFilter ZBarFilter}.
+ * Builder for the {@link ZBarFilter}.
  *
  * @classdesc
- *  This filter detects <a 
- *  href="http://www.kurento.org/docs/current/glossary.html#term-qr">QR</a> 
- *  codes in a video feed. When a code is found, the filter raises a 
- *  :rom:evnt:`CodeFound` event.
+ *  This filter detects QR codes in a video feed. When a code is found, the 
+ *  filter raises a :rom:evnt:`CodeFound` event.
  *
  * @extends module:core/abstracts.Filter
  *
@@ -21006,8 +21085,7 @@ inherits(ZBarFilter, Filter);
  * @alias module:filters.ZBarFilter.constructorParams
  *
  * @property {module:core.MediaPipeline} mediaPipeline
- *  the {@link module:core.MediaPipeline MediaPipeline} to which the filter 
- *  belongs
+ *  the {@link MediaPipeline} to which the filter belongs
  */
 ZBarFilter.constructorParams = {
   mediaPipeline: {
@@ -21043,7 +21121,7 @@ module.exports = ZBarFilter;
 
 ZBarFilter.check = checkZBarFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],111:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],112:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -21121,7 +21199,7 @@ module.exports = OpenCVFilter;
 
 OpenCVFilter.check = checkOpenCVFilter;
 
-},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],112:[function(require,module,exports){
+},{"inherits":"inherits","kurento-client":"kurento-client","kurento-client-core":"kurento-client-core"}],113:[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -21154,7 +21232,7 @@ var OpenCVFilter = require('./OpenCVFilter');
 
 exports.OpenCVFilter = OpenCVFilter;
 
-},{"./OpenCVFilter":111}],113:[function(require,module,exports){
+},{"./OpenCVFilter":112}],114:[function(require,module,exports){
 function Mapper() {
   var sources = {};
 
@@ -21214,7 +21292,7 @@ Mapper.prototype.pop = function (id, source) {
 
 module.exports = Mapper;
 
-},{}],114:[function(require,module,exports){
+},{}],115:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -21236,7 +21314,7 @@ var JsonRpcClient = require('./jsonrpcclient');
 
 exports.JsonRpcClient = JsonRpcClient;
 
-},{"./jsonrpcclient":115}],115:[function(require,module,exports){
+},{"./jsonrpcclient":116}],116:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -21524,7 +21602,7 @@ function JsonRpcClient(configuration) {
 
 module.exports = JsonRpcClient;
 
-},{"../..":118,"./transports/webSocketWithReconnection":117}],116:[function(require,module,exports){
+},{"../..":119,"./transports/webSocketWithReconnection":118}],117:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -21546,7 +21624,7 @@ var WebSocketWithReconnection = require('./webSocketWithReconnection');
 
 exports.WebSocketWithReconnection = WebSocketWithReconnection;
 
-},{"./webSocketWithReconnection":117}],117:[function(require,module,exports){
+},{"./webSocketWithReconnection":118}],118:[function(require,module,exports){
 (function (global){(function (){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
@@ -21796,7 +21874,7 @@ function WebSocketWithReconnection(config) {
 module.exports = WebSocketWithReconnection;
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"ws":155}],118:[function(require,module,exports){
+},{"ws":156}],119:[function(require,module,exports){
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
@@ -22535,7 +22613,7 @@ RpcBuilder.clients = clients;
 RpcBuilder.clients.transports = transports;
 RpcBuilder.packers = packers;
 
-},{"./Mapper":113,"./clients":114,"./clients/transports":116,"./packers":121,"events":21,"inherits":"inherits"}],119:[function(require,module,exports){
+},{"./Mapper":114,"./clients":115,"./clients/transports":117,"./packers":122,"events":21,"inherits":"inherits"}],120:[function(require,module,exports){
 /**
  * JsonRPC 2.0 packer
  */
@@ -22632,7 +22710,7 @@ function unpack(message) {
 exports.pack = pack;
 exports.unpack = unpack;
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 function pack(message) {
   throw new TypeError("Not yet implemented");
 };
@@ -22644,14 +22722,14 @@ function unpack(message) {
 exports.pack = pack;
 exports.unpack = unpack;
 
-},{}],121:[function(require,module,exports){
+},{}],122:[function(require,module,exports){
 var JsonRPC = require('./JsonRPC');
 var XmlRPC = require('./XmlRPC');
 
 exports.JsonRPC = JsonRPC;
 exports.XmlRPC = XmlRPC;
 
-},{"./JsonRPC":119,"./XmlRPC":120}],122:[function(require,module,exports){
+},{"./JsonRPC":120,"./XmlRPC":121}],123:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -22700,7 +22778,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":123}],123:[function(require,module,exports){
+},{"_process":124}],124:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -22886,7 +22964,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],124:[function(require,module,exports){
+},{}],125:[function(require,module,exports){
 (function (global){(function (){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -23423,7 +23501,7 @@ process.umask = function() { return 0; };
 }(this));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],125:[function(require,module,exports){
+},{}],126:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23509,7 +23587,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],126:[function(require,module,exports){
+},{}],127:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23596,16 +23674,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],127:[function(require,module,exports){
+},{}],128:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":125,"./encode":126}],128:[function(require,module,exports){
+},{"./decode":126,"./encode":127}],129:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":129}],129:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":130}],130:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23737,7 +23815,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":131,"./_stream_writable":133,"core-util-is":19,"inherits":"inherits","process-nextick-args":122}],130:[function(require,module,exports){
+},{"./_stream_readable":132,"./_stream_writable":134,"core-util-is":19,"inherits":"inherits","process-nextick-args":123}],131:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23785,7 +23863,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":132,"core-util-is":19,"inherits":"inherits"}],131:[function(require,module,exports){
+},{"./_stream_transform":133,"core-util-is":19,"inherits":"inherits"}],132:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -24807,7 +24885,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":129,"./internal/streams/BufferList":134,"./internal/streams/destroy":135,"./internal/streams/stream":136,"_process":123,"core-util-is":19,"events":21,"inherits":"inherits","isarray":24,"process-nextick-args":122,"safe-buffer":137,"string_decoder/":138,"util":17}],132:[function(require,module,exports){
+},{"./_stream_duplex":130,"./internal/streams/BufferList":135,"./internal/streams/destroy":136,"./internal/streams/stream":137,"_process":124,"core-util-is":19,"events":21,"inherits":"inherits","isarray":24,"process-nextick-args":123,"safe-buffer":138,"string_decoder/":139,"util":17}],133:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -25022,7 +25100,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":129,"core-util-is":19,"inherits":"inherits"}],133:[function(require,module,exports){
+},{"./_stream_duplex":130,"core-util-is":19,"inherits":"inherits"}],134:[function(require,module,exports){
 (function (process,global,setImmediate){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -25712,7 +25790,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":129,"./internal/streams/destroy":135,"./internal/streams/stream":136,"_process":123,"core-util-is":19,"inherits":"inherits","process-nextick-args":122,"safe-buffer":137,"timers":147,"util-deprecate":150}],134:[function(require,module,exports){
+},{"./_stream_duplex":130,"./internal/streams/destroy":136,"./internal/streams/stream":137,"_process":124,"core-util-is":19,"inherits":"inherits","process-nextick-args":123,"safe-buffer":138,"timers":148,"util-deprecate":151}],135:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -25792,7 +25870,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":137,"util":17}],135:[function(require,module,exports){
+},{"safe-buffer":138,"util":17}],136:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -25867,10 +25945,10 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":122}],136:[function(require,module,exports){
+},{"process-nextick-args":123}],137:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":21}],137:[function(require,module,exports){
+},{"events":21}],138:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -25934,7 +26012,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":18}],138:[function(require,module,exports){
+},{"buffer":18}],139:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -26231,10 +26309,10 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":137}],139:[function(require,module,exports){
+},{"safe-buffer":138}],140:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":140}],140:[function(require,module,exports){
+},{"./readable":141}],141:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -26243,13 +26321,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":129,"./lib/_stream_passthrough.js":130,"./lib/_stream_readable.js":131,"./lib/_stream_transform.js":132,"./lib/_stream_writable.js":133}],141:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":130,"./lib/_stream_passthrough.js":131,"./lib/_stream_readable.js":132,"./lib/_stream_transform.js":133,"./lib/_stream_writable.js":134}],142:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":140}],142:[function(require,module,exports){
+},{"./readable":141}],143:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":133}],143:[function(require,module,exports){
+},{"./lib/_stream_writable.js":134}],144:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -26377,7 +26455,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":10,"events":21}],144:[function(require,module,exports){
+},{"backoff":10,"events":21}],145:[function(require,module,exports){
 var websocket = require('websocket-stream');
 var inject = require('reconnect-core');
 
@@ -26396,7 +26474,7 @@ module.exports = inject(function () {
   return ws;
 });
 
-},{"reconnect-core":143,"websocket-stream":153}],145:[function(require,module,exports){
+},{"reconnect-core":144,"websocket-stream":154}],146:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -26525,7 +26603,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":21,"inherits":"inherits","readable-stream/duplex.js":128,"readable-stream/passthrough.js":139,"readable-stream/readable.js":140,"readable-stream/transform.js":141,"readable-stream/writable.js":142}],146:[function(require,module,exports){
+},{"events":21,"inherits":"inherits","readable-stream/duplex.js":129,"readable-stream/passthrough.js":140,"readable-stream/readable.js":141,"readable-stream/transform.js":142,"readable-stream/writable.js":143}],147:[function(require,module,exports){
 (function (process){(function (){
 var Stream = require('stream')
 
@@ -26637,7 +26715,7 @@ function through (write, end, opts) {
 
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":123,"stream":145}],147:[function(require,module,exports){
+},{"_process":124,"stream":146}],148:[function(require,module,exports){
 (function (setImmediate,clearImmediate){(function (){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -26716,7 +26794,7 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this)}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":123,"timers":147}],148:[function(require,module,exports){
+},{"process/browser.js":124,"timers":148}],149:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -27450,7 +27528,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":149,"punycode":124,"querystring":127}],149:[function(require,module,exports){
+},{"./util":150,"punycode":125,"querystring":128}],150:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -27468,7 +27546,7 @@ module.exports = {
   }
 };
 
-},{}],150:[function(require,module,exports){
+},{}],151:[function(require,module,exports){
 (function (global){(function (){
 
 /**
@@ -27539,14 +27617,14 @@ function config (name) {
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],151:[function(require,module,exports){
+},{}],152:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],152:[function(require,module,exports){
+},{}],153:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -28136,7 +28214,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":151,"_process":123,"inherits":"inherits"}],153:[function(require,module,exports){
+},{"./support/isBuffer":152,"_process":124,"inherits":"inherits"}],154:[function(require,module,exports){
 (function (process){(function (){
 var through = require('through')
 var isBuffer = require('isbuffer')
@@ -28232,7 +28310,7 @@ WebsocketStream.prototype.end = function(data) {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":123,"isbuffer":25,"through":146,"ws":154}],154:[function(require,module,exports){
+},{"_process":124,"isbuffer":25,"through":147,"ws":155}],155:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -28277,7 +28355,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],155:[function(require,module,exports){
+},{}],156:[function(require,module,exports){
 'use strict';
 
 module.exports = function () {
@@ -33903,7 +33981,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 })));
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"_process":123,"timers":147}],"es6-promise":[function(require,module,exports){
+},{"_process":124,"timers":148}],"es6-promise":[function(require,module,exports){
 (function (process,global){(function (){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
@@ -35081,7 +35159,7 @@ return Promise$1;
 
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":123}],"inherits":[function(require,module,exports){
+},{"_process":124}],"inherits":[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -35212,7 +35290,7 @@ exports.WebRtcEndpoint = WebRtcEndpoint;
 exports.abstracts    = require('./abstracts');
 exports.complexTypes = require('./complexTypes');
 
-},{"./AlphaBlending":84,"./Composite":85,"./Dispatcher":86,"./DispatcherOneToMany":87,"./HttpPostEndpoint":88,"./Mixer":89,"./PlayerEndpoint":90,"./RecorderEndpoint":91,"./RtpEndpoint":92,"./WebRtcEndpoint":93,"./abstracts":95,"./complexTypes":106}],"kurento-client-filters":[function(require,module,exports){
+},{"./AlphaBlending":84,"./Composite":85,"./Dispatcher":86,"./DispatcherOneToMany":87,"./HttpPostEndpoint":88,"./Mixer":89,"./PlayerEndpoint":90,"./RecorderEndpoint":91,"./RtpEndpoint":92,"./WebRtcEndpoint":93,"./abstracts":95,"./complexTypes":107}],"kurento-client-filters":[function(require,module,exports){
 /* Autogenerated with Kurento Idl */
 
 /*
@@ -35257,7 +35335,7 @@ exports.ZBarFilter = ZBarFilter;
 
 exports.abstracts = require('./abstracts');
 
-},{"./FaceOverlayFilter":107,"./GStreamerFilter":108,"./ImageOverlayFilter":109,"./ZBarFilter":110,"./abstracts":112}],"kurento-client":[function(require,module,exports){
+},{"./FaceOverlayFilter":108,"./GStreamerFilter":109,"./ImageOverlayFilter":110,"./ZBarFilter":111,"./abstracts":113}],"kurento-client":[function(require,module,exports){
 /*
  * (C) Copyright 2013-2015 Kurento (http://kurento.org/)
  *
