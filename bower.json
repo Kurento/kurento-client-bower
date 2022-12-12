@@ -39,14 +39,14 @@
     "srtp",
     "rtsp"
   ],
-  "homepage": "https://www.kurento.org",
+  "homepage": "https://kurento.openvidu.io/",
   "repository": {
     "type": "git",
     "url": "https://github.com/Kurento/kurento-client-js.git"
   },
   "authors": [
-    "Kurento <openvidu@gmail.com> (https://www.kurento.org)",
-    "Kurento Community <kurento@googlegroups.com> (https://www.kurento.org)",
+    "Kurento <kurento@openvidu.io> (https://kurento.openvidu.io/)",
+    "Kurento Community <kurento@googlegroups.com> (https://kurento.openvidu.io/)",
     "Jesús Leganés-Combarro 'piranna' <piranna@gmail.com> (https://pirannafs.blogspot.com/)"
   ],
   "main": "js/kurento-client.js"
