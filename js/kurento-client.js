@@ -7491,9 +7491,244 @@ inherits(MediaElement, MediaObject);
 //
 
 /**
- * Maximum video bandwidth for transcoding.
- * @deprecated Deprecated due to a typo. Use :rom:meth:`maxOutputBitrate` 
- * instead of this function.
+ * Target video bitrate for media transcoding.
+ * <p>
+ *   The bitrate of a video has a direct impact on its perceived image quality.
+ *   Higher bitrate means higher quality, but also a larger amount of bytes to
+ *   transmit or store. Use this parameter to set the desired average bitrate in
+ *   videos that are transcoded by the media server.
+ * </p>
+ * <p>
+ *   This parameter is most useful for :rom:cls:`RecorderEndpoint` and
+ *   :rom:cls:`RtpEndpoint`: when media is being transcoded (either for 
+ *   streaming
+ *   or storing on disk), the resulting quality is directly controlled with this
+ *   value.
+ * </p>
+ * <p>
+ *   For :rom:cls:`WebRtcEndpoint`, this value should be left as default, as 
+ *   remote
+ *   WebRTC receivers will already send feedback to inform the media server 
+ *   about
+ *   what is the optimal bitrate to send.
+ * </p>
+ * <p>
+ *   Setting a value will only work if done before the media starts to flow.
+ * </p>
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: 300000 (300 kbps).</li>
+ * </ul>
+ *
+ * @alias module:core/abstracts.MediaElement#getEncoderBitrate
+ *
+ * @param {module:core/abstracts.MediaElement~getEncoderBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.getEncoderBitrate = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getEncoderBitrate', callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~getEncoderBitrateCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Target video bitrate for media transcoding.
+ * <p>
+ *   The bitrate of a video has a direct impact on its perceived image quality.
+ *   Higher bitrate means higher quality, but also a larger amount of bytes to
+ *   transmit or store. Use this parameter to set the desired average bitrate in
+ *   videos that are transcoded by the media server.
+ * </p>
+ * <p>
+ *   This parameter is most useful for :rom:cls:`RecorderEndpoint` and
+ *   :rom:cls:`RtpEndpoint`: when media is being transcoded (either for 
+ *   streaming
+ *   or storing on disk), the resulting quality is directly controlled with this
+ *   value.
+ * </p>
+ * <p>
+ *   For :rom:cls:`WebRtcEndpoint`, this value should be left as default, as 
+ *   remote
+ *   WebRTC receivers will already send feedback to inform the media server 
+ *   about
+ *   what is the optimal bitrate to send.
+ * </p>
+ * <p>
+ *   Setting a value will only work if done before the media starts to flow.
+ * </p>
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: 300000 (300 kbps).</li>
+ * </ul>
+ *
+ * @alias module:core/abstracts.MediaElement#setEncoderBitrate
+ *
+ * @param {external:Integer} encoderBitrate
+ * @param {module:core/abstracts.MediaElement~setEncoderBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.setEncoderBitrate = function(encoderBitrate, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('int', 'encoderBitrate', encoderBitrate, {required: true});
+  //  
+
+  var params = {
+    encoderBitrate: encoderBitrate
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setEncoderBitrate', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~setEncoderBitrateCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Maximum video bitrate for media transcoding.
+ * <p>
+ *   This parameter can be used to fine tune the automatic bitrate selection 
+ *   that
+ *   normally takes place within elements that are able to dynamically change 
+ *   the
+ *   encoding bitrate according to the conditions of the streaming, such as
+ *   :rom:cls:`WebRtcEndpoint`.
+ * </p>
+ * <p>
+ *   This should be left as default in most cases, given that remote WebRTC
+ *   receivers already send feedback to inform the media server about what is 
+ *   the
+ *   optimal bitrate to send. Otherwise, this parameter could be used for 
+ *   example
+ *   to limit the total bitrate that is handled by the server, by setting a low
+ *   maximum output for all endpoints.
+ * </p>
+ * <p>
+ *   Setting a value will only work if done before the media starts to flow.
+ * </p>
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: 0.</li>
+ *   <li>
+ *     0 = unlimited. Encoding performed with bitrate as requested by receivers.
+ *   </li>
+ * </ul>
+ *
+ * @alias module:core/abstracts.MediaElement#getMaxEncoderBitrate
+ *
+ * @param {module:core/abstracts.MediaElement~getMaxEncoderBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.getMaxEncoderBitrate = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getMaxEncoderBitrate', callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~getMaxEncoderBitrateCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Maximum video bitrate for media transcoding.
+ * <p>
+ *   This parameter can be used to fine tune the automatic bitrate selection 
+ *   that
+ *   normally takes place within elements that are able to dynamically change 
+ *   the
+ *   encoding bitrate according to the conditions of the streaming, such as
+ *   :rom:cls:`WebRtcEndpoint`.
+ * </p>
+ * <p>
+ *   This should be left as default in most cases, given that remote WebRTC
+ *   receivers already send feedback to inform the media server about what is 
+ *   the
+ *   optimal bitrate to send. Otherwise, this parameter could be used for 
+ *   example
+ *   to limit the total bitrate that is handled by the server, by setting a low
+ *   maximum output for all endpoints.
+ * </p>
+ * <p>
+ *   Setting a value will only work if done before the media starts to flow.
+ * </p>
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: 0.</li>
+ *   <li>
+ *     0 = unlimited. Encoding performed with bitrate as requested by receivers.
+ *   </li>
+ * </ul>
+ *
+ * @alias module:core/abstracts.MediaElement#setMaxEncoderBitrate
+ *
+ * @param {external:Integer} maxEncoderBitrate
+ * @param {module:core/abstracts.MediaElement~setMaxEncoderBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.setMaxEncoderBitrate = function(maxEncoderBitrate, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('int', 'maxEncoderBitrate', maxEncoderBitrate, {required: true});
+  //  
+
+  var params = {
+    maxEncoderBitrate: maxEncoderBitrate
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setMaxEncoderBitrate', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~setMaxEncoderBitrateCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Maximum video bitrate for media transcoding.
+ * @deprecated Use {@link core/abstracts.MediaElement#maxEncoderBitrate} instead
  *
  * @alias module:core/abstracts.MediaElement#getMaxOuputBitrate
  *
@@ -7525,9 +7760,8 @@ MediaElement.prototype.getMaxOuputBitrate = function(callback){
  */
 
 /**
- * Maximum video bandwidth for transcoding.
- * @deprecated Deprecated due to a typo. Use :rom:meth:`maxOutputBitrate` 
- * instead of this function.
+ * Maximum video bitrate for media transcoding.
+ * @deprecated Use {@link core/abstracts.MediaElement#maxEncoderBitrate} instead
  *
  * @alias module:core/abstracts.MediaElement#setMaxOuputBitrate
  *
@@ -7559,12 +7793,8 @@ MediaElement.prototype.setMaxOuputBitrate = function(maxOuputBitrate, callback){
  */
 
 /**
- * Maximum video bitrate for transcoding.
- * <ul>
- *   <li>Unit: bps (bits per second).</li>
- *   <li>Default: MAXINT.</li>
- *   <li>0 = unlimited.</li>
- * </ul>
+ * Maximum video bitrate for media transcoding.
+ * @deprecated Use {@link core/abstracts.MediaElement#maxEncoderBitrate} instead
  *
  * @alias module:core/abstracts.MediaElement#getMaxOutputBitrate
  *
@@ -7596,12 +7826,8 @@ MediaElement.prototype.getMaxOutputBitrate = function(callback){
  */
 
 /**
- * Maximum video bitrate for transcoding.
- * <ul>
- *   <li>Unit: bps (bits per second).</li>
- *   <li>Default: MAXINT.</li>
- *   <li>0 = unlimited.</li>
- * </ul>
+ * Maximum video bitrate for media transcoding.
+ * @deprecated Use {@link core/abstracts.MediaElement#maxEncoderBitrate} instead
  *
  * @alias module:core/abstracts.MediaElement#setMaxOutputBitrate
  *
@@ -7633,9 +7859,118 @@ MediaElement.prototype.setMaxOutputBitrate = function(maxOutputBitrate, callback
  */
 
 /**
- * Minimum video bandwidth for transcoding.
- * @deprecated Deprecated due to a typo. Use :rom:meth:`minOutputBitrate` 
- * instead of this function.
+ * Minimum video bitrate for media transcoding.
+ * <p>
+ *   This parameter can be used to fine tune the automatic bitrate selection 
+ *   that
+ *   normally takes place within elements that are able to dynamically change 
+ *   the
+ *   encoding bitrate according to the conditions of the streaming, such as
+ *   :rom:cls:`WebRtcEndpoint`.
+ * </p>
+ * <p>
+ *   This should be left as default in most cases, given that remote WebRTC
+ *   receivers already send feedback to inform the media server about what is 
+ *   the
+ *   optimal bitrate to send. Otherwise, this parameter could be used for 
+ *   example
+ *   to force a higher bitrate than what is being requested by receivers.
+ * </p>
+ * <p>
+ *   Setting a value will only work if done before the media starts to flow.
+ * </p>
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: 0.</li>
+ * </ul>
+ *
+ * @alias module:core/abstracts.MediaElement#getMinEncoderBitrate
+ *
+ * @param {module:core/abstracts.MediaElement~getMinEncoderBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.getMinEncoderBitrate = function(callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  var usePromise = false;
+  
+  if (callback == undefined) {
+    usePromise = true;
+  }
+  
+  if(!arguments.length) callback = undefined;
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'getMinEncoderBitrate', callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~getMinEncoderBitrateCallback
+ * @param {external:Error} error
+ * @param {external:Integer} result
+ */
+
+/**
+ * Minimum video bitrate for media transcoding.
+ * <p>
+ *   This parameter can be used to fine tune the automatic bitrate selection 
+ *   that
+ *   normally takes place within elements that are able to dynamically change 
+ *   the
+ *   encoding bitrate according to the conditions of the streaming, such as
+ *   :rom:cls:`WebRtcEndpoint`.
+ * </p>
+ * <p>
+ *   This should be left as default in most cases, given that remote WebRTC
+ *   receivers already send feedback to inform the media server about what is 
+ *   the
+ *   optimal bitrate to send. Otherwise, this parameter could be used for 
+ *   example
+ *   to force a higher bitrate than what is being requested by receivers.
+ * </p>
+ * <p>
+ *   Setting a value will only work if done before the media starts to flow.
+ * </p>
+ * <ul>
+ *   <li>Unit: bps (bits per second).</li>
+ *   <li>Default: 0.</li>
+ * </ul>
+ *
+ * @alias module:core/abstracts.MediaElement#setMinEncoderBitrate
+ *
+ * @param {external:Integer} minEncoderBitrate
+ * @param {module:core/abstracts.MediaElement~setMinEncoderBitrateCallback} [callback]
+ *
+ * @return {external:Promise}
+ */
+MediaElement.prototype.setMinEncoderBitrate = function(minEncoderBitrate, callback){
+  var transaction = (arguments[0] instanceof Transaction)
+                  ? Array.prototype.shift.apply(arguments)
+                  : undefined;
+
+  //  
+  // checkType('int', 'minEncoderBitrate', minEncoderBitrate, {required: true});
+  //  
+
+  var params = {
+    minEncoderBitrate: minEncoderBitrate
+  };
+
+  callback = (callback || noop).bind(this)
+
+  return disguise(this._invoke(transaction, 'setMinEncoderBitrate', params, callback), this)
+};
+/**
+ * @callback module:core/abstracts.MediaElement~setMinEncoderBitrateCallback
+ * @param {external:Error} error
+ */
+
+/**
+ * Minimum video bitrate for media transcoding.
+ * @deprecated Use {@link core/abstracts.MediaElement#minEncoderBitrate} instead
  *
  * @alias module:core/abstracts.MediaElement#getMinOuputBitrate
  *
@@ -7667,9 +8002,8 @@ MediaElement.prototype.getMinOuputBitrate = function(callback){
  */
 
 /**
- * Minimum video bandwidth for transcoding.
- * @deprecated Deprecated due to a typo. Use :rom:meth:`minOutputBitrate` 
- * instead of this function.
+ * Minimum video bitrate for media transcoding.
+ * @deprecated Use {@link core/abstracts.MediaElement#minEncoderBitrate} instead
  *
  * @alias module:core/abstracts.MediaElement#setMinOuputBitrate
  *
@@ -7701,11 +8035,8 @@ MediaElement.prototype.setMinOuputBitrate = function(minOuputBitrate, callback){
  */
 
 /**
- * Minimum video bitrate for transcoding.
- * <ul>
- *   <li>Unit: bps (bits per second).</li>
- *   <li>Default: 0.</li>
- * </ul>
+ * Minimum video bitrate for media transcoding.
+ * @deprecated Use {@link core/abstracts.MediaElement#minEncoderBitrate} instead
  *
  * @alias module:core/abstracts.MediaElement#getMinOutputBitrate
  *
@@ -7737,11 +8068,8 @@ MediaElement.prototype.getMinOutputBitrate = function(callback){
  */
 
 /**
- * Minimum video bitrate for transcoding.
- * <ul>
- *   <li>Unit: bps (bits per second).</li>
- *   <li>Default: 0.</li>
- * </ul>
+ * Minimum video bitrate for media transcoding.
+ * @deprecated Use {@link core/abstracts.MediaElement#minEncoderBitrate} instead
  *
  * @alias module:core/abstracts.MediaElement#setMinOutputBitrate
  *
@@ -8516,15 +8844,13 @@ MediaElement.prototype.setAudioFormat = function(caps, callback){
  */
 
 /**
- * @deprecated
- * Allows change the target bitrate for the media output, if the media is 
- * encoded using VP8 or H264. This method only works if it is called before the 
- * media starts to flow.
+ * Set the target video bitrate for media transcoding.
+ * @deprecated Use {@link core/abstracts.MediaElement#encoderBitrate} instead of
  *
  * @alias module:core/abstracts.MediaElement.setOutputBitrate
  *
  * @param {external:Integer} bitrate
- *  Configure the enconding media bitrate in bps
+ *  Target video bitrate for media transcoding.
  *
  * @param {module:core/abstracts.MediaElement~setOutputBitrateCallback} [callback]
  *
